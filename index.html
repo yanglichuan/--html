@@ -820,76 +820,84 @@
         let isLoading = false;
         let hasMore = true;
 
-        function fetchStockList(isNextPage = false) {
-            if (isLoading || !hasMore) return;
+        async function fetchStockList() {
+            if (isLoading) return;
             isLoading = true;
 
-            if (!isNextPage) {
-                currentPage = 1;
-                allStocks = [];
-                hasMore = true;
-                document.getElementById('stock-list').innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">加载行情中...</div>';
-            }
+            const container = document.getElementById('stock-list');
+            container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);"><i class="loading-icon"></i> 正在智能同步全量行情...</div>';
 
-            const script = document.createElement('script');
-            // 每次加载 100 条，减少单次渲染压力
-            script.src = `https://push2.eastmoney.com/api/qt/clist/get?pn=${currentPage}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f13,f14&cb=handleStockList&_=${Date.now()}`;
-            script.onerror = () => {
+            try {
+                // fs 参数涵盖：沪深两市主板、创业板、科创板（已移除京市标的）
+                const fs = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23';
+                const fields = 'f2,f3,f12,f13,f14';
+
+                // 1. 获取种子数据与总数
+                const seedUrl = `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=${fields}`;
+                const seedRes = await getJSON(seedUrl);
+                if (!seedRes?.data) throw new Error('同步失败');
+
+                const total = seedRes.data.total;
+                const pageSize = 100;
+                const pageCount = Math.ceil(total / pageSize);
+
+                // 2. 开启高速并发分片抓取
+                const tasks = [];
+                for (let i = 1; i <= pageCount; i++) {
+                    const url = `https://push2.eastmoney.com/api/qt/clist/get?pn=${i}&pz=${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=${fields}`;
+                    tasks.push(getJSON(url));
+                }
+
+                const results = await Promise.all(tasks);
+
+                // 3. 多源流式合并
+                let combined = [];
+                results.forEach(res => {
+                    if (res?.data?.diff) {
+                        const rawData = Array.isArray(res.data.diff) ? res.data.diff : Object.values(res.data.diff);
+                        combined = combined.concat(rawData.map(s => ({
+                            ...s,
+                            f3: parseFloat(s.f3) || 0,
+                            f2: s.f2 === '-' ? '-' : parseFloat(s.f2)
+                        })));
+                    }
+                });
+
+                allStocks = combined;
+                renderStockList(allStocks);
                 isLoading = false;
-                if (!isNextPage) document.getElementById('stock-list').innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">网络异常，请重试</div>`;
-            };
-            document.body.appendChild(script);
-            script.onload = () => script.remove();
+            } catch (e) {
+                console.error('Core sync error:', e);
+                container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">引擎同步异常，请点击重试</div>`;
+                container.onclick = () => { container.onclick = null; fetchStockList(); };
+                isLoading = false;
+            }
         }
 
-        window.handleStockList = function (res) {
-            isLoading = false;
-            const container = document.getElementById('stock-list');
-            if (res?.data?.diff) {
-                const rawData = Array.isArray(res.data.diff) ? res.data.diff : Object.values(res.data.diff);
-                const processed = rawData.map(s => ({
-                    ...s,
-                    f3: parseFloat(s.f3) || 0,
-                    f2: s.f2 === '-' ? '-' : parseFloat(s.f2)
-                }));
+        // 已全量加载，移除了滚动触底监听器
 
-                if (currentPage === 1) allStocks = processed;
-                else allStocks = [...allStocks, ...processed];
+        function renderStockList(list, isSearch = false) {
+            // 更新市场涨跌统计（仅在非搜索模式下更新）
+            if (!isSearch) {
+                const counts = list.reduce((acc, s) => {
+                    if (s.f3 > 0) acc.up++;
+                    else if (s.f3 < 0) acc.down++;
+                    return acc;
+                }, { up: 0, down: 0 });
 
-                if (processed.length < 100) hasMore = false;
-                renderStockList(allStocks);
-                currentPage++;
-            } else {
-                hasMore = false;
-                if (currentPage === 1) container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-secondary);">未发现异动股票</div>`;
+                const total = counts.up + counts.down || 1;
+                document.querySelector('.breadth-up').style.width = (counts.up / total * 100).toFixed(1) + '%';
+                document.querySelector('.breadth-down').style.width = (counts.down / total * 100).toFixed(1) + '%';
+                document.querySelector('.breadth-info .up').innerText = `上涨: ${counts.up}`;
+                document.querySelector('.breadth-info .down').innerText = `下跌: ${counts.down}`;
             }
-        };
-
-        // 监听滚动，实现触底自动加载
-        document.getElementById('stock-list').addEventListener('scroll', function (e) {
-            const { scrollTop, scrollHeight, clientHeight } = e.target;
-            if (scrollTop + clientHeight >= scrollHeight - 300) { fetchStockList(true); }
-        });
-
-        function renderStockList(list) {
-            // 更新市场涨跌统计（基于当前列表）
-            const counts = list.reduce((acc, s) => {
-                if (s.f3 > 0) acc.up++;
-                else if (s.f3 < 0) acc.down++;
-                return acc;
-            }, { up: 0, down: 0 });
-
-            const total = counts.up + counts.down || 1;
-            const upPct = (counts.up / total * 100).toFixed(1);
-            const downPct = (counts.down / total * 100).toFixed(1);
-
-            document.querySelector('.breadth-up').style.width = upPct + '%';
-            document.querySelector('.breadth-down').style.width = downPct + '%';
-            document.querySelector('.breadth-info .up').innerText = `上涨: ${counts.up}`;
-            document.querySelector('.breadth-info .down').innerText = `下跌: ${counts.down}`;
 
             const container = document.getElementById('stock-list');
-            container.innerHTML = list.map(s => {
+            if (isSearch && list.length === 0) {
+                container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">未发现匹配股票</div>';
+                return;
+            }
+            container.innerHTML = list.map((s, i) => {
                 const fullId = `${s.f13}.${s.f12}`;
                 const isActive = fullId === currentStock.id ? 'active' : '';
                 const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
@@ -897,22 +905,20 @@
                 const priceDisplay = (typeof s.f2 === 'number') ? s.f2.toFixed(2) : '--';
                 const pctDisplay = (typeof s.f3 === 'number') ? s.f3.toFixed(2) : '--';
 
-                // 市场识别逻辑
+                // 市场识别逻辑（仅保留沪深）
                 let mktName = '深';
                 let mktClass = 'mkt-sz';
                 if (s.f13 === 1) {
                     mktName = '沪';
                     mktClass = 'mkt-sh';
-                } else if (s.f12.startsWith('8') || s.f12.startsWith('43') || s.f12.startsWith('92')) {
-                    mktName = '京';
-                    mktClass = 'mkt-bj';
                 }
 
-                const itemClass = mktClass === 'mkt-sh' ? 'item-sh' : (mktClass === 'mkt-sz' ? 'item-sz' : 'item-bj');
+                const itemClass = mktClass === 'mkt-sh' ? 'item-sh' : 'item-sz';
 
                 return `
                     <div class="stock-item ${isActive} ${itemClass}" onclick="selectStock('${fullId}', '${s.f14}')">
-                        <div class="stock-info">
+                        <div style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); min-width: 24px; opacity: 0.5;">${(i + 1).toString().padStart(2, '0')}</div>
+                        <div class="stock-info" style="flex: 1;">
                             <div class="stock-name-row">
                                 <span class="stock-name">${s.f14}</span>
                                 <span class="mkt-badge ${mktClass}">${mktName}</span>
@@ -937,19 +943,45 @@
             updateAll();
         }
 
-        document.getElementById('stock-search').addEventListener('input', (e) => {
-            const val = e.target.value.trim().toLowerCase();
+        // 防抖函数
+        function debounce(fn, delay) {
+            let timer = null;
+            return function () {
+                const context = this, args = arguments;
+                clearTimeout(timer);
+                timer = setTimeout(() => fn.apply(context, args), delay);
+            };
+        }
+
+        const searchHandler = debounce(async (val) => {
             if (!val) {
                 renderStockList(allStocks);
                 return;
             }
-            const filtered = allStocks.filter(s => {
-                // 支持代码搜索
-                if (s.f12.includes(val)) return true;
-                // 支持名称、拼音、简拼模糊搜索
-                return PinyinMatch.match(s.f14 || '', val);
+
+            // 精准度权重：代码完全相等 > 代码包含 > 拼音匹配
+            let localResults = allStocks.filter(s =>
+                s.f12.includes(val) || PinyinMatch.match(s.f14 || '', val)
+            ).sort((a, b) => {
+                if (a.f12 === val) return -1;
+                if (b.f12 === val) return 1;
+                return 0;
             });
-            renderStockList(filtered);
+
+            renderStockList(localResults, true);
+        }, 200);
+
+        const searchEl = document.getElementById('stock-search');
+        searchEl.addEventListener('input', e => searchHandler(e.target.value.trim().toLowerCase()));
+
+        searchEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const firstItem = document.querySelector('.stock-item');
+                if (firstItem) {
+                    firstItem.click(); // 直接模拟点击第一个搜索结果
+                    searchEl.blur();   // 失去焦点，收起软键盘/关闭搜索状态
+                }
+            }
         });
 
         // --- 2. Data Update Functions ---
