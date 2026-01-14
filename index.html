@@ -1438,6 +1438,10 @@
             const visibleData = data.slice(Math.max(0, start), Math.min(data.length, end + 1));
             if (visibleData.length === 0) return;
 
+            // 获取最新收盘价（最后一个数据的 Close 值 -> 索引 1）
+            const latestPrice = data[data.length - 1][1];
+
+
             let maxVal = -Infinity, minVal = Infinity;
             visibleData.forEach(d => {
                 const high = d[3], low = d[2];
@@ -1467,10 +1471,13 @@
                         data: [
                             { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: colors.up, position: 'end' }, lineStyle: { color: colors.up } },
                             { yAxis: minVal, label: { formatter: '视野最低: {c}', color: colors.down, position: 'end' }, lineStyle: { color: colors.down } },
+                            // 当前最新价
+                            { yAxis: latestPrice, label: { formatter: '现价: {c}', color: colors.accent, position: 'start', backgroundColor: colors.accent + '20' }, lineStyle: { color: colors.accent, type: 'solid', width: 2 } },
                             // 新增 X 轴边界时间标识
                             { xAxis: Math.max(0, start), label: { formatter: opt.xAxis[0].data[Math.max(0, start)], color: colors.secondary, position: 'start', rotate: 0, distance: 5, backgroundColor: 'transparent' }, lineStyle: { color: colors.grid, type: 'dashed' } },
                             { xAxis: Math.min(data.length - 1, end), label: { formatter: opt.xAxis[0].data[Math.min(data.length - 1, end)], color: colors.secondary, position: 'start', rotate: 0, distance: 5, backgroundColor: 'transparent' }, lineStyle: { color: colors.grid, type: 'dashed' } }
                         ],
+
                         z: 20 // 确保在均线和蜡烛图上方
                     }
                 }]
