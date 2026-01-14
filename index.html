@@ -1555,6 +1555,77 @@
 
             lucide.createIcons();
         })();
+
+        // --- 全局快捷键系统 (Hotkey Engine) ---
+        window.addEventListener('keydown', (e) => {
+            const activeEl = document.activeElement;
+            if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') return;
+
+            // 1. 列表切换导航 (上下键)
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const items = Array.from(document.querySelectorAll('.stock-item'));
+                const currentIndex = items.findIndex(item => item.classList.contains('active'));
+                let nextIndex = currentIndex;
+
+                if (e.key === 'ArrowDown') nextIndex = (currentIndex + 1) % items.length;
+                else nextIndex = (currentIndex - 1 + items.length) % items.length;
+
+                if (items[nextIndex]) {
+                    items[nextIndex].click();
+                    items[nextIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                }
+            }
+
+            // 2. K线缩放控制 (+ / -)
+            if (e.key === '=' || e.key === '+' || e.key === '-' || e.key === '_') {
+                e.preventDefault();
+                const opt = candleChart.getOption();
+                const dz = opt.dataZoom[0];
+                const delta = (e.key === '=' || e.key === '+') ? -5 : 5;
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: Math.max(0, Math.min(99, dz.start + delta)),
+                    end: 100
+                });
+            }
+
+            // 3. 历史平移 (左右键)
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                const opt = candleChart.getOption();
+                const dz = opt.dataZoom[0];
+                const range = dz.end - dz.start;
+                const delta = (e.key === 'ArrowLeft') ? -5 : 5;
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: Math.max(0, Math.min(100 - range, dz.start + delta)),
+                    end: Math.max(range, Math.min(100, dz.end + delta))
+                });
+            }
+
+            // 4. 功能键
+            switch (e.key.toLowerCase()) {
+                case 's': // Toggle Sidebar
+                    document.getElementById('sidebar-toggle').click();
+                    break;
+                case 'd': // Toggle Detail Archive
+                    document.getElementById('detail-toggle').click();
+                    break;
+                case 'f': // Toggle Fullscreen
+                    document.getElementById('fs-toggle').click();
+                    break;
+                case 'l': // Jump to Latest
+                    document.getElementById('latest-toggle').click();
+                    break;
+            }
+
+            // 5. 数字键 1-6 对应时段切换
+            if (e.key >= '1' && e.key <= '6') {
+                const btns = document.querySelectorAll('.range-btn');
+                const idx = parseInt(e.key) - 1;
+                if (btns[idx]) btns[idx].click();
+            }
+        });
     </script>
 </body>
 
