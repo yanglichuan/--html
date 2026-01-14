@@ -7,6 +7,7 @@
     <title>全A股实时联动对比系统</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
         rel="stylesheet">
@@ -366,7 +367,7 @@
                     <div style="background: var(--accent-color); padding: 6px; border-radius: 8px; display: flex;"><i
                             data-lucide="activity" color="white" size="20"></i></div>
                     <div>
-                        <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">个股对比分析系统</h1>
+                        <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">神农集团 对标分析</h1>
                         <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
                     </div>
                 </div>
@@ -395,7 +396,7 @@
             <div class="stats-bar">
                 <div class="stat-card">
                     <div class="stock-info">
-                        <span class="stat-label" id="cur-stock-name">选择股票</span>
+                        <span class="stat-label" id="cur-stock-name">神农集团</span>
                         <span class="stat-value" id="price-cur">--.--</span>
                     </div>
                     <span class="stat-change" id="change-cur">--.--%</span>
@@ -608,8 +609,17 @@
         }
 
         document.getElementById('stock-search').addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            const filtered = allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val));
+            const val = e.target.value.trim().toLowerCase();
+            if (!val) {
+                renderStockList(allStocks);
+                return;
+            }
+            const filtered = allStocks.filter(s => {
+                // 支持代码搜索
+                if (s.f12.includes(val)) return true;
+                // 支持名称、拼音、简拼模糊搜索
+                return PinyinMatch.match(s.f14 || '', val);
+            });
             renderStockList(filtered);
         });
 
@@ -755,7 +765,8 @@
 
         (async () => {
             await fetchStockList();
-            await updateAll();
+            // 初始化时手动触发默认股票的选择逻辑，确保 UI 同步
+            selectStock(currentStock.id, currentStock.name);
             setInterval(() => { updateStats(); updateIntraday(); }, 30000);
         })();
     </script>
