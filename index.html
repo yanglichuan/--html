@@ -836,27 +836,44 @@
 
             const dz = opt.dataZoom[0];
             const data = opt.series[0].data;
-            const startIdx = Math.floor(dz.start * data.length / 100);
-            const endIdx = Math.ceil(dz.end * data.length / 100);
-            const visibleData = data.slice(startIdx, endIdx);
 
+            // 使用 startValue/endValue 获得像素级精确的可见区间索引
+            let start = dz.startValue !== undefined ? dz.startValue : Math.floor(dz.start * data.length / 100);
+            let end = dz.endValue !== undefined ? dz.endValue : Math.ceil(dz.end * data.length / 100);
+
+            const visibleData = data.slice(Math.max(0, start), Math.min(data.length, end + 1));
             if (visibleData.length === 0) return;
 
-            // 数据格式为 [o, c, l, h]，我们需要找最高价 (idx 3) 和最低价 (idx 2)
             let maxVal = -Infinity, minVal = Infinity;
             visibleData.forEach(d => {
-                if (d[3] > maxVal) maxVal = d[3];
-                if (d[2] < minVal) minVal = d[2];
+                const high = d[3], low = d[2];
+                if (high !== null && high > maxVal) maxVal = high;
+                if (low !== null && low < minVal) minVal = low;
             });
 
+            if (maxVal === -Infinity) return;
+
             candleChart.setOption({
+                animation: false,
                 series: [{
                     name: 'K线',
                     markLine: {
+                        symbol: ['none', 'none'],
+                        label: {
+                            position: 'end',
+                            fontSize: 11,
+                            fontWeight: 'bold',
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: [4, 6],
+                            borderRadius: 4,
+                            distance: 15
+                        },
+                        lineStyle: { type: 'dashed', width: 1.5, opacity: 0.8 },
                         data: [
-                            { yAxis: maxVal, label: { position: 'end', formatter: '可视最高: ' + maxVal.toFixed(2), color: '#f43f5e' } },
-                            { yAxis: minVal, label: { position: 'end', formatter: '可视最低: ' + minVal.toFixed(2), color: '#10b981' } }
-                        ]
+                            { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: '#ff3333' }, lineStyle: { color: '#ff3333' } },
+                            { yAxis: minVal, label: { formatter: '视野最低: {c}', color: '#00ff66' }, lineStyle: { color: '#00ff66' } }
+                        ],
+                        z: 20 // 确保在均线和蜡烛图上方
                     }
                 }]
             });
