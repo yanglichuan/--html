@@ -389,32 +389,51 @@
                         <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
                     </div>
                 </div>
-                <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
-                    <div id="sound-toggle" class="sound-toggle" title="音效开关">
-                        <i data-lucide="volume-2" size="18" color="var(--text-secondary)"></i>
-                    </div>
-                    <div class="theme-control">
-                        <div class="theme-dot active" style="background: #0c0f16;" onclick="changeTheme('dark', this)"
-                            title="极客黑"></div>
-                        <div class="theme-dot" style="background: #ffffff;" onclick="changeTheme('light', this)"
-                            title="明亮白"></div>
-                        <div class="theme-dot" style="background: #d4af37;" onclick="changeTheme('gold', this)"
-                            title="土豪金"></div>
-                        <div class="theme-dot" style="background: #10b981;" onclick="changeTheme('emerald', this)"
-                            title="祖母绿"></div>
-                    </div>
-                    <div id="latest-toggle"
-                        style="cursor: pointer; padding: 6px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; transition: all 0.2s;"
-                        title="跳转至最新">
-                        <i data-lucide="chevrons-right" size="18" color="#3b82f6"></i>
-                    </div>
-                    <div id="fs-toggle"
-                        style="cursor: pointer; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 8px; display: flex;"
-                        title="切换全屏">
-                        <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
-                    </div>
+
+                <div style="flex: 1;"></div>
+
+                <div class="header-actions" style="display: flex; gap: 16px; align-items: center;">
                     <div class="refresh-pill">
                         <span id="last-update">--:--:--</span>
+                    </div>
+
+                    <div class="control-center"
+                        style="display: flex; gap: 10px; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 5px 10px; border-radius: 12px; border: 1px solid var(--glass-border); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <div id="sound-toggle" class="sound-toggle" title="音效开关"
+                            style="cursor: pointer; display: flex;">
+                            <i data-lucide="volume-2" size="18" color="var(--text-secondary)"></i>
+                        </div>
+
+                        <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;"></div>
+
+                        <div class="theme-control" style="display: flex; gap: 8px;">
+                            <div class="theme-dot active"
+                                style="background: #0c0f16; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('dark', this)" title="极客黑"></div>
+                            <div class="theme-dot"
+                                style="background: #ffffff; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('light', this)" title="明亮白"></div>
+                            <div class="theme-dot"
+                                style="background: #d4af37; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('gold', this)" title="土豪金"></div>
+                            <div class="theme-dot"
+                                style="background: #10b981; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('emerald', this)" title="祖母绿"></div>
+                        </div>
+
+                        <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;"></div>
+
+                        <div id="latest-toggle"
+                            style="cursor: pointer; padding: 4px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; display: flex; transition: all 0.2s;"
+                            title="跳转至最新">
+                            <i data-lucide="chevrons-right" size="16" color="#3b82f6"></i>
+                        </div>
+
+                        <div id="fs-toggle"
+                            style="cursor: pointer; padding: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 6px; display: flex;"
+                            title="切换全屏">
+                            <i data-lucide="maximize" size="16" color="var(--text-secondary)"></i>
+                        </div>
                     </div>
                 </div>
             </header>
