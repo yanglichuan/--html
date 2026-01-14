@@ -23,6 +23,63 @@
             --glass-border: rgba(255, 255, 255, 0.08);
         }
 
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --accent-color: #2563eb;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --glass-border: rgba(0, 0, 0, 0.08);
+        }
+
+        [data-theme="gold"] {
+            --bg-color: #1a1610;
+            --sidebar-bg: #262118;
+            --card-bg: #2d271d;
+            --accent-color: #d4af37;
+            --text-primary: #f5f1e6;
+            --text-secondary: #a89f8d;
+            --glass-border: rgba(212, 175, 55, 0.15);
+        }
+
+        [data-theme="emerald"] {
+            --bg-color: #06110f;
+            --sidebar-bg: #0b1f1c;
+            --card-bg: #0f2925;
+            --accent-color: #10b981;
+            --text-primary: #ecfdf5;
+            --text-secondary: #6ee7b7;
+            --glass-border: rgba(16, 185, 129, 0.15);
+        }
+
+        .theme-control {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 10px;
+            border-radius: 99px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .theme-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+
+        .theme-dot:hover {
+            transform: scale(1.2);
+        }
+
+        .theme-dot.active {
+            border-color: var(--text-primary);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -313,8 +370,25 @@
                         <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
                     </div>
                 </div>
-                <div class="refresh-pill">
-                    <span id="last-update">--:--:--</span>
+                <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                    <div class="theme-control">
+                        <div class="theme-dot active" style="background: #0c0f16;" onclick="changeTheme('dark', this)"
+                            title="极客黑"></div>
+                        <div class="theme-dot" style="background: #ffffff;" onclick="changeTheme('light', this)"
+                            title="明亮白"></div>
+                        <div class="theme-dot" style="background: #d4af37;" onclick="changeTheme('gold', this)"
+                            title="土豪金"></div>
+                        <div class="theme-dot" style="background: #10b981;" onclick="changeTheme('emerald', this)"
+                            title="祖母绿"></div>
+                    </div>
+                    <div id="fs-toggle"
+                        style="cursor: pointer; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 8px; display: flex;"
+                        title="切换全屏">
+                        <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
+                    </div>
+                    <div class="refresh-pill">
+                        <span id="last-update">--:--:--</span>
+                    </div>
                 </div>
             </header>
 
@@ -352,6 +426,52 @@
     </div>
 
     <script>
+        // --- Theme & Fullscreen Logic ---
+        function changeTheme(theme, el) {
+            document.documentElement.setAttribute('data-theme', theme);
+            document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
+            el.classList.add('active');
+            localStorage.setItem('stock-dashboard-theme', theme);
+
+            // 稍后重绘图表以适配颜色
+            setTimeout(() => {
+                candleChart.resize();
+                intradayChart.resize();
+            }, 100);
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('stock-dashboard-theme');
+        if (savedTheme) {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            document.querySelectorAll('.theme-dot').forEach(dot => {
+                if (dot.title === (savedTheme === 'dark' ? '极客黑' : (savedTheme === 'light' ? '明亮白' : (savedTheme === 'gold' ? '土豪金' : '祖母绿')))) {
+                    dot.classList.add('active');
+                } else {
+                    dot.classList.remove('active');
+                }
+            });
+        }
+
+        document.getElementById('fs-toggle').addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.querySelector('#fs-toggle i');
+            if (document.fullscreenElement) {
+                icon.setAttribute('data-lucide', 'minimize');
+            } else {
+                icon.setAttribute('data-lucide', 'maximize');
+            }
+            lucide.createIcons();
+            setTimeout(() => { candleChart.resize(); intradayChart.resize(); }, 100);
+        });
+
         lucide.createIcons();
 
         // --- Sidebar Toggle Logic ---
