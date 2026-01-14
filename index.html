@@ -645,8 +645,16 @@
 <body>
     <div class="sidebar">
         <div class="sidebar-header">
-            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
-                <h2 style="font-size: 1.1rem; font-weight: 700;">沪深实时行情</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">沪深实时行情</h2>
+                    <div id="sort-toggle"
+                        style="cursor: pointer; padding: 4px; border-radius: 4px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                        title="切换涨跌排序" onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                        onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                        <i data-lucide="arrow-down-wide-narrow" size="14" style="opacity: 0.8;"></i>
+                    </div>
+                </div>
                 <span id="sidebar-industry"
                     style="font-size: 0.7rem; color: var(--accent-color); font-weight: 600; opacity: 0.9;">--</span>
             </div>
@@ -1663,6 +1671,35 @@
                 const idx = parseInt(e.key) - 1;
                 if (btns[idx]) btns[idx].click();
             }
+        });
+
+        // 排序功能逻辑
+        let isSortDesc = true;
+        document.getElementById('sort-toggle').addEventListener('click', () => {
+            AudioFX.play('click');
+            isSortDesc = !isSortDesc;
+
+            const icon = document.querySelector('#sort-toggle i');
+            if (isSortDesc) {
+                // 降序 (涨幅从高到低)
+                allStocks.sort((a, b) => b.f3 - a.f3);
+                icon.setAttribute('data-lucide', 'arrow-down-wide-narrow');
+            } else {
+                // 升序 (跌幅从大到小)
+                allStocks.sort((a, b) => a.f3 - b.f3);
+                icon.setAttribute('data-lucide', 'arrow-up-narrow-wide');
+            }
+            lucide.createIcons();
+
+            // 如果当前有搜索内容，清空搜索以显示完整排序列表
+            const searchInput = document.getElementById('stock-search');
+            if (searchInput.value.trim()) {
+                searchInput.value = '';
+            }
+            renderStockList(allStocks);
+
+            // 滚动到顶部
+            document.querySelector('.stock-list').scrollTop = 0;
         });
     </script>
 </body>
