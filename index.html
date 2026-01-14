@@ -301,39 +301,61 @@
             try { const res = await fetch(url); return await res.json(); } catch (e) { return null; }
         }
 
-        // --- 1. Stock List Functions (JSONP for CORS) ---
-        function fetchStockList() {
-            const container = document.getElementById('stock-list');
+        // --- 1. Stock List Functions (Infinite Scroll) ---
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMore = true;
+
+        function fetchStockList(isNextPage = false) {
+            if (isLoading || !hasMore) return;
+            isLoading = true;
+
+            if (!isNextPage) {
+                currentPage = 1;
+                allStocks = [];
+                hasMore = true;
+                document.getElementById('stock-list').innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">加载行情中...</div>';
+            }
+
             const script = document.createElement('script');
-            // 必须包含 f2(价格), f3(涨幅), f12(代码), f13(市场), f14(名称)
-            script.src = `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1000&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f13,f14&cb=handleStockList&_=${Date.now()}`;
+            // 每次加载 100 条，减少单次渲染压力
+            script.src = `https://push2.eastmoney.com/api/qt/clist/get?pn=${currentPage}&pz=100&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f13,f14&cb=handleStockList&_=${Date.now()}`;
             script.onerror = () => {
-                container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">加载失败: 网络连接受限</div>`;
+                isLoading = false;
+                if (!isNextPage) document.getElementById('stock-list').innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">网络异常，请重试</div>`;
             };
             document.body.appendChild(script);
             script.onload = () => script.remove();
         }
 
         window.handleStockList = function (res) {
+            isLoading = false;
             const container = document.getElementById('stock-list');
             if (res?.data?.diff) {
-                // 转换为数组并确保价格和涨幅为有效数值
                 const rawData = Array.isArray(res.data.diff) ? res.data.diff : Object.values(res.data.diff);
-                allStocks = rawData.map(s => ({
+                const processed = rawData.map(s => ({
                     ...s,
                     f3: parseFloat(s.f3) || 0,
                     f2: s.f2 === '-' ? '-' : parseFloat(s.f2)
-                })).sort((a, b) => b.f3 - a.f3);
+                }));
 
-                if (allStocks.length > 0) {
-                    renderStockList(allStocks);
-                } else {
-                    container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-secondary);">暂无异动股票数据</div>`;
-                }
+                if (currentPage === 1) allStocks = processed;
+                else allStocks = [...allStocks, ...processed];
+
+                if (processed.length < 100) hasMore = false;
+                renderStockList(allStocks);
+                currentPage++;
             } else {
-                container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">接口返回异常，请重试</div>`;
+                hasMore = false;
+                if (currentPage === 1) container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-secondary);">未发现异动股票</div>`;
             }
         };
+
+        // 监听滚动，实现触底自动加载
+        document.getElementById('stock-list').addEventListener('scroll', function (e) {
+            const { scrollTop, scrollHeight, clientHeight } = e.target;
+            if (scrollTop + clientHeight >= scrollHeight - 300) { fetchStockList(true); }
+        });
 
         function renderStockList(list) {
             const container = document.getElementById('stock-list');
