@@ -22,6 +22,9 @@
             --up-color: #f43f5e;
             --down-color: #10b981;
             --glass-border: rgba(255, 255, 255, 0.08);
+            --chart-grid: rgba(255, 255, 255, 0.05);
+            --chart-text: #94a3b8;
+            --tooltip-bg: rgba(23, 27, 38, 0.95);
         }
 
         [data-theme="light"] {
@@ -32,6 +35,9 @@
             --text-primary: #0f172a;
             --text-secondary: #64748b;
             --glass-border: rgba(0, 0, 0, 0.08);
+            --chart-grid: rgba(0, 0, 0, 0.05);
+            --chart-text: #64748b;
+            --tooltip-bg: rgba(255, 255, 255, 0.95);
         }
 
         [data-theme="gold"] {
@@ -42,6 +48,9 @@
             --text-primary: #f5f1e6;
             --text-secondary: #a89f8d;
             --glass-border: rgba(212, 175, 55, 0.15);
+            --chart-grid: rgba(212, 175, 55, 0.08);
+            --chart-text: #a89f8d;
+            --tooltip-bg: rgba(45, 39, 29, 0.95);
         }
 
         [data-theme="emerald"] {
@@ -52,6 +61,65 @@
             --text-primary: #ecfdf5;
             --text-secondary: #6ee7b7;
             --glass-border: rgba(16, 185, 129, 0.15);
+            --chart-grid: rgba(16, 185, 129, 0.08);
+            --chart-text: #6ee7b7;
+            --tooltip-bg: rgba(10, 30, 25, 0.95);
+        }
+
+        /* 赛博霓虹 - 极致科幻对比 */
+        [data-theme="cyber"] {
+            --bg-color: #0b0e14;
+            --sidebar-bg: #111420;
+            --card-bg: rgba(20, 25, 45, 0.9);
+            --accent-color: #00f2ff;
+            --text-primary: #e0faff;
+            --text-secondary: #7085b8;
+            --glass-border: rgba(0, 242, 255, 0.2);
+            --chart-grid: rgba(0, 242, 255, 0.1);
+            --chart-text: #7085b8;
+            --tooltip-bg: rgba(15, 20, 35, 0.95);
+        }
+
+        /* 幻影紫 - 高端沉浸感 */
+        [data-theme="purple"] {
+            --bg-color: #0f0a1a;
+            --sidebar-bg: #181125;
+            --card-bg: rgba(30, 20, 50, 0.85);
+            --accent-color: #a855f7;
+            --text-primary: #f5f3ff;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(168, 85, 247, 0.2);
+            --chart-grid: rgba(168, 85, 247, 0.1);
+            --chart-text: #94a3b8;
+            --tooltip-bg: rgba(25, 15, 40, 0.95);
+        }
+
+        /* 深海蓝 - 深度专业投研 */
+        [data-theme="ocean"] {
+            --bg-color: #0a1118;
+            --sidebar-bg: #101c26;
+            --card-bg: rgba(20, 35, 50, 0.9);
+            --accent-color: #38bdf8;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(56, 189, 248, 0.2);
+            --chart-grid: rgba(56, 189, 248, 0.1);
+            --chart-text: #94a3b8;
+            --tooltip-bg: rgba(15, 25, 35, 0.95);
+        }
+
+        /* 护眼模式 - 豆沙缓压 */
+        [data-theme="eyecare"] {
+            --bg-color: #f0f4f0;
+            --sidebar-bg: #ffffff;
+            --card-bg: #e6eee6;
+            --accent-color: #2d6a4f;
+            --text-primary: #1b4332;
+            --text-secondary: #52796f;
+            --glass-border: rgba(45, 106, 79, 0.1);
+            --chart-grid: rgba(45, 106, 79, 0.05);
+            --chart-text: #52796f;
+            --tooltip-bg: rgba(230, 238, 230, 0.95);
         }
 
         .theme-control {
@@ -199,6 +267,15 @@
             background: var(--accent-color) !important;
             border-left-color: white !important;
             color: white;
+            box-shadow: 0 4px 15px var(--accent-color);
+            transform: translateX(4px);
+        }
+
+        .stock-item.active .stock-code,
+        .stock-item.active .stock-price,
+        .stock-item.active .stock-pct {
+            color: white !important;
+            opacity: 1;
         }
 
         .stock-info {
@@ -256,6 +333,32 @@
             font-weight: 600;
         }
 
+        .status-pulse {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse-ring 2s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.9);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: scale(0.9);
+                opacity: 1;
+            }
+        }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -301,11 +404,29 @@
         .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .mini-sparkline {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 40%;
+            height: 40px;
+            opacity: 0.6;
+            pointer-events: none;
         }
 
         .stat-label {
@@ -360,6 +481,35 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
+
+        .breadth-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            display: flex;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .breadth-up {
+            background: var(--up-color);
+            height: 100%;
+            transition: width 1s ease;
+        }
+
+        .breadth-down {
+            background: var(--down-color);
+            height: 100%;
+            transition: width 1s ease;
+        }
+
+        .breadth-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
     </style>
 </head>
 
@@ -367,6 +517,16 @@
     <div class="sidebar">
         <div class="sidebar-header">
             <h2 style="font-size: 1.1rem; font-weight: 700;">沪深京实时行情</h2>
+            <div id="market-breadth">
+                <div class="breadth-bar">
+                    <div class="breadth-up" style="width: 50%"></div>
+                    <div class="breadth-down" style="width: 50%"></div>
+                </div>
+                <div class="breadth-info">
+                    <span class="up">上涨: --</span>
+                    <span class="down">下跌: --</span>
+                </div>
+            </div>
             <input type="text" class="search-box" placeholder="搜索代码/拼音..." id="stock-search">
         </div>
         <div class="stock-list" id="stock-list">
@@ -385,7 +545,12 @@
                     <div style="background: var(--accent-color); padding: 6px; border-radius: 8px; display: flex;"><i
                             data-lucide="activity" color="white" size="20"></i></div>
                     <div>
-                        <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">神农集团 对标分析</h1>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">神农集团 对标分析</h1>
+                            <div class="status-pulse"></div>
+                            <span
+                                style="font-size: 0.65rem; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
+                        </div>
                         <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
                     </div>
                 </div>
@@ -406,19 +571,31 @@
 
                         <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;"></div>
 
-                        <div class="theme-control" style="display: flex; gap: 8px;">
-                            <div class="theme-dot active"
-                                style="background: #0c0f16; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                        <div class="theme-control" style="display: flex; gap: 6px;">
+                            <div class="theme-dot active" data-theme="dark"
+                                style="background: #0c0f16; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
                                 onclick="changeTheme('dark', this)" title="极客黑"></div>
-                            <div class="theme-dot"
-                                style="background: #ffffff; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                            <div class="theme-dot" data-theme="light"
+                                style="background: #ffffff; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
                                 onclick="changeTheme('light', this)" title="明亮白"></div>
-                            <div class="theme-dot"
-                                style="background: #d4af37; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                            <div class="theme-dot" data-theme="gold"
+                                style="background: #d4af37; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
                                 onclick="changeTheme('gold', this)" title="土豪金"></div>
-                            <div class="theme-dot"
-                                style="background: #10b981; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                            <div class="theme-dot" data-theme="emerald"
+                                style="background: #10b981; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
                                 onclick="changeTheme('emerald', this)" title="祖母绿"></div>
+                            <div class="theme-dot" data-theme="cyber"
+                                style="background: #00f2ff; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('cyber', this)" title="赛博霓虹"></div>
+                            <div class="theme-dot" data-theme="purple"
+                                style="background: #a855f7; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('purple', this)" title="幻影紫"></div>
+                            <div class="theme-dot" data-theme="ocean"
+                                style="background: #38bdf8; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('ocean', this)" title="深海蓝"></div>
+                            <div class="theme-dot" data-theme="eyecare"
+                                style="background: #2d6a4f; width: 12px; height: 12px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: all 0.2s;"
+                                onclick="changeTheme('eyecare', this)" title="护眼模式"></div>
                         </div>
 
                         <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;"></div>
@@ -442,20 +619,29 @@
                 <div class="stat-card">
                     <div class="stock-info">
                         <span class="stat-label" id="cur-stock-name">神农集团</span>
-                        <span class="stat-value" id="price-cur">--.--</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span class="stat-value" id="price-cur">--.--</span>
+                            <span class="stat-change" id="change-cur">--.--%</span>
+                        </div>
                     </div>
-                    <span class="stat-change" id="change-cur">--.--%</span>
+                    <div id="spark-cur" class="mini-sparkline"></div>
                 </div>
                 <div class="stat-card">
                     <div class="stock-info">
                         <span class="stat-label">上证指数</span>
-                        <span class="stat-value" id="price-zs">--.--</span>
+                        <div style="display: flex; align-items: baseline; gap: 8px;">
+                            <span class="stat-value" id="price-zs">--.--</span>
+                            <span class="stat-change" id="change-zs">--.--%</span>
+                        </div>
                     </div>
-                    <span class="stat-change" id="change-zs">--.--%</span>
+                    <div id="spark-zs" class="mini-sparkline"></div>
                 </div>
                 <div class="stat-card">
-                    <span class="stat-label">成交活跃度</span>
-                    <span class="stat-value" style="font-size: 1rem;" id="vol-cur">-- 手</span>
+                    <div class="stock-info">
+                        <span class="stat-label">成交活跃度</span>
+                        <span class="stat-value" style="font-size: 1rem;" id="vol-cur">-- 手</span>
+                    </div>
+                    <div style="opacity: 0.2;"><i data-lucide="bar-chart-3" size="32"></i></div>
                 </div>
             </div>
 
@@ -530,6 +716,20 @@
         }, 100);
 
         // --- Theme & Fullscreen Logic ---
+        function getThemeColors() {
+            const style = getComputedStyle(document.documentElement);
+            return {
+                text: style.getPropertyValue('--text-primary').trim(),
+                secondary: style.getPropertyValue('--chart-text').trim(),
+                grid: style.getPropertyValue('--chart-grid').trim(),
+                tooltipBg: style.getPropertyValue('--tooltip-bg').trim(),
+                border: style.getPropertyValue('--glass-border').trim(),
+                up: style.getPropertyValue('--up-color').trim(),
+                down: style.getPropertyValue('--down-color').trim(),
+                accent: style.getPropertyValue('--accent-color').trim()
+            };
+        }
+
         function changeTheme(theme, el) {
             AudioFX.play('switch');
             document.documentElement.setAttribute('data-theme', theme);
@@ -537,7 +737,9 @@
             el.classList.add('active');
             localStorage.setItem('stock-dashboard-theme', theme);
 
-            // 稍后重绘图表以适配颜色
+            // 立即刷新所有数据和图表以适配颜色
+            updateAll();
+
             setTimeout(() => {
                 candleChart.resize();
                 intradayChart.resize();
@@ -545,17 +747,15 @@
         }
 
         // Load saved theme
-        const savedTheme = localStorage.getItem('stock-dashboard-theme');
-        if (savedTheme) {
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            document.querySelectorAll('.theme-dot').forEach(dot => {
-                if (dot.title === (savedTheme === 'dark' ? '极客黑' : (savedTheme === 'light' ? '明亮白' : (savedTheme === 'gold' ? '土豪金' : '祖母绿')))) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
-        }
+        const savedTheme = localStorage.getItem('stock-dashboard-theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.querySelectorAll('.theme-dot').forEach(dot => {
+            if (dot.getAttribute('data-theme') === savedTheme) {
+                dot.classList.add('active');
+            } else {
+                dot.classList.remove('active');
+            }
+        });
 
         document.getElementById('fs-toggle').addEventListener('click', () => {
             AudioFX.play('switch');
@@ -601,8 +801,15 @@
 
         const candleChart = echarts.init(document.getElementById('candle-chart'));
         const intradayChart = echarts.init(document.getElementById('intraday-chart'));
+        const sparkCur = echarts.init(document.getElementById('spark-cur'));
+        const sparkZS = echarts.init(document.getElementById('spark-zs'));
 
-        window.addEventListener('resize', () => { candleChart.resize(); intradayChart.resize(); });
+        window.addEventListener('resize', () => {
+            candleChart.resize();
+            intradayChart.resize();
+            sparkCur.resize();
+            sparkZS.resize();
+        });
 
         async function getJSON(url) {
             try { const res = await fetch(url); return await res.json(); } catch (e) { return null; }
@@ -665,6 +872,22 @@
         });
 
         function renderStockList(list) {
+            // 更新市场涨跌统计（基于当前列表）
+            const counts = list.reduce((acc, s) => {
+                if (s.f3 > 0) acc.up++;
+                else if (s.f3 < 0) acc.down++;
+                return acc;
+            }, { up: 0, down: 0 });
+
+            const total = counts.up + counts.down || 1;
+            const upPct = (counts.up / total * 100).toFixed(1);
+            const downPct = (counts.down / total * 100).toFixed(1);
+
+            document.querySelector('.breadth-up').style.width = upPct + '%';
+            document.querySelector('.breadth-down').style.width = downPct + '%';
+            document.querySelector('.breadth-info .up').innerText = `上涨: ${counts.up}`;
+            document.querySelector('.breadth-info .down').innerText = `下跌: ${counts.down}`;
+
             const container = document.getElementById('stock-list');
             container.innerHTML = list.map(s => {
                 const fullId = `${s.f13}.${s.f12}`;
@@ -789,24 +1012,25 @@
                 return result;
             };
 
+            const colors = getThemeColors();
             const option = {
                 backgroundColor: 'transparent',
                 tooltip: {
                     trigger: 'axis', axisPointer: { type: 'cross' },
-                    backgroundColor: 'rgba(23,27,38,0.95)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fff' },
+                    backgroundColor: colors.tooltipBg, borderColor: colors.border, textStyle: { color: colors.text },
                     formatter: function (params) {
                         const idx = params[0].dataIndex;
                         const c = curD[idx], z = zsD[idx];
-                        const formatPct = (p) => `<span style="color:${p >= 0 ? '#f43f5e' : '#10b981'}">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</span>`;
+                        const formatPct = (p) => `<span style="color:${p >= 0 ? colors.up : colors.down}">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</span>`;
                         return `
                         <div style="padding:4px; font-size:12px;">
-                            <div style="margin-bottom:8px; font-weight:bold;">${params[0].name}</div>
-                            <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:4px;">
+                            <div style="margin-bottom:8px; font-weight:bold; color:${colors.text}">${params[0].name}</div>
+                            <div style="border-bottom:1px solid ${colors.grid}; padding-bottom:4px; margin-bottom:4px;">
                                 <div style="color:${params[0].color}">${currentStock.name}</div>
                                 收: ${c.c?.toFixed(2) || '-'} 幅: ${formatPct(c.pct)}
                             </div>
                             <div>
-                                <div style="color:#94a3b8">上证指数</div>
+                                <div style="color:${colors.secondary}">上证指数</div>
                                 收: ${z.c?.toFixed(2) || '-'} 幅: ${formatPct(z.pct)}
                             </div>
                         </div>`;
@@ -819,11 +1043,11 @@
                     { left: 50, right: 30, top: '51%', height: '37%' },
                     { left: 50, right: 30, top: '89%', height: '7%' }
                 ],
-                xAxis: [0, 1, 2, 3].map(i => ({ type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { show: i === 3, color: '#64748b' } })),
+                xAxis: [0, 1, 2, 3].map(i => ({ type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: colors.grid } }, axisLabel: { show: i === 3, color: colors.secondary } })),
                 yAxis: [
-                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.secondary } },
                     { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
-                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.secondary } },
                     { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
                 ],
                 dataZoom: [
@@ -834,19 +1058,19 @@
                     {
                         name: 'K线', type: 'candlestick',
                         data: curD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { color: '#f43f5e', color0: '#10b981' }
+                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down }
                     },
                     { name: 'MA5', type: 'line', data: calculateMA(curD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: 'MA20', type: 'line', data: calculateMA(curD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) },
+                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } })) },
                     {
                         name: '上证K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
                         data: zsD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { color: '#f43f5e', color0: '#10b981' }
+                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down }
                     },
                     { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) }
+                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } })) }
                 ]
             };
 
@@ -876,6 +1100,7 @@
             });
 
             if (maxVal === -Infinity) return;
+            const colors = getThemeColors();
 
             candleChart.setOption({
                 animation: false,
@@ -887,15 +1112,15 @@
                             position: 'end',
                             fontSize: 11,
                             fontWeight: 'bold',
-                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            backgroundColor: colors.tooltipBg,
                             padding: [4, 6],
                             borderRadius: 4,
                             distance: 15
                         },
                         lineStyle: { type: 'dashed', width: 1.5, opacity: 0.8 },
                         data: [
-                            { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: '#ff3333' }, lineStyle: { color: '#ff3333' } },
-                            { yAxis: minVal, label: { formatter: '视野最低: {c}', color: '#00ff66' }, lineStyle: { color: '#00ff66' } }
+                            { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: colors.up }, lineStyle: { color: colors.up } },
+                            { yAxis: minVal, label: { formatter: '视野最低: {c}', color: colors.down }, lineStyle: { color: colors.down } }
                         ],
                         z: 20 // 确保在均线和蜡烛图上方
                     }
@@ -914,16 +1139,50 @@
             const parse = (d) => d.trends.map(t => ({ time: t.split(',')[0].split(' ')[1], pct: ((parseFloat(t.split(',')[2]) - d.prePrice) / d.prePrice * 100).toFixed(2) }));
             const curP = parse(curRes.data);
             const zsP = parse(zsRes.data);
+            const colors = getThemeColors();
             intradayChart.setOption({
-                backgroundColor: 'transparent', tooltip: { trigger: 'axis' }, legend: { textStyle: { color: '#94a3b8' }, top: 0 },
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: colors.tooltipBg,
+                    borderColor: colors.border,
+                    textStyle: { color: colors.text }
+                },
+                legend: { textStyle: { color: colors.secondary }, top: 0 },
                 grid: { top: 30, left: 50, right: 30, bottom: 30 },
-                xAxis: { type: 'category', data: curP.map(x => x.time), axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
-                yAxis: { type: 'value', axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                xAxis: {
+                    type: 'category', data: curP.map(x => x.time),
+                    axisLine: { lineStyle: { color: colors.grid } },
+                    axisLabel: { color: colors.secondary }
+                },
+                yAxis: {
+                    type: 'value', axisLabel: { formatter: '{value}%', color: colors.secondary },
+                    splitLine: { lineStyle: { color: colors.grid } }
+                },
                 series: [
-                    { name: currentStock.name, type: 'line', data: curP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 2, color: '#3b82f6' } },
-                    { name: '上证指数', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f43f5e', type: 'dashed' } }
+                    { name: currentStock.name, type: 'line', data: curP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 2, color: colors.accent } },
+                    { name: '上证指数', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1, color: colors.up, type: 'dashed' } }
                 ]
             });
+
+            // 绘制 Sparklines
+            const sparkOpt = (data, color) => ({
+                grid: { left: 0, right: 0, top: 0, bottom: 0 },
+                xAxis: { type: 'category', show: false },
+                yAxis: { type: 'value', show: false, scale: true },
+                series: [{
+                    type: 'line', data: data, smooth: true, showSymbol: false,
+                    lineStyle: { width: 2, color: color },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: color + '44' },
+                            { offset: 1, color: color + '00' }
+                        ])
+                    }
+                }]
+            });
+            sparkCur.setOption(sparkOpt(curP.map(x => parseFloat(x.pct)), colors.accent));
+            sparkZS.setOption(sparkOpt(zsP.map(x => parseFloat(x.pct)), colors.up));
         }
 
         async function updateAll() {
