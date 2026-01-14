@@ -508,13 +508,36 @@
             color: var(--text-secondary);
         }
 
+        /* 优化后的强交互滚动条 */
         ::-webkit-scrollbar {
-            width: 4px;
+            width: 14px;
+            /* 加宽至 14px，极易拖动 */
+            height: 14px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.25);
+            /* 默认提高亮度 */
+            border-radius: 7px;
+            border: 3px solid transparent;
+            /* 增加透明边框，让滑块看起来悬浮且精致 */
+            background-clip: content-box;
+            transition: background 0.2s;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: var(--accent-color);
+            /* 悬停变色，极度醒目 */
+            border-width: 0;
+            /* 悬停时变大 */
+        }
+
+        ::-webkit-scrollbar-corner {
+            background: transparent;
         }
 
         .breadth-bar {
@@ -622,7 +645,11 @@
 <body>
     <div class="sidebar">
         <div class="sidebar-header">
-            <h2 style="font-size: 1.1rem; font-weight: 700;">沪深京实时行情</h2>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px;">
+                <h2 style="font-size: 1.1rem; font-weight: 700;">沪深实时行情</h2>
+                <span id="sidebar-industry"
+                    style="font-size: 0.7rem; color: var(--accent-color); font-weight: 600; opacity: 0.9;">--</span>
+            </div>
             <div id="market-breadth">
                 <div class="breadth-bar">
                     <div class="breadth-up" style="width: 50%"></div>
@@ -657,7 +684,11 @@
                             <span
                                 style="font-size: 0.65rem; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                         </div>
-                        <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
+                            <span id="cur-industry"
+                                style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; font-weight: 600;">--</span>
+                        </div>
                     </div>
                 </div>
 
@@ -1032,7 +1063,7 @@
             try {
                 // fs 参数涵盖：沪深两市主板、创业板、科创板（已移除京市标的）
                 const fs = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23';
-                const fields = 'f2,f3,f12,f13,f14';
+                const fields = 'f2,f3,f12,f13,f14,f127';
 
                 // 1. 获取种子数据与总数
                 const seedUrl = `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=${fields}`;
@@ -1125,7 +1156,10 @@
                                 <span class="stock-name">${s.f14}</span>
                                 <span class="mkt-badge ${mktClass}">${mktName}</span>
                             </div>
-                            <span class="stock-code">${s.f12}</span>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="stock-code">${s.f12}</span>
+                                <span style="font-size: 0.65rem; color: var(--accent-color); opacity: 0.8;">${s.f127 || '--'}</span>
+                            </div>
                         </div>
                         <div style="text-align:right">
                             <div class="stock-price ${color}">${priceDisplay}</div>
@@ -1139,18 +1173,22 @@
         function selectStock(id, name) {
             AudioFX.play('click');
 
-            // 局部更新列表状态，避免全量重绘 5000+ 节点
+            // 局部更新列表状态
             const oldActive = document.querySelector('.stock-item.active');
             if (oldActive) oldActive.classList.remove('active');
             const newActive = document.querySelector(`.stock-item[data-id="${id}"]`);
             if (newActive) newActive.classList.add('active');
 
-            currentStock = { id, name };
+            const stockData = allStocks.find(s => `${s.f13}.${s.f12}` === id);
+            const industry = stockData ? (stockData.f127 || '--') : '--';
+
+            currentStock = { id, name, industry };
             document.getElementById('main-title').innerText = `${name} 对标分析`;
             document.getElementById('cur-stock-name').innerText = name;
+            document.getElementById('cur-industry').innerText = industry;
+            document.getElementById('sidebar-industry').innerText = industry;
 
             updateAll();
-            // 如果详情面板是开启的，同步更新详情
             if (document.getElementById('stock-detail-panel').classList.contains('active')) {
                 updateStockDetail();
             }
