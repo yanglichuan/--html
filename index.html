@@ -510,6 +510,77 @@
             margin-top: 4px;
             font-weight: 600;
         }
+
+        /* Detail Panel Styles */
+        .detail-panel {
+            position: fixed;
+            top: 70px;
+            right: -350px;
+            width: 320px;
+            height: calc(100vh - 90px);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px 0 0 16px;
+            z-index: 1000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 1.5rem;
+            color: white;
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .detail-panel.active {
+            right: 0;
+        }
+
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .detail-item {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .detail-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .detail-val {
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: 'Outfit';
+        }
+
+        .detail-val.up {
+            color: var(--up-color);
+        }
+
+        .detail-val.down {
+            color: var(--down-color);
+        }
     </style>
 </head>
 
@@ -606,6 +677,12 @@
                             <i data-lucide="chevrons-right" size="16" color="#3b82f6"></i>
                         </div>
 
+                        <div id="detail-toggle"
+                            style="cursor: pointer; padding: 4px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 6px; display: flex; transition: all 0.2s;"
+                            title="个股深度档案">
+                            <i data-lucide="file-text" size="16" color="#a855f7"></i>
+                        </div>
+
                         <div id="fs-toggle"
                             style="cursor: pointer; padding: 4px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 6px; display: flex;"
                             title="切换全屏">
@@ -614,6 +691,86 @@
                     </div>
                 </div>
             </header>
+
+            <div id="stock-detail-panel" class="detail-panel">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 id="panel-stock-name" style="font-size: 1.1rem; font-weight: 700;">--</h3>
+                    <div id="close-detail" style="cursor: pointer; opacity: 0.5;"><i data-lucide="x" size="20"></i>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-title"><i data-lucide="layout-grid" size="14"></i> 市场基本面</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">所属行业</div>
+                            <div class="detail-val" id="det-hy">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">市盈率(TTM)</div>
+                            <div class="detail-val" id="det-pe">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">市净率</div>
+                            <div class="detail-val" id="det-pb">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">股息率</div>
+                            <div class="detail-val" id="det-gxl">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-title"><i data-lucide="database" size="14"></i> 市值规模</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">总市值</div>
+                            <div class="detail-val" id="det-zsz">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">流通市值</div>
+                            <div class="detail-val" id="det-ltsz">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-title"><i data-lucide="trending-up" size="14"></i> 核心财务 (最新季)</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">ROE净资产收益率</div>
+                            <div class="detail-val" id="det-roe">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">净利润(Q3/Q4)</div>
+                            <div class="detail-val" id="det-jlr">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">净利增长率</div>
+                            <div class="detail-val" id="det-jlrz">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">营收增长率</div>
+                            <div class="detail-val" id="det-ysrz">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <div class="detail-title"><i data-lucide="zap" size="14"></i> 交易异动</div>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">换手率</div>
+                            <div class="detail-val" id="det-hsl">--</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">振幅</div>
+                            <div class="detail-val" id="det-zf">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
             <div class="stats-bar">
                 <div class="stat-card">
@@ -1175,8 +1332,11 @@
                         },
                         lineStyle: { type: 'dashed', width: 1.5, opacity: 0.8 },
                         data: [
-                            { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: colors.up }, lineStyle: { color: colors.up } },
-                            { yAxis: minVal, label: { formatter: '视野最低: {c}', color: colors.down }, lineStyle: { color: colors.down } }
+                            { yAxis: maxVal, label: { formatter: '视野最高: {c}', color: colors.up, position: 'end' }, lineStyle: { color: colors.up } },
+                            { yAxis: minVal, label: { formatter: '视野最低: {c}', color: colors.down, position: 'end' }, lineStyle: { color: colors.down } },
+                            // 新增 X 轴边界时间标识
+                            { xAxis: Math.max(0, start), label: { formatter: opt.xAxis[0].data[Math.max(0, start)], color: colors.secondary, position: 'start', rotate: 0, distance: 5, backgroundColor: 'transparent' }, lineStyle: { color: colors.grid, type: 'dashed' } },
+                            { xAxis: Math.min(data.length - 1, end), label: { formatter: opt.xAxis[0].data[Math.min(data.length - 1, end)], color: colors.secondary, position: 'start', rotate: 0, distance: 5, backgroundColor: 'transparent' }, lineStyle: { color: colors.grid, type: 'dashed' } }
                         ],
                         z: 20 // 确保在均线和蜡烛图上方
                     }
@@ -1246,7 +1406,9 @@
             Promise.all([
                 updateStats(),
                 updateCandle(),
-                updateIntraday()
+                updateIntraday(),
+                // 如果面板已经打开，同步抓取详细数据
+                document.getElementById('stock-detail-panel').classList.contains('active') ? updateStockDetail() : Promise.resolve()
             ]).catch(e => console.error('Parallel update failed:', e));
         }
 
