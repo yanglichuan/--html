@@ -403,6 +403,11 @@
                         <div class="theme-dot" style="background: #10b981;" onclick="changeTheme('emerald', this)"
                             title="祖母绿"></div>
                     </div>
+                    <div id="latest-toggle"
+                        style="cursor: pointer; padding: 6px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; transition: all 0.2s;"
+                        title="跳转至最新">
+                        <i data-lucide="chevrons-right" size="18" color="#3b82f6"></i>
+                    </div>
                     <div id="fs-toggle"
                         style="cursor: pointer; padding: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); border-radius: 8px; display: flex;"
                         title="切换全屏">
@@ -908,11 +913,27 @@
             await updateIntraday();
         }
 
+        // 跳转至最新
+        document.getElementById('latest-toggle').addEventListener('click', () => {
+            AudioFX.play('click');
+            const options = candleChart.getOption();
+            if (options.dataZoom && options.dataZoom[0]) {
+                const dz = options.dataZoom[0];
+                const range = dz.end - dz.start;
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: 100 - range,
+                    end: 100
+                });
+            }
+        });
+
         (async () => {
             await fetchStockList();
             // 初始化时手动触发默认股票的选择逻辑，确保 UI 同步
             selectStock(currentStock.id, currentStock.name);
             setInterval(() => { updateStats(); updateIntraday(); }, 30000);
+            lucide.createIcons(); // 确保所有新添加的图标被渲染
         })();
     </script>
 </body>
