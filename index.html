@@ -4,17 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>同步对标看板 (含成交量)</title>
-
+    <title>全A股实时联动对比系统</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
         rel="stylesheet">
-
     <style>
         :root {
-            --bg-color: #080a0f;
+            --bg-color: #05070a;
+            --sidebar-bg: #0c0f16;
             --card-bg: rgba(20, 24, 35, 0.8);
             --accent-color: #3b82f6;
             --text-primary: #f8fafc;
@@ -33,14 +32,100 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
             color: var(--text-primary);
-            min-height: 100vh;
-            padding: 0.2rem;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Stock List */
+        .sidebar {
+            width: 320px;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .search-box {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            color: white;
+            outline: none;
+            margin-top: 0.8rem;
+        }
+
+        .stock-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        .stock-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            margin-bottom: 2px;
+        }
+
+        .stock-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .stock-item.active {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stock-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .stock-code {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        .stock-price {
+            font-weight: 700;
+            text-align: right;
+        }
+
+        .stock-pct {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem;
         }
 
         .container {
-            max-width: 1500px;
+            max-width: 1400px;
             margin: 0 auto;
         }
 
@@ -48,73 +133,40 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.2rem;
+            margin-bottom: 0.4rem;
             padding: 0.2rem 0.5rem;
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: 0.8rem;
         }
 
         .refresh-pill {
             background: rgba(59, 130, 246, 0.1);
             border: 1px solid rgba(59, 130, 246, 0.2);
-            padding: 0.5rem 1rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 99px;
-            font-size: 0.85rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            font-size: 0.75rem;
             color: var(--accent-color);
-        }
-
-        .countdown-circle {
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(59, 130, 246, 0.2);
-            border-top: 2px solid var(--accent-color);
-            border-radius: 50%;
-            animation: spin 30s linear infinite;
-        }
-
-        @keyframes spin {
-            100% {
-                transform: rotate(360deg);
-            }
         }
 
         .stats-bar {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 0.4rem;
-            margin-bottom: 0.4rem;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
         }
 
         .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
-            padding: 0.4rem 0.8rem;
+            padding: 0.5rem 1rem;
             border-radius: 8px;
             display: flex;
-            flex-direction: row;
-            align-items: center;
             justify-content: space-between;
-            gap: 0.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stat-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--accent-color);
-            opacity: 0.3;
+            align-items: center;
         }
 
         .stat-label {
@@ -123,9 +175,8 @@
         }
 
         .stat-value {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            letter-spacing: -1px;
         }
 
         .stat-change {
@@ -137,21 +188,17 @@
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            padding: 0.5rem;
-            margin-bottom: 0.4rem;
+            padding: 0.6rem;
+            margin-bottom: 0.5rem;
         }
 
         .chart-title {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             font-weight: 600;
             margin-bottom: 0.4rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-        }
-
-        .chart-container {
-            width: 100%;
         }
 
         .up {
@@ -161,59 +208,89 @@
         .down {
             color: var(--down-color);
         }
+
+        .neutral {
+            color: var(--text-secondary);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <div class="brand">
-                <div style="background: var(--accent-color); padding: 8px; border-radius: 10px; display: flex;"><i
-                        data-lucide="bar-chart-3" color="white" size="24"></i></div>
-                <div>
-                    <h1 style="font-size: 1.4rem; font-weight: 700;">深度联动看板：神农集团 & 上证指数</h1>
-                    <p style="font-size: 0.8rem; color: var(--text-secondary);">全维度 K 线、成交量、分时对标</p>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2 style="font-size: 1.1rem; font-weight: 700;">沪深京实时行情</h2>
+            <input type="text" class="search-box" placeholder="搜索代码/拼音..." id="stock-search">
+        </div>
+        <div class="stock-list" id="stock-list">
+            <div style="padding: 2rem; text-align: center; color: var(--text-secondary);">加载榜单中...</div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <header>
+                <div class="brand">
+                    <div style="background: var(--accent-color); padding: 6px; border-radius: 8px; display: flex;"><i
+                            data-lucide="activity" color="white" size="20"></i></div>
+                    <div>
+                        <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">个股对比分析系统</h1>
+                        <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
+                    </div>
+                </div>
+                <div class="refresh-pill">
+                    <span id="last-update">--:--:--</span>
+                </div>
+            </header>
+
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stock-info">
+                        <span class="stat-label" id="cur-stock-name">选择股票</span>
+                        <span class="stat-value" id="price-cur">--.--</span>
+                    </div>
+                    <span class="stat-change" id="change-cur">--.--%</span>
+                </div>
+                <div class="stat-card">
+                    <div class="stock-info">
+                        <span class="stat-label">上证指数</span>
+                        <span class="stat-value" id="price-zs">--.--</span>
+                    </div>
+                    <span class="stat-change" id="change-zs">--.--%</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">成交活跃度</span>
+                    <span class="stat-value" style="font-size: 1rem;" id="vol-cur">-- 手</span>
                 </div>
             </div>
-            <div class="refresh-pill">
-                <div class="countdown-circle"></div>
-                <span>自动刷新 | <span id="last-update">--:--:--</span></span>
-            </div>
-        </header>
 
-        <div class="stats-bar">
-            <div class="stat-card">
-                <span class="stat-label">神农集团 (605296)</span>
-                <span class="stat-value" id="price-sn">--.--</span>
-                <span class="stat-change" id="change-sn">--.--%</span>
+            <div class="chart-box">
+                <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                <div id="candle-chart" style="height: 1100px;"></div>
             </div>
-            <div class="stat-card">
-                <span class="stat-label">上证指数 (000001)</span>
-                <span class="stat-value" id="price-zs">--.--</span>
-                <span class="stat-change" id="change-zs">--.--%</span>
-            </div>
-            <div class="stat-card" style="opacity: 0.8;">
-                <span class="stat-label">成交活跃度 (神农)</span>
-                <span class="stat-value" style="font-size: 1.5rem; margin-top: 0.5rem;" id="vol-sn">-- 手</span>
-                <span class="stat-change" style="font-size: 0.85rem; color: var(--text-secondary)">今日累计成交量</span>
-            </div>
-        </div>
 
-        <div class="chart-box">
-            <div class="chart-title"><i data-lucide="layers" size="18"></i> 深度 K 线与成交量联动</div>
-            <div id="candle-chart" class="chart-container" style="height: 1350px;"></div>
-        </div>
-
-        <div class="chart-box">
-            <div class="chart-title"><i data-lucide="zap" size="18"></i> 今日分时相对走势对比</div>
-            <div id="intraday-chart" class="chart-container" style="height: 400px;"></div>
+            <div class="chart-box">
+                <div class="chart-title"><i data-lucide="zap" size="16"></i> 今日分时走势相对强度对标</div>
+                <div id="intraday-chart" style="height: 350px;"></div>
+            </div>
         </div>
     </div>
 
     <script>
         lucide.createIcons();
-        const SN_SECID = '1.605296';
-        const ZS_SECID = '1.000001';
+
+        // Initial state
+        let currentStock = { id: '1.605296', name: '神农集团' }; // Default
+        const ZS_ID = '1.000001';
+        let allStocks = [];
 
         const candleChart = echarts.init(document.getElementById('candle-chart'));
         const intradayChart = echarts.init(document.getElementById('intraday-chart'));
@@ -221,23 +298,71 @@
         window.addEventListener('resize', () => { candleChart.resize(); intradayChart.resize(); });
 
         async function getJSON(url) {
-            try {
-                const res = await fetch(url);
-                return await res.json();
-            } catch (e) { return null; }
+            try { const res = await fetch(url); return await res.json(); } catch (e) { return null; }
         }
 
-        async function updateStats() {
-            const snUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${SN_SECID}&fields=f43,f170,f47`;
-            const zsUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${ZS_SECID}&fields=f43,f170`;
-            const [snRes, zsRes] = await Promise.all([getJSON(snUrl), getJSON(zsUrl)]);
+        async function fetchStockList() {
+            const url = `https://push2.eastmoney.com/api/qt/clist/get?fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048&fields=f12,f14,f2,f3,f13&pz=5000&po=1&np=1&fltt=2&invt=2&fid=f3`;
+            const res = await getJSON(url);
+            if (res?.data?.diff) {
+                // 将对象转为数组并按涨跌幅二次排序确保一致性
+                allStocks = Object.values(res.data.diff).sort((a, b) => b.f3 - a.f3);
+                renderStockList(allStocks);
+            } else {
+                document.getElementById('stock-list').innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">榜单加载失败，请检查网络</div>`;
+            }
+        }
 
-            if (snRes?.data) {
-                const d = snRes.data;
-                document.getElementById('price-sn').innerText = (d.f43 / 100).toFixed(2);
-                document.getElementById('change-sn').innerText = (d.f170 > 0 ? '+' : '') + (d.f170 / 100).toFixed(2) + '%';
-                document.getElementById('change-sn').className = 'stat-change ' + (d.f170 > 0 ? 'up' : 'down');
-                document.getElementById('vol-sn').innerText = (d.f47).toLocaleString() + ' 手';
+        function renderStockList(list) {
+            const container = document.getElementById('stock-list');
+            container.innerHTML = list.map(s => {
+                const fullId = `${s.f13}.${s.f12}`;
+                const isActive = fullId === currentStock.id ? 'active' : '';
+                const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
+                const sign = s.f3 > 0 ? '+' : '';
+                return `
+                    <div class="stock-item ${isActive}" onclick="selectStock('${fullId}', '${s.f14}')">
+                        <div class="stock-info">
+                            <span class="stock-name">${s.f14}</span>
+                            <span class="stock-code">${s.f12}</span>
+                        </div>
+                        <div style="text-align:right">
+                            <div class="stock-price ${color}">${s.f2 === '-' ? '--' : s.f2.toFixed(2)}</div>
+                            <div class="stock-pct ${color}">${sign}${s.f3.toFixed(2)}%</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function selectStock(id, name) {
+            currentStock = { id, name };
+            document.getElementById('main-title').innerText = `${name} 对标分析`;
+            document.getElementById('cur-stock-name').innerText = name;
+            renderStockList(allStocks); // Refresh active state
+            updateAll();
+        }
+
+        document.getElementById('stock-search').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val));
+            renderStockList(filtered);
+        });
+
+        // --- 2. Data Update Functions ---
+        async function updateStats() {
+            const curUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f58,f43,f170,f47`;
+            const zsUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${ZS_ID}&fields=f43,f170`;
+            const [curRes, zsRes] = await Promise.all([getJSON(curUrl), getJSON(zsUrl)]);
+
+            if (curRes?.data) {
+                const d = curRes.data;
+                const price = (d.f43 / 100).toFixed(2);
+                const pct = (d.f170 / 100).toFixed(2);
+                document.getElementById('price-cur').innerText = price;
+                document.getElementById('change-cur').innerText = (pct > 0 ? '+' : '') + pct + '%';
+                document.getElementById('change-cur').className = 'stat-change ' + (pct > 0 ? 'up' : 'down');
+                document.getElementById('vol-cur').innerText = (d.f47).toLocaleString() + ' 手';
             }
             if (zsRes?.data) {
                 const d = zsRes.data;
@@ -250,36 +375,28 @@
 
         async function updateCandle() {
             const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1000&ut=fa5fd1943c7b386f172d6893dbf24fe0`;
-            const [snRes, zsRes] = await Promise.all([
-                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${SN_SECID}&${common}`),
-                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_SECID}&${common}`)
+            const [curRes, zsRes] = await Promise.all([
+                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`),
+                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`)
             ]);
-            if (!snRes?.data || !zsRes?.data) return;
+            if (!curRes?.data || !zsRes?.data) return;
 
             const parse = (k) => k.map(x => {
                 const p = x.split(',');
-                return {
-                    date: p[0],
-                    o: parseFloat(p[1]),
-                    c: parseFloat(p[2]),
-                    h: parseFloat(p[3]),
-                    l: parseFloat(p[4]),
-                    v: parseFloat(p[5]),
-                    pct: parseFloat(p[6]) // 涨跌幅
-                };
+                return { date: p[0], o: parseFloat(p[1]), c: parseFloat(p[2]), h: parseFloat(p[3]), l: parseFloat(p[4]), v: parseFloat(p[5]), pct: parseFloat(p[6]) };
             });
 
-            const snRaw = parse(snRes.data.klines);
+            const curRaw = parse(curRes.data.klines);
             const zsRaw = parse(zsRes.data.klines);
-            const dates = [...new Set([...snRaw.map(d => d.date), ...zsRaw.map(d => d.date)])].sort();
+            const dates = [...new Set([...curRaw.map(d => d.date), ...zsRaw.map(d => d.date)])].sort();
 
             const align = (raw) => dates.map(d => {
                 const found = raw.find(x => x.date === d);
                 return found ? found : { o: null, c: null, h: null, l: null, v: 0, pct: 0 };
             });
 
-            const sn = align(snRaw);
-            const zs = align(zsRaw);
+            const curD = align(curRaw);
+            const zsD = align(zsRaw);
 
             const calculateMA = (data, dayCount) => {
                 let result = [];
@@ -295,118 +412,88 @@
             const option = {
                 backgroundColor: 'transparent',
                 tooltip: {
-                    trigger: 'axis',
-                    axisPointer: { type: 'cross' },
-                    backgroundColor: 'rgba(23,27,38,0.95)',
-                    borderColor: 'rgba(255,255,255,0.1)',
-                    textStyle: { color: '#fff' },
+                    trigger: 'axis', axisPointer: { type: 'cross' },
+                    backgroundColor: 'rgba(23,27,38,0.95)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fff' },
                     formatter: function (params) {
                         const idx = params[0].dataIndex;
-                        const snData = sn[idx];
-                        const zsData = zs[idx];
-                        const maColors = ['#3b82f6', '#f59e0b', '#8b5cf6', '#10b981'];
-
-                        const formatPct = (pct) => {
-                            const sign = pct > 0 ? '+' : '';
-                            const color = pct > 0 ? '#f43f5e' : pct < 0 ? '#10b981' : '#94a3b8';
-                            return `<span style="color:${color};font-weight:600">${sign}${pct.toFixed(2)}%</span>`;
-                        };
-
-                        const getMAVal = (data, count) => calculateMA(data, count)[idx];
-
+                        const c = curD[idx], z = zsD[idx];
+                        const formatPct = (p) => `<span style="color:${p >= 0 ? '#f43f5e' : '#10b981'}">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</span>`;
                         return `
-                            <div style="padding:8px;min-width:200px;">
-                                <div style="font-weight:600;margin-bottom:8px;color:#3b82f6;border-bottom:1px solid rgba(255,255,255,0.2);padding-bottom:4px;">${params[0].name}</div>
-                                
-                                <div style="margin-bottom:10px;">
-                                    <div style="color:#fff;font-size:13px;margin-bottom:4px;font-weight:bold;">神农集团 (605296)</div>
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#cbd5e1;">
-                                        <span>收: ${snData.c?.toFixed(2) || '-'}</span>
-                                        <span>幅: ${formatPct(snData.pct)}</span>
-                                    </div>
-                                    <div style="font-size:11px;margin-top:4px;color:#94a3b8;">
-                                        <span style="color:${maColors[0]}">MA5: ${getMAVal(sn, 5)}</span> | 
-                                        <span style="color:${maColors[1]}">MA10: ${getMAVal(sn, 10)}</span> | 
-                                        <span style="color:${maColors[2]}">MA20: ${getMAVal(sn, 20)}</span>
-                                    </div>
-                                </div>
-                                
-                                <div>
-                                    <div style="color:#fff;font-size:13px;margin-bottom:4px;font-weight:bold;">上证指数 (000001)</div>
-                                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:12px;color:#cbd5e1;">
-                                        <span>收: ${zsData.c?.toFixed(2) || '-'}</span>
-                                        <span>幅: ${formatPct(zsData.pct)}</span>
-                                    </div>
-                                    <div style="font-size:11px;margin-top:4px;color:#94a3b8;">
-                                         <span style="color:${maColors[2]}">MA20: ${getMAVal(zs, 20)}</span> | 
-                                         <span style="color:${maColors[3]}">MA30: ${getMAVal(zs, 30)}</span>
-                                    </div>
-                                </div>
+                        <div style="padding:4px; font-size:12px;">
+                            <div style="margin-bottom:8px; font-weight:bold;">${params[0].name}</div>
+                            <div style="border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px; margin-bottom:4px;">
+                                <div style="color:${params[0].color}">${currentStock.name}</div>
+                                收: ${c.c?.toFixed(2) || '-'} 幅: ${formatPct(c.pct)}
                             </div>
-                        `;
+                            <div>
+                                <div style="color:#94a3b8">上证指数</div>
+                                收: ${z.c?.toFixed(2) || '-'} 幅: ${formatPct(z.pct)}
+                            </div>
+                        </div>`;
                     }
                 },
                 axisPointer: { link: { xAxisIndex: 'all' } },
                 grid: [
-                    { left: 60, right: 40, top: '2%', height: '37%' },   // SN K
-                    { left: 60, right: 40, top: '40%', height: '7%' },  // SN Vol
-                    { left: 60, right: 40, top: '51%', height: '37%' },  // ZS K
-                    { left: 60, right: 40, top: '89%', height: '7%' }   // ZS Vol
+                    { left: 50, right: 30, top: '2%', height: '37%' },
+                    { left: 50, right: 30, top: '40%', height: '7%' },
+                    { left: 50, right: 30, top: '51%', height: '37%' },
+                    { left: 50, right: 30, top: '89%', height: '7%' }
                 ],
-                xAxis: [0, 1, 2, 3].map(i => ({
-                    type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
-                    axisLabel: { show: i === 3, color: '#64748b' }
-                })),
+                xAxis: [0, 1, 2, 3].map(i => ({ type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }, axisLabel: { show: i === 3, color: '#64748b' } })),
                 yAxis: [
-                    { scale: true, gridIndex: 0, name: '个股K', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-                    { scale: true, gridIndex: 1, name: '量', splitLine: { show: false }, axisLabel: { show: false } },
-                    { scale: true, gridIndex: 2, name: '大盘K', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
-                    { scale: true, gridIndex: 3, name: '量', splitLine: { show: false }, axisLabel: { show: false } }
+                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
+                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
                 ],
-                dataZoom: [
-                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 90, end: 100 },
-                    { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 20 }
-                ],
+                dataZoom: [{ type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 95, end: 100 }, { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 16 }],
                 series: [
-                    { name: '神农K', type: 'candlestick', data: sn.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
-                    { name: 'MA5', type: 'line', data: calculateMA(sn, 5), smooth: true, lineStyle: { opacity: 0.6, color: '#3b82f6', width: 1 }, showSymbol: false },
-                    { name: 'MA10', type: 'line', data: calculateMA(sn, 10), smooth: true, lineStyle: { opacity: 0.6, color: '#f59e0b', width: 1 }, showSymbol: false },
-                    { name: 'MA20', type: 'line', data: calculateMA(sn, 20), smooth: true, lineStyle: { opacity: 0.6, color: '#8b5cf6', width: 1 }, showSymbol: false },
-                    { name: 'MA30', type: 'line', data: calculateMA(sn, 30), smooth: true, lineStyle: { opacity: 0.6, color: '#10b981', width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: sn.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) },
+                    { name: 'K线', type: 'candlestick', data: curD.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
+                    { name: 'MA5', type: 'line', data: calculateMA(curD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
+                    { name: 'MA20', type: 'line', data: calculateMA(curD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
+                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) },
 
-                    { name: '上证K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2, data: zs.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
-                    { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zs, 5), smooth: true, lineStyle: { opacity: 0.6, color: '#3b82f6', width: 1 }, showSymbol: false },
-                    { name: 'MA10', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zs, 10), smooth: true, lineStyle: { opacity: 0.6, color: '#f59e0b', width: 1 }, showSymbol: false },
-                    { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zs, 20), smooth: true, lineStyle: { opacity: 0.6, color: '#8b5cf6', width: 1 }, showSymbol: false },
-                    { name: 'MA30', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zs, 30), smooth: true, lineStyle: { opacity: 0.6, color: '#10b981', width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zs.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) }
+                    { name: '上证K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2, data: zsD.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
+                    { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
+                    { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
+                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) }
                 ]
             };
             candleChart.setOption(option);
         }
 
         async function updateIntraday() {
-            const [snRes, zsRes] = await Promise.all([
-                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${SN_SECID}&fields2=f51,f52,f53&ndays=1`),
-                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${ZS_SECID}&fields2=f51,f52,f53&ndays=1`)
+            const [curRes, zsRes] = await Promise.all([
+                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${currentStock.id}&fields2=f51,f52,f53&ndays=1`),
+                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${ZS_ID}&fields2=f51,f52,f53&ndays=1`)
             ]);
-            if (!snRes?.data || !zsRes?.data) return;
+            if (!curRes?.data || !zsRes?.data) return;
             const parse = (d) => d.trends.map(t => ({ time: t.split(',')[0].split(' ')[1], pct: ((parseFloat(t.split(',')[2]) - d.prePrice) / d.prePrice * 100).toFixed(2) }));
-            const snP = parse(snRes.data);
+            const curP = parse(curRes.data);
             const zsP = parse(zsRes.data);
             intradayChart.setOption({
-                backgroundColor: 'transparent', tooltip: { trigger: 'axis' }, legend: { textStyle: { color: '#94a3b8' } },
-                xAxis: { type: 'category', data: snP.map(x => x.time), axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+                backgroundColor: 'transparent', tooltip: { trigger: 'axis' }, legend: { textStyle: { color: '#94a3b8' }, top: 0 },
+                grid: { top: 30, left: 50, right: 30, bottom: 30 },
+                xAxis: { type: 'category', data: curP.map(x => x.time), axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
                 yAxis: { type: 'value', axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
                 series: [
-                    { name: '神农 (%)', type: 'line', data: snP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 3, color: '#3b82f6' } },
-                    { name: '上证 (%)', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: '#f43f5e', type: 'dashed' } }
+                    { name: currentStock.name, type: 'line', data: curP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 2, color: '#3b82f6' } },
+                    { name: '上证指数', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f43f5e', type: 'dashed' } }
                 ]
             });
         }
 
-        (async () => { await updateStats(); await updateCandle(); await updateIntraday(); setInterval(() => { updateStats(); updateIntraday(); }, 30000); })();
+        async function updateAll() {
+            await updateStats();
+            await updateCandle();
+            await updateIntraday();
+        }
+
+        (async () => {
+            await fetchStockList();
+            await updateAll();
+            setInterval(() => { updateStats(); updateIntraday(); }, 30000);
+        })();
     </script>
 </body>
 
