@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全A股实时联动对比系统</title>
+    <title>美股实时联动分析系统</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
@@ -237,21 +237,6 @@
             margin-bottom: 4px;
         }
 
-        /* 上海：高清亮蓝 (SH) - 侧重主板稳健 */
-        .item-sh {
-            border-left: 6px solid #00a2ff;
-            background: rgba(0, 162, 255, 0.15);
-            border-bottom: 1px solid rgba(0, 162, 255, 0.2);
-        }
-
-        /* 深圳：鲜艳极速紫 (SZ) - 侧重成长 */
-        .item-sz {
-            border-left: 6px solid #e100ff;
-            background: rgba(225, 0, 255, 0.12);
-            border-bottom: 1px solid rgba(225, 0, 255, 0.2);
-        }
-
-        /* 北京：明锐金黄 (BJ) - 侧重启航 */
         /* 纳斯达克：科技蓝紫 */
         .item-nasdaq {
             border-left: 6px solid #8b5cf6;
@@ -271,24 +256,6 @@
             border-left: 6px solid #f97316;
             background: rgba(249, 115, 22, 0.15);
             border-bottom: 1px solid rgba(249, 115, 22, 0.2);
-        }
-
-        /* 市场切换按钮 */
-        .mkt-switcher {
-            cursor: pointer;
-            padding: 4px 8px;
-            background: var(--accent-color);
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            transition: all 0.2s;
-        }
-
-        .mkt-switcher:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
         }
 
         .stock-item:hover {
@@ -334,16 +301,6 @@
             border-radius: 4px;
             font-weight: 700;
             line-height: 1;
-        }
-
-        .mkt-sh {
-            background: #00a2ff;
-            color: #000;
-        }
-
-        .mkt-sz {
-            background: #e100ff;
-            color: #fff;
         }
 
         .mkt-nasdaq {
@@ -690,8 +647,7 @@
         <div class="sidebar-header">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;" id="sidebar-title">沪深实时行情</h2>
-                    <div id="mkt-toggle" class="mkt-switcher" title="切换 A股 / 美股">CN</div>
+                    <h2 style="font-size: 1.1rem; font-weight: 700; margin: 0;">美股实时行情</h2>
                     <div id="sort-toggle"
                         style="cursor: pointer; padding: 4px; border-radius: 4px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
                         title="切换涨跌排序" onmouseover="this.style.background='rgba(255,255,255,0.1)'"
@@ -731,13 +687,13 @@
                             data-lucide="activity" color="white" size="20"></i></div>
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">神农集团 对标分析</h1>
+                            <h1 style="font-size: 1.1rem; font-weight: 700;" id="main-title">NVIDIA 对标分析</h1>
                             <div class="status-pulse"></div>
                             <span
                                 style="font-size: 0.65rem; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                         </div>
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
+                            <p style="font-size: 0.7rem; color: var(--text-secondary);">美股全维度联动 K 线 / 成交量 / 分时</p>
                             <span id="cur-industry"
                                 style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; font-weight: 600;">--</span>
                         </div>
@@ -903,7 +859,7 @@
                 </div>
                 <div class="stat-card">
                     <div class="stock-info">
-                        <span class="stat-label" id="zs-name">上证指数</span>
+                        <span class="stat-label">纳斯达克</span>
                         <div style="display: flex; align-items: baseline; gap: 8px;">
                             <span class="stat-value" id="price-zs">--.--</span>
                             <span class="stat-change" id="change-zs">--.--%</span>
@@ -1080,9 +1036,8 @@
         });
 
         // Initial state
-        let currentRegion = 'CN'; // 'CN' or 'US'
-        let currentStock = { id: '1.605296', name: '神农集团' };
-        let ZS_ID = '1.000001';
+        let currentStock = { id: '105.NVDA', name: 'NVIDIA' }; // Default US Stock
+        const ZS_ID = '100.NDX'; // Nasdaq 100 Index
         let allStocks = [];
 
         const candleChart = echarts.init(document.getElementById('candle-chart'));
@@ -1114,11 +1069,8 @@
             container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);"><i class="loading-icon"></i> 正在智能同步全量行情...</div>';
 
             try {
-                // 根据区域选择 fs 参数
-                // CN: 沪深两市主板、创业板、科创板; US: Nasdaq, NYSE, AMEX
-                const fs = currentRegion === 'CN'
-                    ? 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23'
-                    : 'm:105,m:106,m:107';
+                // fs 参数涵盖：美股主要市场 (Nasdaq, NYSE, AMEX)
+                const fs = 'm:105,m:106,m:107';
                 const fields = 'f2,f3,f12,f13,f14,f127';
 
                 // 1. 获取种子数据与总数
@@ -1194,30 +1146,19 @@
                 const priceDisplay = (typeof s.f2 === 'number') ? s.f2.toFixed(2) : '--';
                 const pctDisplay = (typeof s.f3 === 'number') ? s.f3.toFixed(2) : '--';
 
-                // 市场识别逻辑
-                let mktName = '深';
-                let mktClass = 'mkt-sz';
-                let itemClass = 'item-sz';
+                // 市场识别逻辑（美股）
+                let mktName = '美';
+                let mktClass = 'mkt-amex';
+                let itemClass = 'item-amex';
 
-                if (currentRegion === 'CN') {
-                    if (s.f13 === 1) {
-                        mktName = '沪';
-                        mktClass = 'mkt-sh';
-                    }
-                    itemClass = mktClass === 'mkt-sh' ? 'item-sh' : 'item-sz';
-                } else {
-                    mktName = '美';
-                    mktClass = 'mkt-amex';
-                    itemClass = 'item-amex';
-                    if (s.f13 === 105) {
-                        mktName = '纳';
-                        mktClass = 'mkt-nasdaq';
-                        itemClass = 'item-nasdaq';
-                    } else if (s.f13 === 106) {
-                        mktName = '纽';
-                        mktClass = 'mkt-nyse';
-                        itemClass = 'item-nyse';
-                    }
+                if (s.f13 === 105) {
+                    mktName = '纳';
+                    mktClass = 'mkt-nasdaq';
+                    itemClass = 'item-nasdaq';
+                } else if (s.f13 === 106) {
+                    mktName = '纽';
+                    mktClass = 'mkt-nyse';
+                    itemClass = 'item-nyse';
                 }
 
                 return `
@@ -1356,9 +1297,7 @@
 
             if (curRes?.data) {
                 const d = curRes.data;
-                // US Stocks scaled by 1000 for f43
-                const scale = currentRegion === 'US' ? 1000 : 100;
-                const price = (d.f43 / scale).toFixed(2);
+                const price = (d.f43 / 1000).toFixed(2); // US Stocks scaled by 1000 for f43
                 const pct = (d.f170 / 100).toFixed(2);
                 document.getElementById('price-cur').innerText = price;
                 document.getElementById('change-cur').innerText = (pct > 0 ? '+' : '') + pct + '%';
@@ -1445,7 +1384,7 @@
                                 收: ${c.c?.toFixed(2) || '-'} 幅: ${formatPct(c.pct)}
                             </div>
                             <div>
-                                <div style="color:${colors.secondary}">${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</div>
+                                <div style="color:${colors.secondary}">纳斯达克</div>
                                 收: ${z.c?.toFixed(2) || '-'} 幅: ${formatPct(z.pct)}
                             </div>
                         </div>`;
@@ -1479,7 +1418,7 @@
                     { name: 'MA20', type: 'line', data: calculateMA(curD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } })) },
                     {
-                        name: currentRegion === 'CN' ? '上证K' : '纳指K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
+                        name: '纳指K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
                         data: zsD.map(d => [d.o, d.c, d.l, d.h]),
                         itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down }
                     },
@@ -1586,7 +1525,7 @@
                 },
                 series: [
                     { name: currentStock.name, type: 'line', data: curP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 2, color: colors.accent } },
-                    { name: currentRegion === 'CN' ? '上证指数' : '纳斯达克', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1, color: colors.up, type: 'dashed' } }
+                    { name: '纳斯达克', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1, color: colors.up, type: 'dashed' } }
                 ]
             }, { notMerge: true });
 
@@ -1786,44 +1725,6 @@
             // 滚动到顶部
             const listEl = document.getElementById('stock-list');
             if (listEl) listEl.scrollTop = 0;
-        });
-
-        // 市场切换功能
-        document.getElementById('mkt-toggle').addEventListener('click', () => {
-            AudioFX.play('click');
-            // 切换状态
-            if (currentRegion === 'CN') {
-                currentRegion = 'US';
-                document.getElementById('mkt-toggle').innerText = 'US';
-                document.getElementById('sidebar-title').innerText = '美股实时行情';
-                document.getElementById('zs-name').innerText = '纳斯达克';
-                ZS_ID = '100.NDX';
-                currentStock = { id: '105.NVDA', name: 'NVIDIA' }; // Default US
-            } else {
-                currentRegion = 'CN';
-                document.getElementById('mkt-toggle').innerText = 'CN';
-                document.getElementById('sidebar-title').innerText = '沪深实时行情';
-                document.getElementById('zs-name').innerText = '上证指数';
-                ZS_ID = '1.000001';
-                currentStock = { id: '1.605296', name: '神农集团' }; // Default CN
-            }
-
-            // 更新 UI 和数据
-            document.getElementById('main-title').innerText = `${currentStock.name} 对标分析`;
-            document.getElementById('cur-stock-name').innerText = currentStock.name;
-
-            // 清空列表并重新加载
-            allStocks = [];
-            document.getElementById('stock-list').innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">市场切换中...</div>';
-            fetchStockList();
-
-            // 触发一次选择逻辑(更新图表)
-            selectStock(currentStock.id, currentStock.name);
-
-            // 重置排序状态
-            isSortDesc = true;
-            document.querySelector('#sort-toggle i').setAttribute('data-lucide', 'arrow-down-wide-narrow');
-            lucide.createIcons();
         });
     </script>
 </body>
