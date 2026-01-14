@@ -75,31 +75,86 @@
             justify-content: space-between;
             align-items: center;
             padding: 0.8rem 1rem;
-            border-radius: 8px;
+            border-radius: 4px 8px 8px 4px;
+            /* 侧边条效果 */
             cursor: pointer;
             transition: all 0.2s;
             border: 1px solid transparent;
-            margin-bottom: 2px;
+            border-left-width: 4px;
+            /* 预留侧边条宽度 */
+            margin-bottom: 4px;
+        }
+
+        /* 上海：高清亮蓝 (SH) - 侧重主板稳健 */
+        .item-sh {
+            border-left: 6px solid #00a2ff;
+            background: rgba(0, 162, 255, 0.15);
+            border-bottom: 1px solid rgba(0, 162, 255, 0.2);
+        }
+
+        /* 深圳：鲜艳极速紫 (SZ) - 侧重成长 */
+        .item-sz {
+            border-left: 6px solid #e100ff;
+            background: rgba(225, 0, 255, 0.12);
+            border-bottom: 1px solid rgba(225, 0, 255, 0.2);
+        }
+
+        /* 北京：明锐金黄 (BJ) - 侧重启航 */
+        .item-bj {
+            border-left: 6px solid #ffcc00;
+            background: rgba(255, 204, 0, 0.15);
+            border-bottom: 1px solid rgba(255, 204, 0, 0.2);
         }
 
         .stock-item:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: rgba(59, 130, 246, 0.2);
+            filter: brightness(1.2);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .stock-item.active {
-            background: var(--accent-color);
+            background: var(--accent-color) !important;
+            border-left-color: white !important;
             color: white;
         }
 
         .stock-info {
             display: flex;
             flex-direction: column;
+            gap: 2px;
+        }
+
+        .stock-name-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .stock-name {
             font-weight: 600;
             font-size: 0.95rem;
+        }
+
+        .mkt-badge {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .mkt-sh {
+            background: #00a2ff;
+            color: #000;
+        }
+
+        .mkt-sz {
+            background: #e100ff;
+            color: #fff;
+        }
+
+        .mkt-bj {
+            background: #ffcc00;
+            color: #000;
         }
 
         .stock-code {
@@ -367,10 +422,26 @@
                 const priceDisplay = (typeof s.f2 === 'number') ? s.f2.toFixed(2) : '--';
                 const pctDisplay = (typeof s.f3 === 'number') ? s.f3.toFixed(2) : '--';
 
+                // 市场识别逻辑
+                let mktName = '深';
+                let mktClass = 'mkt-sz';
+                if (s.f13 === 1) {
+                    mktName = '沪';
+                    mktClass = 'mkt-sh';
+                } else if (s.f12.startsWith('8') || s.f12.startsWith('43') || s.f12.startsWith('92')) {
+                    mktName = '京';
+                    mktClass = 'mkt-bj';
+                }
+
+                const itemClass = mktClass === 'mkt-sh' ? 'item-sh' : (mktClass === 'mkt-sz' ? 'item-sz' : 'item-bj');
+
                 return `
-                    <div class="stock-item ${isActive}" onclick="selectStock('${fullId}', '${s.f14}')">
+                    <div class="stock-item ${isActive} ${itemClass}" onclick="selectStock('${fullId}', '${s.f14}')">
                         <div class="stock-info">
-                            <span class="stock-name">${s.f14}</span>
+                            <div class="stock-name-row">
+                                <span class="stock-name">${s.f14}</span>
+                                <span class="mkt-badge ${mktClass}">${mktName}</span>
+                            </div>
                             <span class="stock-code">${s.f12}</span>
                         </div>
                         <div style="text-align:right">
