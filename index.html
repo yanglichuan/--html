@@ -119,6 +119,24 @@
             border-bottom: 1px solid var(--glass-border);
         }
 
+        .sound-toggle {
+            cursor: pointer;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            display: flex;
+            transition: all 0.2s;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sound-toggle.muted {
+            opacity: 0.4;
+        }
+
         .search-box {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
@@ -372,6 +390,9 @@
                     </div>
                 </div>
                 <div class="header-actions" style="display: flex; gap: 12px; align-items: center;">
+                    <div id="sound-toggle" class="sound-toggle" title="音效开关">
+                        <i data-lucide="volume-2" size="18" color="var(--text-secondary)"></i>
+                    </div>
                     <div class="theme-control">
                         <div class="theme-dot active" style="background: #0c0f16;" onclick="changeTheme('dark', this)"
                             title="极客黑"></div>
@@ -427,8 +448,58 @@
     </div>
 
     <script>
+        // --- High Fidelity UI Sound Engine ---
+        const AudioFX = {
+            ctx: null,
+            enabled: localStorage.getItem('sound-enabled') !== 'false',
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            play(type) {
+                if (!this.enabled) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                const now = this.ctx.currentTime;
+                if (type === 'click') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(440, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'switch') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(440, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    osc.start(now); osc.stop(now + 0.15);
+                } else if (type === 'hover') {
+                    osc.frequency.setValueAtTime(1200, now);
+                    gain.gain.setValueAtTime(0.02, now);
+                    gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                    osc.start(now); osc.stop(now + 0.05);
+                }
+            }
+        };
+
+        // Sound Toggle Handler
+        setTimeout(() => {
+            const sToggle = document.getElementById('sound-toggle');
+            if (!AudioFX.enabled) sToggle.classList.add('muted');
+            sToggle.onclick = () => {
+                AudioFX.enabled = !AudioFX.enabled;
+                localStorage.setItem('sound-enabled', AudioFX.enabled);
+                sToggle.classList.toggle('muted');
+                if (AudioFX.enabled) AudioFX.play('switch');
+            };
+        }, 100);
+
         // --- Theme & Fullscreen Logic ---
         function changeTheme(theme, el) {
+            AudioFX.play('switch');
             document.documentElement.setAttribute('data-theme', theme);
             document.querySelectorAll('.theme-dot').forEach(dot => dot.classList.remove('active'));
             el.classList.add('active');
@@ -455,6 +526,7 @@
         }
 
         document.getElementById('fs-toggle').addEventListener('click', () => {
+            AudioFX.play('switch');
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen();
             } else {
@@ -477,6 +549,7 @@
 
         // --- Sidebar Toggle Logic ---
         document.getElementById('sidebar-toggle').addEventListener('click', () => {
+            AudioFX.play('switch');
             const sidebar = document.querySelector('.sidebar');
             sidebar.classList.toggle('collapsed');
 
@@ -601,6 +674,7 @@
         }
 
         function selectStock(id, name) {
+            AudioFX.play('click');
             currentStock = { id, name };
             document.getElementById('main-title').innerText = `${name} 对标分析`;
             document.getElementById('cur-stock-name').innerText = name;
