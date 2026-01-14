@@ -301,17 +301,39 @@
             try { const res = await fetch(url); return await res.json(); } catch (e) { return null; }
         }
 
-        async function fetchStockList() {
-            const url = `https://push2.eastmoney.com/api/qt/clist/get?fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23,m:0+t:81+s:2048&fields=f12,f14,f2,f3,f13&pz=5000&po=1&np=1&fltt=2&invt=2&fid=f3`;
-            const res = await getJSON(url);
-            if (res?.data?.diff) {
-                // 将对象转为数组并按涨跌幅二次排序确保一致性
-                allStocks = Object.values(res.data.diff).sort((a, b) => b.f3 - a.f3);
-                renderStockList(allStocks);
-            } else {
-                document.getElementById('stock-list').innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">榜单加载失败，请检查网络</div>`;
-            }
+        // --- 1. Stock List Functions (JSONP for CORS) ---
+        function fetchStockList() {
+            const container = document.getElementById('stock-list');
+            const script = document.createElement('script');
+            // 必须包含 f2(价格), f3(涨幅), f12(代码), f13(市场), f14(名称)
+            script.src = `https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1000&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f13,f14&cb=handleStockList&_=${Date.now()}`;
+            script.onerror = () => {
+                container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">加载失败: 网络连接受限</div>`;
+            };
+            document.body.appendChild(script);
+            script.onload = () => script.remove();
         }
+
+        window.handleStockList = function (res) {
+            const container = document.getElementById('stock-list');
+            if (res?.data?.diff) {
+                // 转换为数组并确保价格和涨幅为有效数值
+                const rawData = Array.isArray(res.data.diff) ? res.data.diff : Object.values(res.data.diff);
+                allStocks = rawData.map(s => ({
+                    ...s,
+                    f3: parseFloat(s.f3) || 0,
+                    f2: s.f2 === '-' ? '-' : parseFloat(s.f2)
+                })).sort((a, b) => b.f3 - a.f3);
+
+                if (allStocks.length > 0) {
+                    renderStockList(allStocks);
+                } else {
+                    container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--text-secondary);">暂无异动股票数据</div>`;
+                }
+            } else {
+                container.innerHTML = `<div style="padding:2rem;text-align:center;color:var(--up-color);">接口返回异常，请重试</div>`;
+            }
+        };
 
         function renderStockList(list) {
             const container = document.getElementById('stock-list');
@@ -320,6 +342,9 @@
                 const isActive = fullId === currentStock.id ? 'active' : '';
                 const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
                 const sign = s.f3 > 0 ? '+' : '';
+                const priceDisplay = (typeof s.f2 === 'number') ? s.f2.toFixed(2) : '--';
+                const pctDisplay = (typeof s.f3 === 'number') ? s.f3.toFixed(2) : '--';
+
                 return `
                     <div class="stock-item ${isActive}" onclick="selectStock('${fullId}', '${s.f14}')">
                         <div class="stock-info">
@@ -327,8 +352,8 @@
                             <span class="stock-code">${s.f12}</span>
                         </div>
                         <div style="text-align:right">
-                            <div class="stock-price ${color}">${s.f2 === '-' ? '--' : s.f2.toFixed(2)}</div>
-                            <div class="stock-pct ${color}">${sign}${s.f3.toFixed(2)}%</div>
+                            <div class="stock-price ${color}">${priceDisplay}</div>
+                            <div class="stock-pct ${color}">${sign}${pctDisplay}%</div>
                         </div>
                     </div>
                 `;
