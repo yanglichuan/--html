@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同步对标看板 (含成交量)</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-color: #080a0f;
+            --card-bg: rgba(20, 24, 35, 0.8);
+            --accent-color: #3b82f6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --up-color: #f43f5e;
+            --down-color: #10b981;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.03) 0%, transparent 40%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 0.2rem;
+        }
+
+        .container {
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.2rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .refresh-pill {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 99px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--accent-color);
+        }
+
+        .countdown-circle {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-top: 2px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 30s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.4rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--accent-color);
+            opacity: 0.3;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .stat-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .chart-box {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.5rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-container {
+            width: 100%;
+        }
+
+        .up {
+            color: var(--up-color);
+        }
+
+        .down {
+            color: var(--down-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div style="background: var(--accent-color); padding: 8px; border-radius: 10px; display: flex;"><i
+                        data-lucide="bar-chart-3" color="white" size="24"></i></div>
+                <div>
+                    <h1 style="font-size: 1.4rem; font-weight: 700;">深度联动看板：神农集团 & 上证指数</h1>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">全维度 K 线、成交量、分时对标</p>
+                </div>
+            </div>
+            <div class="refresh-pill">
+                <div class="countdown-circle"></div>
+                <span>自动刷新 | <span id="last-update">--:--:--</span></span>
+            </div>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <span class="stat-label">神农集团 (605296)</span>
+                <span class="stat-value" id="price-sn">--.--</span>
+                <span class="stat-change" id="change-sn">--.--%</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">上证指数 (000001)</span>
+                <span class="stat-value" id="price-zs">--.--</span>
+                <span class="stat-change" id="change-zs">--.--%</span>
+            </div>
+            <div class="stat-card" style="opacity: 0.8;">
+                <span class="stat-label">成交活跃度 (神农)</span>
+                <span class="stat-value" style="font-size: 1.5rem; margin-top: 0.5rem;" id="vol-sn">-- 手</span>
+                <span class="stat-change" style="font-size: 0.85rem; color: var(--text-secondary)">今日累计成交量</span>
+            </div>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-title"><i data-lucide="layers" size="18"></i> 深度 K 线与成交量联动</div>
+            <div id="candle-chart" class="chart-container" style="height: 1350px;"></div>
+        </div>
+
+        <div class="chart-box">
+            <div class="chart-title"><i data-lucide="zap" size="18"></i> 今日分时相对走势对比</div>
+            <div id="intraday-chart" class="chart-container" style="height: 400px;"></div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const SN_SECID = '1.605296';
+        const ZS_SECID = '1.000001';
+
+        const candleChart = echarts.init(document.getElementById('candle-chart'));
+        const intradayChart = echarts.init(document.getElementById('intraday-chart'));
+
+        window.addEventListener('resize', () => { candleChart.resize(); intradayChart.resize(); });
+
+        async function getJSON(url) {
+            try {
+                const res = await fetch(url);
+                return await res.json();
+            } catch (e) { return null; }
+        }
+
+        async function updateStats() {
+            const snUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${SN_SECID}&fields=f43,f170,f47`;
+            const zsUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${ZS_SECID}&fields=f43,f170`;
+            const [snRes, zsRes] = await Promise.all([getJSON(snUrl), getJSON(zsUrl)]);
+
+            if (snRes?.data) {
+                const d = snRes.data;
+                document.getElementById('price-sn').innerText = (d.f43 / 100).toFixed(2);
+                document.getElementById('change-sn').innerText = (d.f170 > 0 ? '+' : '') + (d.f170 / 100).toFixed(2) + '%';
+                document.getElementById('change-sn').className = 'stat-change ' + (d.f170 > 0 ? 'up' : 'down');
+                document.getElementById('vol-sn').innerText = (d.f47).toLocaleString() + ' 手';
+            }
+            if (zsRes?.data) {
+                const d = zsRes.data;
+                document.getElementById('price-zs').innerText = (d.f43 / 100).toFixed(2);
+                document.getElementById('change-zs').innerText = (d.f170 > 0 ? '+' : '') + (d.f170 / 100).toFixed(2) + '%';
+                document.getElementById('change-zs').className = 'stat-change ' + (d.f170 > 0 ? 'up' : 'down');
+            }
+            document.getElementById('last-update').innerText = new Date().toLocaleTimeString();
+        }
+
+        async function updateCandle() {
+            const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1000&ut=fa5fd1943c7b386f172d6893dbf24fe0`;
+            const [snRes, zsRes] = await Promise.all([
+                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${SN_SECID}&${common}`),
+                getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_SECID}&${common}`)
+            ]);
+            if (!snRes?.data || !zsRes?.data) return;
+
+            const parse = (k) => k.map(x => {
+                const p = x.split(',');
+                return {
+                    date: p[0],
+                    o: parseFloat(p[1]),
+                    c: parseFloat(p[2]),
+                    h: parseFloat(p[3]),
+                    l: parseFloat(p[4]),
+                    v: parseFloat(p[5]),
+                    pct: parseFloat(p[6]) // 涨跌幅
+                };
+            });
+
+            const snRaw = parse(snRes.data.klines);
+            const zsRaw = parse(zsRes.data.klines);
+            const dates = [...new Set([...snRaw.map(d => d.date), ...zsRaw.map(d => d.date)])].sort();
+
+            const align = (raw) => dates.map(d => {
+                const found = raw.find(x => x.date === d);
+                return found ? found : { o: null, c: null, h: null, l: null, v: 0, pct: 0 };
+            });
+
+            const sn = align(snRaw);
+            const zs = align(zsRaw);
+
+            const option = {
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross' },
+                    backgroundColor: 'rgba(23,27,38,0.95)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    textStyle: { color: '#fff' },
+                    formatter: function (params) {
+                        const idx = params[0].dataIndex;
+                        const snData = sn[idx];
+                        const zsData = zs[idx];
+
+                        const formatPct = (pct) => {
+                            const sign = pct > 0 ? '+' : '';
+                            const color = pct > 0 ? '#f43f5e' : pct < 0 ? '#10b981' : '#94a3b8';
+                            return `<span style="color:${color};font-weight:600">${sign}${pct.toFixed(2)}%</span>`;
+                        };
+
+                        return `
+                            <div style="padding:8px;">
+                                <div style="font-weight:600;margin-bottom:8px;color:#3b82f6;">${params[0].name}</div>
+                                
+                                <div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.1);">
+                                    <div style="color:#94a3b8;font-size:12px;margin-bottom:4px;">神农集团 (605296)</div>
+                                    <div>开: ${snData.o?.toFixed(2) || '-'} | 收: ${snData.c?.toFixed(2) || '-'}</div>
+                                    <div>高: ${snData.h?.toFixed(2) || '-'} | 低: ${snData.l?.toFixed(2) || '-'}</div>
+                                    <div>涨跌幅: ${formatPct(snData.pct)}</div>
+                                    <div>成交量: ${(snData.v / 10000).toFixed(2)}万手</div>
+                                </div>
+                                
+                                <div>
+                                    <div style="color:#94a3b8;font-size:12px;margin-bottom:4px;">上证指数 (000001)</div>
+                                    <div>开: ${zsData.o?.toFixed(2) || '-'} | 收: ${zsData.c?.toFixed(2) || '-'}</div>
+                                    <div>高: ${zsData.h?.toFixed(2) || '-'} | 低: ${zsData.l?.toFixed(2) || '-'}</div>
+                                    <div>涨跌幅: ${formatPct(zsData.pct)}</div>
+                                    <div>成交量: ${(zsData.v / 100000000).toFixed(2)}亿手</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+                axisPointer: { link: { xAxisIndex: 'all' } },
+                grid: [
+                    { left: 60, right: 40, top: '2%', height: '37%' },   // SN K
+                    { left: 60, right: 40, top: '40%', height: '7%' },  // SN Vol
+                    { left: 60, right: 40, top: '51%', height: '37%' },  // ZS K
+                    { left: 60, right: 40, top: '89%', height: '7%' }   // ZS Vol
+                ],
+                xAxis: [0, 1, 2, 3].map(i => ({
+                    type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } },
+                    axisLabel: { show: i === 3, color: '#64748b' }
+                })),
+                yAxis: [
+                    { scale: true, gridIndex: 0, name: '个股K', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 1, name: '量', splitLine: { show: false }, axisLabel: { show: false } },
+                    { scale: true, gridIndex: 2, name: '大盘K', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                    { scale: true, gridIndex: 3, name: '量', splitLine: { show: false }, axisLabel: { show: false } }
+                ],
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 90, end: 100 },
+                    { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 20 }
+                ],
+                series: [
+                    { name: '神农K', type: 'candlestick', data: sn.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
+                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: sn.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) },
+                    { name: '上证K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2, data: zs.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
+                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zs.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) }
+                ]
+            };
+            candleChart.setOption(option);
+        }
+
+        async function updateIntraday() {
+            const [snRes, zsRes] = await Promise.all([
+                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${SN_SECID}&fields2=f51,f52,f53&ndays=1`),
+                getJSON(`https://push2.eastmoney.com/api/qt/stock/trends/get?secid=${ZS_SECID}&fields2=f51,f52,f53&ndays=1`)
+            ]);
+            if (!snRes?.data || !zsRes?.data) return;
+            const parse = (d) => d.trends.map(t => ({ time: t.split(',')[0].split(' ')[1], pct: ((parseFloat(t.split(',')[2]) - d.prePrice) / d.prePrice * 100).toFixed(2) }));
+            const snP = parse(snRes.data);
+            const zsP = parse(zsRes.data);
+            intradayChart.setOption({
+                backgroundColor: 'transparent', tooltip: { trigger: 'axis' }, legend: { textStyle: { color: '#94a3b8' } },
+                xAxis: { type: 'category', data: snP.map(x => x.time), axisLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } } },
+                yAxis: { type: 'value', axisLabel: { formatter: '{value}%' }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
+                series: [
+                    { name: '神农 (%)', type: 'line', data: snP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 3, color: '#3b82f6' } },
+                    { name: '上证 (%)', type: 'line', data: zsP.map(x => x.pct), smooth: true, showSymbol: false, lineStyle: { width: 1.5, color: '#f43f5e', type: 'dashed' } }
+                ]
+            });
+        }
+
+        (async () => { await updateStats(); await updateCandle(); await updateIntraday(); setInterval(() => { updateStats(); updateIntraday(); }, 30000); })();
+    </script>
+</body>
+
+</html>
