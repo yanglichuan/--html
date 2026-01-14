@@ -720,19 +720,32 @@
                     { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } } },
                     { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
                 ],
-                dataZoom: [{ type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 95, end: 100 }, { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 16 }],
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 95, end: 100 },
+                    { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 16, start: 95, end: 100 }
+                ],
                 series: [
                     { name: 'K线', type: 'candlestick', data: curD.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
                     { name: 'MA5', type: 'line', data: calculateMA(curD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: 'MA20', type: 'line', data: calculateMA(curD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) },
-
                     { name: '上证K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2, data: zsD.map(d => [d.o, d.c, d.l, d.h]), itemStyle: { color: '#f43f5e', color0: '#10b981' } },
                     { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 5), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: calculateMA(zsD, 20), smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
                     { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? '#f43f5e' : '#10b981' } })) }
                 ]
             };
+
+            // 保持现有的缩放比例
+            const currentOption = candleChart.getOption();
+            if (currentOption && currentOption.dataZoom) {
+                const dz = currentOption.dataZoom;
+                option.dataZoom[0].start = dz[0].start;
+                option.dataZoom[0].end = dz[0].end;
+                option.dataZoom[1].start = dz[1].start;
+                option.dataZoom[1].end = dz[1].end;
+            }
+
             candleChart.setOption(option);
         }
 
