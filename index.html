@@ -1680,13 +1680,22 @@
             isSortDesc = !isSortDesc;
 
             const icon = document.querySelector('#sort-toggle i');
+            const sortFn = (a, b) => {
+                const va = typeof a.f3 === 'number' ? a.f3 : -999999;
+                const vb = typeof b.f3 === 'number' ? b.f3 : -999999;
+                // 将无效数据始终置于底部
+                if (typeof a.f3 !== 'number') return 1;
+                if (typeof b.f3 !== 'number') return -1;
+                return isSortDesc ? vb - va : va - vb;
+            };
+
             if (isSortDesc) {
                 // 降序 (涨幅从高到低)
-                allStocks.sort((a, b) => b.f3 - a.f3);
+                allStocks.sort(sortFn);
                 icon.setAttribute('data-lucide', 'arrow-down-wide-narrow');
             } else {
                 // 升序 (跌幅从大到小)
-                allStocks.sort((a, b) => a.f3 - b.f3);
+                allStocks.sort(sortFn);
                 icon.setAttribute('data-lucide', 'arrow-up-narrow-wide');
             }
             lucide.createIcons();
@@ -1699,7 +1708,8 @@
             renderStockList(allStocks);
 
             // 滚动到顶部
-            document.querySelector('.stock-list').scrollTop = 0;
+            const listEl = document.getElementById('stock-list');
+            if (listEl) listEl.scrollTop = 0;
         });
     </script>
 </body>
