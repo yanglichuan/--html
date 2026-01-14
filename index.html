@@ -455,10 +455,45 @@
         .chart-title {
             font-size: 0.9rem;
             font-weight: 600;
-            margin-bottom: 0.4rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+
+        .chart-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.6rem;
+        }
+
+        .time-range-btns {
+            display: flex;
+            gap: 5px;
+        }
+
+        .range-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .range-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+            color: var(--text-primary);
+        }
+
+        .range-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
         }
 
         .up {
@@ -803,7 +838,17 @@
             </div>
 
             <div class="chart-box">
-                <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                <div class="chart-header-row">
+                    <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                    <div class="time-range-btns">
+                        <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
+                        <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
+                        <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
+                        <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
+                        <button class="range-btn" onclick="setTimeRange(750, this)">3年</button>
+                        <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
+                    </div>
+                </div>
                 <div id="candle-chart" style="height: 1100px;"></div>
             </div>
 
@@ -1105,6 +1150,48 @@
             document.getElementById('cur-stock-name').innerText = name;
 
             updateAll();
+            // 如果详情面板是开启的，同步更新详情
+            if (document.getElementById('stock-detail-panel').classList.contains('active')) {
+                updateStockDetail();
+            }
+        }
+
+        // --- 提取股票详情数据逻辑 ---
+        async function updateStockDetail() {
+            // f127:行业, f9:PE, f23:PB, f20:总市值, f21:流通市值, f183:ROE, f184:净利润, f186:净利增长, f187:营收增长, f168:换手, f171:振幅, f108:股息
+            const fields = 'f58,f127,f9,f23,f20,f21,f183,f184,f185,f186,f187,f168,f171,f108';
+            const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=${fields}`;
+            const res = await getJSON(url);
+            if (res?.data) {
+                const d = res.data;
+                const fmt = (v) => (v === undefined || v === '-') ? '--' : v;
+                const fmtCap = (v) => {
+                    if (v === undefined || v === '-') return '--';
+                    return v > 1e12 ? (v / 1e12).toFixed(2) + '万亿' : (v > 1e8 ? (v / 1e8).toFixed(2) + '亿' : (v / 1e4).toFixed(2) + '万');
+                };
+                const fmtColor = (v) => parseFloat(v) > 0 ? 'up' : (parseFloat(v) < 0 ? 'down' : '');
+
+                document.getElementById('panel-stock-name').innerText = d.f58 || '--';
+                document.getElementById('det-hy').innerText = fmt(d.f127);
+                document.getElementById('det-pe').innerText = fmt(d.f9 === '-' ? '-' : d.f9);
+                document.getElementById('det-pb').innerText = fmt(d.f23 === '-' ? '-' : (d.f23 / 100).toFixed(2));
+                document.getElementById('det-gxl').innerText = (d.f108 === '-' || d.f108 === undefined) ? '--' : (d.f108 / 100).toFixed(2) + '%';
+
+                document.getElementById('det-zsz').innerText = fmtCap(d.f20);
+                document.getElementById('det-ltsz').innerText = fmtCap(d.f21);
+
+                document.getElementById('det-roe').innerText = (d.f183 === '-' || d.f183 === undefined) ? '--' : (d.f183 / 100).toFixed(2) + '%';
+                document.getElementById('det-jlr').innerText = fmtCap(d.f184);
+
+                document.getElementById('det-jlrz').innerText = (d.f186 === '-' || d.f186 === undefined) ? '--' : (d.f186 / 100).toFixed(2) + '%';
+                document.getElementById('det-jlrz').className = 'detail-val ' + fmtColor(d.f186);
+
+                document.getElementById('det-ysrz').innerText = (d.f187 === '-' || d.f187 === undefined) ? '--' : (d.f187 / 100).toFixed(2) + '%';
+                document.getElementById('det-ysrz').className = 'detail-val ' + fmtColor(d.f187);
+
+                document.getElementById('det-hsl').innerText = (d.f168 === '-' || d.f168 === undefined) ? '--' : (d.f168 / 100).toFixed(2) + '%';
+                document.getElementById('det-zf').innerText = (d.f171 === '-' || d.f171 === undefined) ? '--' : (d.f171 / 100).toFixed(2) + '%';
+            }
         }
 
         // 防抖函数
@@ -1412,6 +1499,26 @@
             ]).catch(e => console.error('Parallel update failed:', e));
         }
 
+        // 时段快捷切换
+        function setTimeRange(days, btn) {
+            AudioFX.play('click');
+            const data = candleChart.getOption().series[0].data;
+            if (!data) return;
+
+            const total = data.length;
+            const startIdx = Math.max(0, total - days);
+
+            // 切换按钮状态
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            candleChart.dispatchAction({
+                type: 'dataZoom',
+                startValue: startIdx,
+                endValue: total - 1
+            });
+        }
+
         // 跳转至最新
         document.getElementById('latest-toggle').addEventListener('click', () => {
             AudioFX.play('click');
@@ -1432,7 +1539,21 @@
             // 初始化时手动触发默认股票的选择逻辑，确保 UI 同步
             selectStock(currentStock.id, currentStock.name);
             setInterval(() => { updateStats(); updateIntraday(); }, 30000);
-            lucide.createIcons(); // 确保所有新添加的图标被渲染
+
+            // 详情面板交互
+            document.getElementById('detail-toggle').addEventListener('click', () => {
+                AudioFX.play('switch');
+                const panel = document.getElementById('stock-detail-panel');
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active')) updateStockDetail();
+            });
+
+            document.getElementById('close-detail').addEventListener('click', () => {
+                AudioFX.play('switch');
+                document.getElementById('stock-detail-panel').classList.remove('active');
+            });
+
+            lucide.createIcons();
         })();
     </script>
 </body>
