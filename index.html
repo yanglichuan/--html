@@ -46,6 +46,14 @@
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar.collapsed {
+            width: 0;
+            opacity: 0;
+            pointer-events: none;
+            border-right: none;
         }
 
         .sidebar-header {
@@ -294,6 +302,10 @@
         <div class="container">
             <header>
                 <div class="brand">
+                    <div id="sidebar-toggle"
+                        style="cursor: pointer; padding: 6px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; transition: all 0.2s;">
+                        <i data-lucide="menu" size="20" color="#3b82f6"></i>
+                    </div>
                     <div style="background: var(--accent-color); padding: 6px; border-radius: 8px; display: flex;"><i
                             data-lucide="activity" color="white" size="20"></i></div>
                     <div>
@@ -341,6 +353,20 @@
 
     <script>
         lucide.createIcons();
+
+        // --- Sidebar Toggle Logic ---
+        document.getElementById('sidebar-toggle').addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+
+            // 持续重绘图表以适配过渡动画
+            let count = 0;
+            const resizeTimer = setInterval(() => {
+                candleChart.resize();
+                intradayChart.resize();
+                if (++count > 35) clearInterval(resizeTimer);
+            }, 10);
+        });
 
         // Initial state
         let currentStock = { id: '1.605296', name: '神农集团' }; // Default
