@@ -1893,61 +1893,187 @@
             const option = {
                 backgroundColor: 'transparent',
                 tooltip: {
-                    trigger: 'axis', axisPointer: { type: 'cross' },
-                    backgroundColor: colors.tooltipBg, borderColor: colors.border, textStyle: { color: colors.text },
+                    trigger: 'axis',
+                    axisPointer: { 
+                        type: 'cross',
+                        label: {
+                            backgroundColor: colors.accent,
+                            color: '#fff',
+                            borderRadius: 4,
+                            padding: [4, 8]
+                        },
+                        crossStyle: {
+                            color: colors.accent,
+                            width: 1,
+                            type: 'dashed'
+                        }
+                    },
+                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                    borderColor: colors.accent + '44',
+                    borderWidth: 1,
+                    padding: 0,
+                    textStyle: { color: colors.text },
+                    extraCssText: 'box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); border-radius: 12px; overflow: hidden;',
                     formatter: function (params) {
                         const idx = params[0].dataIndex;
                         const c = curD[idx], z = zsD[idx];
-                        const formatPct = (p) => `<span style="color:${p >= 0 ? colors.up : colors.down}">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</span>`;
+                        if (!c || !z) return '';
+                        const formatPct = (p) => `<span style="color:${p >= 0 ? colors.up : colors.down}; font-weight: bold;">${p >= 0 ? '+' : ''}${p.toFixed(2)}%</span>`;
                         return `
-                        <div style="padding:4px; font-size:12px;">
-                            <div style="margin-bottom:8px; font-weight:bold; color:${colors.text}">${params[0].name}</div>
-                            <div style="border-bottom:1px solid ${colors.grid}; padding-bottom:4px; margin-bottom:4px;">
-                                <div style="color:${params[0].color}">${currentStock.name}</div>
-                                收: ${c.c?.toFixed(2) || '-'} 幅: ${formatPct(c.pct)}
+                        <div style="min-width: 180px; font-family: 'Inter', system-ui, sans-serif;">
+                            <div style="background: ${colors.accent}15; padding: 10px 15px; border-bottom: 1px solid ${colors.accent}22;">
+                                <div style="font-weight: 700; color: ${colors.text}; font-size: 14px;">${params[0].name}</div>
                             </div>
-                            <div>
-                                <div style="color:${colors.secondary}">${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</div>
-                                收: ${z.c?.toFixed(2) || '-'} 幅: ${formatPct(z.pct)}
+                            <div style="padding: 12px 15px;">
+                                <div style="margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="color: ${colors.secondary}; font-size: 12px;">${currentStock.name}</span>
+                                        <span style="font-size: 13px; font-weight: 700; color: ${colors.text};">${c.c?.toFixed(2) || '-'}</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                        <span style="color: ${colors.secondary};">涨跌幅</span>
+                                        <span>${formatPct(c.pct)}</span>
+                                    </div>
+                                </div>
+                                <div style="border-top: 1px dashed ${colors.grid}; padding-top: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                        <span style="color: ${colors.secondary}; font-size: 12px;">${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</span>
+                                        <span style="font-size: 13px; font-weight: 700; color: ${colors.text};">${z.c?.toFixed(2) || '-'}</span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                                        <span style="color: ${colors.secondary};">指数涨幅</span>
+                                        <span>${formatPct(z.pct)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>`;
                     }
                 },
                 axisPointer: { link: { xAxisIndex: 'all' } },
                 grid: [
-                    { left: 50, right: 30, top: '2%', height: '37%' },
-                    { left: 50, right: 30, top: '40%', height: '7%' },
-                    { left: 50, right: 30, top: '51%', height: '37%' },
-                    { left: 50, right: 30, top: '89%', height: '7%' }
+                    { left: 60, right: 30, top: '5%', height: '35%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '40%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '53%', height: '35%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '88%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' }
                 ],
-                xAxis: [0, 1, 2, 3].map(i => ({ type: 'category', data: dates, gridIndex: i, axisLine: { lineStyle: { color: colors.grid } }, axisLabel: { show: i === 3, color: colors.secondary } })),
+                xAxis: [0, 1, 2, 3].map(i => ({ 
+                    type: 'category', 
+                    data: dates, 
+                    gridIndex: i, 
+                    boundaryGap: true,
+                    axisLine: { lineStyle: { color: colors.grid, width: 1 } }, 
+                    axisLabel: { show: i === 3, color: colors.secondary, fontSize: 10, margin: 12 },
+                    axisTick: { show: i === 3, lineStyle: { color: colors.grid } },
+                    splitLine: { show: false }
+                })),
                 yAxis: [
-                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.secondary } },
-                    { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
-                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.secondary } },
-                    { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
+                    { 
+                        scale: true, gridIndex: 0, 
+                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } }, 
+                        axisLabel: { color: colors.secondary, fontSize: 10, inside: false, margin: 8 },
+                        axisLine: { show: false }
+                    },
+                    { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false }, axisLine: { show: false }, axisTick: { show: false } },
+                    { 
+                        scale: true, gridIndex: 2, 
+                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } }, 
+                        axisLabel: { color: colors.secondary, fontSize: 10, inside: false, margin: 8 },
+                        axisLine: { show: false }
+                    },
+                    { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false }, axisLine: { show: false }, axisTick: { show: false } }
                 ],
                 dataZoom: [
-                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd },
-                    { show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '0%', height: 16, start: zoomStart, end: zoomEnd }
+                    { 
+                        type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd,
+                        zoomOnMouseWheel: true, moveOnMouseMove: true
+                    },
+                    { 
+                        show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '1%', height: 20, 
+                        start: zoomStart, end: zoomEnd,
+                        handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
+                        handleSize: '80%',
+                        handleStyle: {
+                            color: '#fff',
+                            shadowBlur: 3,
+                            shadowColor: 'rgba(0, 0, 0, 0.6)',
+                            shadowOffsetX: 2,
+                            shadowOffsetY: 2
+                        },
+                        textStyle: { color: colors.secondary },
+                        borderColor: 'transparent',
+                        fillerColor: colors.accent + '22',
+                        dataBackground: {
+                            lineStyle: { color: colors.accent, opacity: 0.2 },
+                            areaStyle: { color: colors.accent, opacity: 0.1 }
+                        },
+                        selectedDataBackground: {
+                            lineStyle: { color: colors.accent, opacity: 0.5 },
+                            areaStyle: { color: colors.accent, opacity: 0.3 }
+                        }
+                    }
                 ],
                 series: [
                     {
                         name: 'K线', type: 'candlestick',
                         data: curD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down }
+                        itemStyle: { 
+                            color: colors.up, color0: colors.down, 
+                            borderColor: colors.up, borderColor0: colors.down,
+                            borderWidth: 1.5
+                        },
+                        emphasis: {
+                            itemStyle: {
+                                borderWidth: 2,
+                                shadowBlur: 10,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
                     },
-                    { name: 'MA5', type: 'line', data: curMA5, smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: 'MA20', type: 'line', data: curMA20, smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } })) },
+                    { 
+                        name: 'MA5', type: 'line', data: curMA5, smooth: true, 
+                        lineStyle: { opacity: 0.8, width: 1.5, color: '#f59e0b' }, 
+                        showSymbol: false,
+                        animationDuration: 1000
+                    },
+                    { 
+                        name: 'MA20', type: 'line', data: curMA20, smooth: true, 
+                        lineStyle: { opacity: 0.8, width: 1.5, color: '#3b82f6' }, 
+                        showSymbol: false,
+                        animationDuration: 1000
+                    },
+                    { 
+                        name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, 
+                        data: curD.map(d => ({ 
+                            value: d.v, 
+                            itemStyle: { 
+                                color: d.c >= d.o 
+                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.up}, {offset: 1, color: colors.up + '88'}])
+                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.down}, {offset: 1, color: colors.down + '88'}])
+                            } 
+                        })) 
+                    },
                     {
                         name: currentRegion === 'CN' ? '上证K' : '纳指K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
                         data: zsD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down }
+                        itemStyle: { 
+                            color: colors.up, color0: colors.down, 
+                            borderColor: colors.up, borderColor0: colors.down,
+                            borderWidth: 1.2
+                        }
                     },
-                    { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA5, smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA20, smooth: true, lineStyle: { opacity: 0.5, width: 1 }, showSymbol: false },
-                    { name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } })) }
+                    { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA5, smooth: true, lineStyle: { opacity: 0.6, width: 1, color: '#f59e0b' }, showSymbol: false },
+                    { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA20, smooth: true, lineStyle: { opacity: 0.6, width: 1, color: '#3b82f6' }, showSymbol: false },
+                    { 
+                        name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, 
+                        data: zsD.map(d => ({ 
+                            value: d.v, 
+                            itemStyle: { 
+                                color: d.c >= d.o 
+                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.up}, {offset: 1, color: colors.up + '66'}])
+                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.down}, {offset: 1, color: colors.down + '66'}])
+                            } 
+                        })) 
+                    }
                 ]
             };
 
@@ -2229,6 +2355,9 @@
         window.addEventListener('keydown', (e) => {
             const activeEl = document.activeElement;
             if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') return;
+            
+            // 如果按下了 Ctrl, Cmd 或 Alt 键，不触发自定义快捷键，避免干扰系统功能（如全选 Ctrl+A）
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
 
             // 1. 列表切换导航 (上下键)
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -2954,7 +3083,8 @@
                     }
                     
                     this.renderPanel();
-                    renderStockList(allStocks); // Update stars
+                    // 仅刷新当前虚拟滚动窗口以更新星标，而不重置 vs_data，避免干扰搜索结果
+                    renderVirtualWindow(true); 
                     this.sync();
                 },
                 async sync() {
