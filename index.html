@@ -405,13 +405,20 @@
         /* Main Content */
         .main-content {
             flex: 1;
-            overflow-y: auto;
-            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* 禁用主要区域滚动，由内部组件自适应 */
+            padding: 0.5rem 1rem;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 100%;
+            margin: 0;
+            padding: 0 1rem;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
 
         header {
@@ -492,7 +499,33 @@
             border: 1px solid var(--glass-border);
             border-radius: 12px;
             padding: 0.6rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .charts-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+            min-height: 0;
+            /* 关键：允许 flex 子项收缩 */
+        }
+
+        .kline-box {
+            flex: 3;
+        }
+
+        .intra-box {
+            flex: 1;
+        }
+
+        #candle-chart,
+        #intraday-chart {
+            flex: 1;
+            width: 100%;
+            height: 100% !important;
+            /* 强制填满容器 */
         }
 
         .chart-title {
@@ -920,24 +953,26 @@
                 </div>
             </div>
 
-            <div class="chart-box">
-                <div class="chart-header-row">
-                    <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
-                    <div class="time-range-btns">
-                        <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
-                        <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
-                        <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
-                        <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
-                        <button class="range-btn" onclick="setTimeRange(750, this)">3年</button>
-                        <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
+            <div class="charts-wrapper">
+                <div class="chart-box kline-box">
+                    <div class="chart-header-row">
+                        <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                        <div class="time-range-btns">
+                            <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
+                            <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
+                            <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
+                            <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
+                            <button class="range-btn" onclick="setTimeRange(750, this)">3年</button>
+                            <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
+                        </div>
                     </div>
+                    <div id="candle-chart"></div>
                 </div>
-                <div id="candle-chart" style="height: 1100px;"></div>
-            </div>
 
-            <div class="chart-box">
-                <div class="chart-title"><i data-lucide="zap" size="16"></i> 今日分时走势相对强度对标</div>
-                <div id="intraday-chart" style="height: 350px;"></div>
+                <div class="chart-box intra-box">
+                    <div class="chart-title"><i data-lucide="zap" size="16"></i> 今日分时走势相对强度对标</div>
+                    <div id="intraday-chart"></div>
+                </div>
             </div>
         </div>
     </div>
