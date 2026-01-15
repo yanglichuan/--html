@@ -1018,6 +1018,7 @@
                             </div>
                         </div>
                         <div id="kline-header-info" style="display: flex; align-items: center; gap: 12px; padding-right: 10px;">
+                            <span id="kline-header-industry" style="font-size: 0.9rem; color: var(--text-secondary); background: var(--glass-bg); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--glass-border);"></span>
                             <span id="kline-header-name" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);"></span>
                             <span id="kline-header-pct" style="font-size: 1.1rem; font-weight: 700;"></span>
                         </div>
@@ -1705,8 +1706,9 @@
             document.getElementById('cur-industry').innerText = industry;
             document.getElementById('sidebar-industry').innerText = industry;
             
-            // 同步更新 K 线图表头部的股票名称
+            // 同步更新 K 线图表头部的股票名称和行业
             document.getElementById('kline-header-name').innerText = name;
+            document.getElementById('kline-header-industry').innerText = industry;
             
             if (optPrice !== '--') {
                 document.getElementById('price-cur').innerText = optPrice;
@@ -1811,7 +1813,7 @@
         // const indexCache = ... (Removed in favor of SmartFetch)
 
         async function updateStats() {
-            const curUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f58,f43,f170,f47`;
+            const curUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
             const zsUrl = `https://push2.eastmoney.com/api/qt/stock/get?secid=${ZS_ID}&fields=f43,f170`;
             const [curRes, zsRes] = await Promise.all([getJSON(curUrl), getJSON(zsUrl, 'CN')]);
 
@@ -1822,17 +1824,22 @@
                 const price = (d.f43 / scale).toFixed(2);
                 const pct = (d.f170 / 100).toFixed(2);
                 const pctStr = (pct > 0 ? '+' : '') + pct + '%';
+                const industry = d.f127 || currentStock.industry || '--';
                 
                 document.getElementById('price-cur').innerText = price;
                 document.getElementById('change-cur').innerText = pctStr;
                 document.getElementById('change-cur').className = 'stat-change ' + (pct > 0 ? 'up' : 'down');
                 document.getElementById('vol-cur').innerText = (d.f47).toLocaleString() + ' 手';
                 
-                // 同步更新 K 线图表头部的股票名称和涨幅
+                // 同步更新 K 线图表头部的股票名称、行业和涨幅
                 document.getElementById('kline-header-name').innerText = currentStock.name;
+                document.getElementById('kline-header-industry').innerText = industry;
                 const headerPct = document.getElementById('kline-header-pct');
                 headerPct.innerText = pctStr;
                 headerPct.className = (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
+                
+                // 更新全局变量中的行业信息
+                currentStock.industry = industry;
             }
             if (zsRes?.data) {
                 const d = zsRes.data;
