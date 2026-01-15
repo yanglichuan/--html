@@ -2300,6 +2300,15 @@
                 case 'l': // Jump to Latest
                     document.getElementById('latest-toggle').click();
                     break;
+                case 'a': // Toggle Favorite (Add/Remove)
+                    if (typeof currentStock !== 'undefined' && currentStock.id) {
+                        const price = document.getElementById('price-cur').innerText;
+                        FavoritesManager.toggle(currentStock.id, currentStock.name, price);
+                    }
+                    break;
+                case 'z': // Toggle Favorites Panel
+                    document.getElementById('intra-toggle').click();
+                    break;
             }
 
             // 5. 数字键 1-6 对应时段切换
