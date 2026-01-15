@@ -2761,6 +2761,82 @@
                     background: rgba(239, 68, 68, 0.1);
                     color: #ef4444;
                 }
+
+                /* Shortcut Help */
+                .help-trigger {
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    width: 40px;
+                    height: 40px;
+                    background: var(--accent-color);
+                    color: white;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    z-index: 1000;
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .help-trigger:hover {
+                    transform: scale(1.1) rotate(10deg);
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+                }
+                .shortcut-overlay {
+                    position: fixed;
+                    bottom: 75px;
+                    right: 20px;
+                    width: 280px;
+                    background: var(--card-bg);
+                    backdrop-filter: blur(12px);
+                    border: 1px solid var(--glass-border);
+                    border-radius: 16px;
+                    padding: 20px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                    z-index: 1000;
+                    display: none;
+                    opacity: 0;
+                    transform: translateY(20px);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                .shortcut-overlay.active {
+                    display: block;
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                .shortcut-title {
+                    font-size: 1rem;
+                    font-weight: 700;
+                    margin-bottom: 15px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    color: var(--accent-color);
+                }
+                .shortcut-list {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                }
+                .shortcut-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    font-size: 0.85rem;
+                }
+                .shortcut-key {
+                    background: rgba(255,255,255,0.1);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: monospace;
+                    border: 1px solid var(--glass-border);
+                    color: var(--text-primary);
+                }
+                .shortcut-desc {
+                    color: var(--text-secondary);
+                }
             `;
             document.head.insertAdjacentHTML('beforeend', `<style>${styles}</style>`);
 
@@ -3372,8 +3448,72 @@
 
             // Init
             StockUserManager.init();
-
         })();
+
+        // --- 快捷键提示系统 (Shortcut Help) ---
+        const helpHTML = `
+            <div class="help-trigger" id="help-trigger" title="快捷键说明">
+                <i class="fas fa-question"></i>
+            </div>
+            <div class="shortcut-overlay" id="shortcut-overlay">
+                <div class="shortcut-title">
+                    <i class="fas fa-keyboard"></i> 快捷键说明
+                </div>
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">列表上下导航</span>
+                        <span class="shortcut-key">↑ / ↓</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">K线平移</span>
+                        <span class="shortcut-key">← / →</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">K线缩放</span>
+                        <span class="shortcut-key">+ / -</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">收藏/取消收藏</span>
+                        <span class="shortcut-key">A</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">开关收藏面板</span>
+                        <span class="shortcut-key">Z</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">开关侧边栏</span>
+                        <span class="shortcut-key">S</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">开关股票详情</span>
+                        <span class="shortcut-key">D</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">全屏切换</span>
+                        <span class="shortcut-key">F</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="shortcut-desc">回到最新(K线)</span>
+                        <span class="shortcut-key">L</span>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', helpHTML);
+
+        const helpBtn = document.getElementById('help-trigger');
+        const helpOverlay = document.getElementById('shortcut-overlay');
+
+        helpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            helpOverlay.classList.toggle('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!helpOverlay.contains(e.target) && e.target !== helpBtn) {
+                helpOverlay.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
