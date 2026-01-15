@@ -1666,23 +1666,66 @@
         }
 
         // 时段快捷切换
+        // 时段快捷切换 (Animated)
         function setTimeRange(days, btn) {
             AudioFX.play('click');
-            const data = candleChart.getOption().series[0].data;
+            const option = candleChart.getOption();
+            const data = option.series[0].data;
             if (!data) return;
 
             const total = data.length;
-            const startIdx = Math.max(0, total - days);
+
+            // Calculate target range in percentage (0-100)
+            // If total < days, show all (0-100). Else show last 'days' amount.
+            let targetStartPct = 0;
+            if (total > days) {
+                targetStartPct = ((total - days) / total) * 100;
+            }
+            const targetEndPct = 100;
 
             // 切换按钮状态
             document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
 
-            candleChart.dispatchAction({
-                type: 'dataZoom',
-                startValue: startIdx,
-                endValue: total - 1
-            });
+            // Animation Logic
+            const currentZoom = option.dataZoom[0];
+            const currentStart = currentZoom.start;
+            const currentEnd = currentZoom.end;
+
+            // If change is very small, minimal jump
+            if (Math.abs(currentStart - targetStartPct) < 0.1 && Math.abs(currentEnd - targetEndPct) < 0.1) {
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: targetStartPct,
+                    end: targetEndPct
+                });
+                return;
+            }
+
+            const duration = 800;
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Ease Out Quart
+                const ease = 1 - Math.pow(1 - progress, 4);
+
+                const newStart = currentStart + (targetStartPct - currentStart) * ease;
+                const newEnd = currentEnd + (targetEndPct - currentEnd) * ease;
+
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: newStart,
+                    end: newEnd
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            requestAnimationFrame(animate);
         }
 
         // 跳转至最新
