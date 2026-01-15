@@ -1686,18 +1686,44 @@
         }
 
         // 跳转至最新
+        // 跳转至最新 (Animated)
         document.getElementById('latest-toggle').addEventListener('click', () => {
             AudioFX.play('click');
             const options = candleChart.getOption();
-            if (options.dataZoom && options.dataZoom[0]) {
-                const dz = options.dataZoom[0];
-                const range = dz.end - dz.start;
+            if (!options.dataZoom || !options.dataZoom[0]) return;
+
+            const dz = options.dataZoom[0];
+            const currentStart = dz.start;
+            const range = dz.end - dz.start;
+            const targetStart = 100 - range;
+
+            // If already at the end, do nothing
+            if (Math.abs(currentStart - targetStart) < 0.1) return;
+
+            const duration = 800; // ms
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Ease Out Quart
+                const ease = 1 - Math.pow(1 - progress, 4);
+
+                const newStart = currentStart + (targetStart - currentStart) * ease;
+                const newEnd = newStart + range;
+
                 candleChart.dispatchAction({
                     type: 'dataZoom',
-                    start: 100 - range,
-                    end: 100
+                    start: newStart,
+                    end: newEnd
                 });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
             }
+            requestAnimationFrame(animate);
         });
 
         (async () => {
