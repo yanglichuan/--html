@@ -822,16 +822,19 @@
 
                         <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;"></div>
 
-                        <div id="latest-toggle"
-                            style="cursor: pointer; padding: 4px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 6px; display: flex; transition: all 0.2s;"
-                            title="跳转至最新">
-                            <i data-lucide="chevrons-right" size="16" color="#3b82f6"></i>
-                        </div>
+
 
                         <div id="detail-toggle"
                             style="cursor: pointer; padding: 4px; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 6px; display: flex; transition: all 0.2s;"
                             title="个股深度档案">
                             <i data-lucide="file-text" size="16" color="#a855f7"></i>
+                        </div>
+
+                        <div id="intra-toggle"
+                            style="cursor: pointer; padding: 4px 8px; background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.2); border-radius: 6px; display: flex; align-items: center; gap: 4px; transition: all 0.2s;"
+                            title="显示/隐藏 分时对比">
+                            <i data-lucide="columns" size="16" color="#f97316"></i>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: #f97316;">分时</span>
                         </div>
 
                         <div id="fs-toggle"
@@ -958,6 +961,12 @@
                     <div class="chart-header-row">
                         <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
                         <div class="time-range-btns">
+                            <button id="latest-toggle" class="range-btn"
+                                style="color:var(--accent-color); border-color:rgba(59, 130, 246, 0.3); background:rgba(59, 130, 246, 0.1); display:flex; align-items:center; gap:2px;">
+                                <i data-lucide="chevrons-right" size="10"></i> 最新
+                            </button>
+                            <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;">
+                            </div>
                             <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
                             <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
                             <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
@@ -1860,6 +1869,59 @@
             document.querySelector('#sort-toggle i').setAttribute('data-lucide', 'arrow-down-wide-narrow');
             lucide.createIcons();
         });
+
+        // 分时图显示/隐藏切换
+        document.getElementById('intra-toggle').addEventListener('click', () => {
+            AudioFX.play('switch');
+            const box = document.querySelector('.intra-box');
+            const btn = document.getElementById('intra-toggle');
+            const icon = btn.querySelector('i');
+            const text = btn.querySelector('span');
+
+            if (box.style.display === 'none') {
+                box.style.display = 'flex';
+                box.style.opacity = 0;
+                setTimeout(() => box.style.opacity = 1, 10); // Fade in
+
+                icon.setAttribute('color', '#f97316');
+                if (text) text.style.color = '#f97316';
+                btn.style.background = 'rgba(249, 115, 22, 0.1)';
+            } else {
+                box.style.display = 'none';
+                icon.setAttribute('color', 'var(--text-secondary)');
+                if (text) text.style.color = 'var(--text-secondary)';
+                btn.style.background = 'rgba(255, 255, 255, 0.05)';
+            }
+            lucide.createIcons();
+
+            // 触发重绘
+            setTimeout(() => {
+                candleChart.resize();
+                intradayChart.resize();
+            }, 50);
+        });
+
+        // Add Close Button to Intra Panel Header
+        const intraHeader = document.querySelector('.intra-box .chart-title');
+        if (intraHeader) {
+            intraHeader.innerHTML = `
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <i data-lucide="zap" size="16"></i> 今日分时
+                </div>
+                <div id="intra-close" style="cursor: pointer; opacity: 0.6; padding: 4px;" title="关闭面板">
+                    <i data-lucide="x" size="16"></i>
+                </div>
+            `;
+            intraHeader.style.justifyContent = 'space-between';
+            intraHeader.style.display = 'flex';
+            intraHeader.style.width = '100%';
+
+            document.getElementById('intra-close').addEventListener('click', () => {
+                document.getElementById('intra-toggle').click();
+            });
+            lucide.createIcons();
+        }
+
     </script>
 </body>
 
