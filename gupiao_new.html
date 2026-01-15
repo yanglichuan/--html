@@ -1000,20 +1000,26 @@
             <div class="charts-wrapper">
                 <div class="chart-box kline-box">
                     <div class="chart-header-row">
-                        <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
-                        <div class="time-range-btns">
-                            <button id="latest-toggle" class="range-btn"
-                                style="color:var(--accent-color); border-color:rgba(59, 130, 246, 0.3); background:rgba(59, 130, 246, 0.1); display:flex; align-items:center; gap:2px;">
-                                <i data-lucide="chevrons-right" size="10"></i> 最新
-                            </button>
-                            <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                            <div class="time-range-btns">
+                                <button id="latest-toggle" class="range-btn"
+                                    style="color:var(--accent-color); border-color:rgba(59, 130, 246, 0.3); background:rgba(59, 130, 246, 0.1); display:flex; align-items:center; gap:2px;">
+                                    <i data-lucide="chevrons-right" size="10"></i> 最新
+                                </button>
+                                <div style="width: 1px; height: 16px; background: var(--glass-border); margin: 0 4px;">
+                                </div>
+                                <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
+                                <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
+                                <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
+                                <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
+                                <button class="range-btn" onclick="setTimeRange(750, this)">3年</button>
+                                <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
                             </div>
-                            <button class="range-btn" onclick="setTimeRange(125, this)">半年</button>
-                            <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
-                            <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
-                            <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
-                            <button class="range-btn" onclick="setTimeRange(750, this)">3年</button>
-                            <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
+                        </div>
+                        <div id="kline-header-info" style="display: flex; align-items: center; gap: 12px; padding-right: 10px;">
+                            <span id="kline-header-name" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);"></span>
+                            <span id="kline-header-pct" style="font-size: 1.1rem; font-weight: 700;"></span>
                         </div>
                     </div>
                     <div id="candle-chart"></div>
@@ -1699,12 +1705,23 @@
             document.getElementById('cur-industry').innerText = industry;
             document.getElementById('sidebar-industry').innerText = industry;
             
+            // 同步更新 K 线图表头部的股票名称
+            document.getElementById('kline-header-name').innerText = name;
+            
             if (optPrice !== '--') {
                 document.getElementById('price-cur').innerText = optPrice;
                 // Parse percent string to determine color
                 const pctVal = parseFloat(optPct);
-                document.getElementById('change-cur').innerText = (pctVal > 0 ? '+' : '') + optPct + '%';
+                const pctStr = (pctVal > 0 ? '+' : '') + optPct + '%';
+                
+                document.getElementById('change-cur').innerText = pctStr;
                 document.getElementById('change-cur').className = 'stat-change ' + (pctVal > 0 ? 'up' : pctVal < 0 ? 'down' : '');
+                
+                // 同步更新 K 线图表头部的涨幅
+                const headerPct = document.getElementById('kline-header-pct');
+                headerPct.innerText = pctStr;
+                headerPct.className = (pctVal > 0 ? 'up' : pctVal < 0 ? 'down' : '');
+                
                 // Note: Volume is not available in list item, so it will be updated by updateStats network call
             }
             // -----------------------------------------------
@@ -1804,10 +1821,18 @@
                 const scale = currentRegion === 'US' ? 1000 : 100;
                 const price = (d.f43 / scale).toFixed(2);
                 const pct = (d.f170 / 100).toFixed(2);
+                const pctStr = (pct > 0 ? '+' : '') + pct + '%';
+                
                 document.getElementById('price-cur').innerText = price;
-                document.getElementById('change-cur').innerText = (pct > 0 ? '+' : '') + pct + '%';
+                document.getElementById('change-cur').innerText = pctStr;
                 document.getElementById('change-cur').className = 'stat-change ' + (pct > 0 ? 'up' : 'down');
                 document.getElementById('vol-cur').innerText = (d.f47).toLocaleString() + ' 手';
+                
+                // 同步更新 K 线图表头部的股票名称和涨幅
+                document.getElementById('kline-header-name').innerText = currentStock.name;
+                const headerPct = document.getElementById('kline-header-pct');
+                headerPct.innerText = pctStr;
+                headerPct.className = (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
             }
             if (zsRes?.data) {
                 const d = zsRes.data;
