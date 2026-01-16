@@ -220,7 +220,8 @@
         .stock-list {
             flex: 1;
             overflow-y: auto;
-            padding: 0; /* 移除 padding，避免计算复杂化 */
+            padding: 0;
+            /* 移除 padding，避免计算复杂化 */
             position: relative;
             /* 启用硬件加速 */
             will-change: transform;
@@ -236,11 +237,13 @@
             top: 0;
             left: 0;
             width: 100%;
-            padding: 0.5rem; /* 恢复 padding */
+            padding: 0.5rem;
+            /* 恢复 padding */
         }
 
         .stock-item {
-            height: 60px; /* 固定高度，这是虚拟滚动的关键 */
+            height: 60px;
+            /* 固定高度，这是虚拟滚动的关键 */
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -248,12 +251,14 @@
             border-radius: 4px 8px 8px 4px;
             /* 侧边条效果 */
             cursor: pointer;
-            transition: background 0.2s; /* 仅对背景色过渡，移除 all 以提升性能 */
+            transition: background 0.2s;
+            /* 仅对背景色过渡，移除 all 以提升性能 */
             border: 1px solid transparent;
             border-left-width: 4px;
             /* 预留侧边条宽度 */
             margin-bottom: 4px;
-            box-sizing: border-box; /* 确保 padding 不增加总高度 */
+            box-sizing: border-box;
+            /* 确保 padding 不增加总高度 */
         }
 
         /* 上海：高清亮蓝 (SH) - 侧重主板稳健 */
@@ -443,7 +448,7 @@
             flex-direction: column;
             overflow: hidden;
             /* 禁用主要区域滚动，由内部组件自适应 */
-            padding: 0.5rem 1rem;
+            padding: 0.2rem 0.8rem;
         }
 
         .container {
@@ -459,8 +464,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 0.4rem;
-            padding: 0.2rem 0.5rem;
+            margin-bottom: 0.2rem;
+            padding: 0.1rem 0.5rem;
         }
 
         .brand {
@@ -481,14 +486,14 @@
         .stats-bar {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            gap: 0.4rem;
+            margin-bottom: 0.4rem;
         }
 
         .stat-card {
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
-            padding: 0.6rem 1rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 12px;
             display: flex;
             justify-content: space-between;
@@ -532,7 +537,7 @@
             background: var(--card-bg);
             border: 1px solid var(--glass-border);
             border-radius: 12px;
-            padding: 0.6rem;
+            padding: 0.4rem;
             margin-bottom: 0;
             display: flex;
             flex-direction: column;
@@ -551,7 +556,8 @@
             min-width: 0;
         }
 
-        .intra-box, .fav-box {
+        .intra-box,
+        .fav-box {
             width: 300px;
             flex-shrink: 0;
         }
@@ -1001,7 +1007,8 @@
                 <div class="chart-box kline-box">
                     <div class="chart-header-row">
                         <div style="display: flex; align-items: center; gap: 15px;">
-                            <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)</div>
+                            <div class="chart-title"><i data-lucide="layers" size="16"></i> 同步日K线与成交量对比 (MA5/10/20/30)
+                            </div>
                             <div class="time-range-btns">
                                 <button id="latest-toggle" class="range-btn"
                                     style="color:var(--accent-color); border-color:rgba(59, 130, 246, 0.3); background:rgba(59, 130, 246, 0.1); display:flex; align-items:center; gap:2px;">
@@ -1017,9 +1024,12 @@
                                 <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
                             </div>
                         </div>
-                        <div id="kline-header-info" style="display: flex; align-items: center; gap: 12px; padding-right: 10px;">
-                            <span id="kline-header-industry" style="font-size: 0.9rem; color: var(--text-secondary); background: var(--glass-bg); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--glass-border);"></span>
-                            <span id="kline-header-name" style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);"></span>
+                        <div id="kline-header-info"
+                            style="display: flex; align-items: center; gap: 12px; padding-right: 10px;">
+                            <span id="kline-header-industry"
+                                style="font-size: 0.9rem; color: var(--text-secondary); background: var(--glass-bg); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--glass-border);"></span>
+                            <span id="kline-header-name"
+                                style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary);"></span>
                             <span id="kline-header-pct" style="font-size: 1.1rem; font-weight: 700;"></span>
                         </div>
                     </div>
@@ -1035,7 +1045,8 @@
                             <i data-lucide="x" size="16"></i>
                         </div>
                     </div>
-                    <div class="fav-stats" style="padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
+                    <div class="fav-stats"
+                        style="padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
                         <div class="fav-stat-item">
                             <div class="fav-stat-val" id="fb-total">0</div>
                             <div class="fav-stat-label">总收藏</div>
@@ -1211,7 +1222,7 @@
 
         const blob = new Blob([workerScript], { type: 'application/javascript' });
         const worker = new Worker(URL.createObjectURL(blob));
-        
+
         const workerCallbacks = {};
         function runWorkerTask(type, payload) {
             return new Promise((resolve, reject) => {
@@ -1345,8 +1356,8 @@
                 icon.setAttribute('data-lucide', 'maximize');
             }
             lucide.createIcons();
-            setTimeout(() => { 
-                if (typeof candleChart !== 'undefined') candleChart.resize(); 
+            setTimeout(() => {
+                if (typeof candleChart !== 'undefined') candleChart.resize();
             }, 100);
         });
 
@@ -1411,7 +1422,7 @@
                 const hour = now.getHours();
                 const minute = now.getMinutes();
                 const t = hour * 100 + minute;
-                
+
                 if (region === 'CN') {
                     if (day === 0 || day === 6) return false;
                     // 9:15 - 11:30, 13:00 - 15:00
@@ -1432,7 +1443,7 @@
             cache: new Map(),
             async get(url, region = 'CN') {
                 const isOpen = MarketClock.isTradingTime(region);
-                
+
                 // If market is closed and we have cache, return it
                 if (!isOpen && this.cache.has(url)) {
                     // console.log('Using Cache:', url); 
@@ -1443,7 +1454,7 @@
                 try {
                     const res = await fetch(url);
                     const data = await res.json();
-                    
+
                     // Always update cache when we successfully fetch
                     this.cache.set(url, JSON.stringify(data));
                     return data;
@@ -1464,7 +1475,7 @@
         let currentPage = 1;
         let isLoading = false;
         let hasMore = true;
-        
+
         // Virtual Scrolling State
         const ITEM_HEIGHT = 64; // 60px height + 4px margin
         const BUFFER_SIZE = 10; // Extra items to render above/below
@@ -1489,7 +1500,7 @@
                 vs_container = container;
                 vs_spacer = container.querySelector('.virtual-spacer');
                 vs_content = container.querySelector('.virtual-content');
-                
+
                 // Bind Scroll Event
                 vs_container.addEventListener('scroll', () => {
                     requestAnimationFrame(() => renderVirtualWindow(false));
@@ -1500,12 +1511,12 @@
                 // Offload to Worker
                 allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
                 renderStockList(allStocks);
-                
+
                 // 同步更新收藏面板的实时数据
                 if (window.FavoritesManager) {
                     FavoritesManager.refreshAllPrices();
                 }
-                
+
                 isLoading = false;
             } catch (e) {
                 console.error('Core sync error:', e);
@@ -1525,7 +1536,7 @@
 
             const scrollTop = vs_container.scrollTop;
             const containerHeight = vs_container.clientHeight;
-            
+
             const totalHeight = vs_data.length * ITEM_HEIGHT;
             if (vs_spacer.style.height !== `${totalHeight}px`) {
                 vs_spacer.style.height = `${totalHeight}px`;
@@ -1547,9 +1558,9 @@
             // Generate HTML for visible items only
             const visibleItems = vs_data.slice(startIndex, endIndex);
             const offsetY = startIndex * ITEM_HEIGHT;
-            
+
             vs_content.style.transform = `translate3d(0, ${offsetY}px, 0)`;
-            
+
             // Re-use logic from previous renderStockList, but only for slice
             renderSlice(visibleItems, startIndex);
         }
@@ -1614,7 +1625,7 @@
                     const isFav = favorites.some(f => f.stockId === fullId);
                     // Inline SVG to avoid Lucide scanning overhead during scroll
                     const starSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="${isFav ? '#ffd700' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-star"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
-                    
+
                     favBtn = `
                         <div class="fav-btn ${isFav ? 'active' : ''}" 
                                 onclick="event.stopPropagation(); FavoritesManager.toggle('${fullId}', '${s.f14}', '${priceDisplay}')">
@@ -1625,7 +1636,7 @@
 
                 // Pass price/pct to selectStock for Optimistic UI
                 return `
-                    <div class="stock-item ${isActive} ${itemClass}" style="height:${ITEM_HEIGHT-4}px" data-id="${fullId}" onclick="selectStock('${fullId}', '${s.f14}', '${priceDisplay}', '${pctDisplay}')">
+                    <div class="stock-item ${isActive} ${itemClass}" style="height:${ITEM_HEIGHT - 4}px" data-id="${fullId}" onclick="selectStock('${fullId}', '${s.f14}', '${priceDisplay}', '${pctDisplay}')">
                         <div style="font-size: 0.8rem; font-weight: 900; color: #FFD700; min-width: 28px; opacity: 1; text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); font-family: 'JetBrains Mono', monospace;">${(globalIndex + 1).toString().padStart(2, '0')}</div>
                         <div class="stock-info" style="flex: 1;">
                             <div class="stock-name-row">
@@ -1645,13 +1656,13 @@
                     </div>
                 `;
             }).join('');
-            
+
             // Optimization: No longer need to call lucide.createIcons here!
             // if (typeof lucide !== 'undefined') lucide.createIcons({ root: vs_content });
         }
 
         // 覆盖原来的 renderStockList，接入虚拟滚动
-        window.renderStockList = function(list, isSearch = false) {
+        window.renderStockList = function (list, isSearch = false) {
             // Update Breadth
             if (!isSearch) {
                 const counts = list.reduce((acc, s) => {
@@ -1668,7 +1679,7 @@
             }
 
             vs_data = list;
-            
+
             if (isSearch && list.length === 0) {
                 vs_content.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">未发现匹配股票</div>';
                 return;
@@ -1676,7 +1687,7 @@
 
             // Force Render First Frame
             renderVirtualWindow(true);
-            
+
             // Update favorites prices (keep logic)
             const isLoggedIn = (typeof USER_STATE !== 'undefined') ? USER_STATE.isLoggedIn : false;
             if (isLoggedIn && typeof FavoritesManager !== 'undefined') FavoritesManager.refreshAllPrices();
@@ -1699,31 +1710,31 @@
             const industry = stockData ? (stockData.f127 || '--') : '--';
 
             currentStock = { id, name, industry };
-            
+
             // --- Optimistic UI Update (Instant Feedback) ---
             document.getElementById('main-title').innerText = `${name} 对标分析`;
             document.getElementById('cur-stock-name').innerText = name;
             document.getElementById('cur-industry').innerText = industry;
             document.getElementById('sidebar-industry').innerText = industry;
-            
+
             // 同步更新 K 线图表头部的股票名称和行业
             document.getElementById('kline-header-name').innerText = name;
             document.getElementById('kline-header-industry').innerText = industry;
-            
+
             if (optPrice !== '--') {
                 document.getElementById('price-cur').innerText = optPrice;
                 // Parse percent string to determine color
                 const pctVal = parseFloat(optPct);
                 const pctStr = (pctVal > 0 ? '+' : '') + optPct + '%';
-                
+
                 document.getElementById('change-cur').innerText = pctStr;
                 document.getElementById('change-cur').className = 'stat-change ' + (pctVal > 0 ? 'up' : pctVal < 0 ? 'down' : '');
-                
+
                 // 同步更新 K 线图表头部的涨幅
                 const headerPct = document.getElementById('kline-header-pct');
                 headerPct.innerText = pctStr;
                 headerPct.className = (pctVal > 0 ? 'up' : pctVal < 0 ? 'down' : '');
-                
+
                 // Note: Volume is not available in list item, so it will be updated by updateStats network call
             }
             // -----------------------------------------------
@@ -1825,19 +1836,19 @@
                 const pct = (d.f170 / 100).toFixed(2);
                 const pctStr = (pct > 0 ? '+' : '') + pct + '%';
                 const industry = d.f127 || currentStock.industry || '--';
-                
+
                 document.getElementById('price-cur').innerText = price;
                 document.getElementById('change-cur').innerText = pctStr;
                 document.getElementById('change-cur').className = 'stat-change ' + (pct > 0 ? 'up' : 'down');
                 document.getElementById('vol-cur').innerText = (d.f47).toLocaleString() + ' 手';
-                
+
                 // 同步更新 K 线图表头部的股票名称、行业和涨幅
                 document.getElementById('kline-header-name').innerText = currentStock.name;
                 document.getElementById('kline-header-industry').innerText = industry;
                 const headerPct = document.getElementById('kline-header-pct');
                 headerPct.innerText = pctStr;
                 headerPct.className = (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
-                
+
                 // 更新全局变量中的行业信息
                 currentStock.industry = industry;
             }
@@ -1868,13 +1879,13 @@
             }
 
             const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1000&ut=fa5fd1943c7b386f172d6893dbf24fe0`;
-            
+
             // Smart Cache Strategy is now handled by getJSON
             const [curRes, zsRes] = await Promise.all([
                 getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`),
                 getJSON(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`, 'CN')
             ]);
-            
+
             candleChart.hideLoading();
             if (!curRes?.data || !zsRes?.data) return;
 
@@ -1885,7 +1896,7 @@
 
             const curRaw = parse(curRes.data.klines);
             const zsRaw = parse(zsRes.data.klines);
-            
+
             // Offload heavy data alignment and MA calculation to Worker
             const processedData = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
             const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processedData;
@@ -1894,7 +1905,7 @@
                 backgroundColor: 'transparent',
                 tooltip: {
                     trigger: 'axis',
-                    axisPointer: { 
+                    axisPointer: {
                         type: 'cross',
                         label: {
                             backgroundColor: colors.accent,
@@ -1951,44 +1962,44 @@
                 },
                 axisPointer: { link: { xAxisIndex: 'all' } },
                 grid: [
-                    { left: 60, right: 30, top: '5%', height: '35%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
-                    { left: 60, right: 30, top: '40%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
-                    { left: 60, right: 30, top: '53%', height: '35%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
-                    { left: 60, right: 30, top: '88%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' }
+                    { left: 60, right: 30, top: '2%', height: '45%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '47%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '58%', height: '32%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' },
+                    { left: 60, right: 30, top: '90%', height: '8%', show: true, backgroundColor: 'rgba(255,255,255,0.01)', borderColor: 'transparent' }
                 ],
-                xAxis: [0, 1, 2, 3].map(i => ({ 
-                    type: 'category', 
-                    data: dates, 
-                    gridIndex: i, 
+                xAxis: [0, 1, 2, 3].map(i => ({
+                    type: 'category',
+                    data: dates,
+                    gridIndex: i,
                     boundaryGap: true,
-                    axisLine: { lineStyle: { color: colors.grid, width: 1 } }, 
-                    axisLabel: { show: i === 3, color: colors.secondary, fontSize: 10, margin: 12 },
+                    axisLine: { lineStyle: { color: colors.grid, width: 1 } },
+                    axisLabel: { show: i === 3, color: colors.secondary, fontSize: 10, margin: 8 },
                     axisTick: { show: i === 3, lineStyle: { color: colors.grid } },
                     splitLine: { show: false }
                 })),
                 yAxis: [
-                    { 
-                        scale: true, gridIndex: 0, 
-                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } }, 
+                    {
+                        scale: true, gridIndex: 0,
+                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } },
                         axisLabel: { color: colors.secondary, fontSize: 10, inside: false, margin: 8 },
                         axisLine: { show: false }
                     },
                     { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false }, axisLine: { show: false }, axisTick: { show: false } },
-                    { 
-                        scale: true, gridIndex: 2, 
-                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } }, 
+                    {
+                        scale: true, gridIndex: 2,
+                        splitLine: { lineStyle: { color: colors.grid, type: 'dashed', opacity: 0.3 } },
                         axisLabel: { color: colors.secondary, fontSize: 10, inside: false, margin: 8 },
                         axisLine: { show: false }
                     },
                     { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false }, axisLine: { show: false }, axisTick: { show: false } }
                 ],
                 dataZoom: [
-                    { 
+                    {
                         type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd,
                         zoomOnMouseWheel: true, moveOnMouseMove: true
                     },
-                    { 
-                        show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '1%', height: 20, 
+                    {
+                        show: true, xAxisIndex: [0, 1, 2, 3], type: 'slider', bottom: '1%', height: 20,
                         start: zoomStart, end: zoomEnd,
                         handleIcon: 'path://M10.7,11.9v-1.3H9.3v1.3c-4.9,0.3-8.8,4.4-8.8,9.4c0,5,3.9,9.1,8.8,9.4v1.3h1.3v-1.3c4.9-0.3,8.8-4.4,8.8-9.4C19.5,16.3,15.6,12.2,10.7,11.9z M13.3,24.4H6.7V23h6.6V24.4z M13.3,19.6H6.7v-1.4h6.6V19.6z',
                         handleSize: '80%',
@@ -2016,8 +2027,8 @@
                     {
                         name: 'K线', type: 'candlestick',
                         data: curD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { 
-                            color: colors.up, color0: colors.down, 
+                        itemStyle: {
+                            color: colors.up, color0: colors.down,
                             borderColor: colors.up, borderColor0: colors.down,
                             borderWidth: 1.5
                         },
@@ -2029,50 +2040,50 @@
                             }
                         }
                     },
-                    { 
-                        name: 'MA5', type: 'line', data: curMA5, smooth: true, 
-                        lineStyle: { opacity: 0.8, width: 1.5, color: '#f59e0b' }, 
+                    {
+                        name: 'MA5', type: 'line', data: curMA5, smooth: true,
+                        lineStyle: { opacity: 0.8, width: 1.5, color: '#f59e0b' },
                         showSymbol: false,
                         animationDuration: 1000
                     },
-                    { 
-                        name: 'MA20', type: 'line', data: curMA20, smooth: true, 
-                        lineStyle: { opacity: 0.8, width: 1.5, color: '#3b82f6' }, 
+                    {
+                        name: 'MA20', type: 'line', data: curMA20, smooth: true,
+                        lineStyle: { opacity: 0.8, width: 1.5, color: '#3b82f6' },
                         showSymbol: false,
                         animationDuration: 1000
                     },
-                    { 
-                        name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, 
-                        data: curD.map(d => ({ 
-                            value: d.v, 
-                            itemStyle: { 
-                                color: d.c >= d.o 
-                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.up}, {offset: 1, color: colors.up + '88'}])
-                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.down}, {offset: 1, color: colors.down + '88'}])
-                            } 
-                        })) 
+                    {
+                        name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
+                        data: curD.map(d => ({
+                            value: d.v,
+                            itemStyle: {
+                                color: d.c >= d.o
+                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.up }, { offset: 1, color: colors.up + '88' }])
+                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.down }, { offset: 1, color: colors.down + '88' }])
+                            }
+                        }))
                     },
                     {
                         name: currentRegion === 'CN' ? '上证K' : '纳指K', type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
                         data: zsD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { 
-                            color: colors.up, color0: colors.down, 
+                        itemStyle: {
+                            color: colors.up, color0: colors.down,
                             borderColor: colors.up, borderColor0: colors.down,
                             borderWidth: 1.2
                         }
                     },
                     { name: 'MA5', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA5, smooth: true, lineStyle: { opacity: 0.6, width: 1, color: '#f59e0b' }, showSymbol: false },
                     { name: 'MA20', type: 'line', xAxisIndex: 2, yAxisIndex: 2, data: zsMA20, smooth: true, lineStyle: { opacity: 0.6, width: 1, color: '#3b82f6' }, showSymbol: false },
-                    { 
-                        name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3, 
-                        data: zsD.map(d => ({ 
-                            value: d.v, 
-                            itemStyle: { 
-                                color: d.c >= d.o 
-                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.up}, {offset: 1, color: colors.up + '66'}])
-                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: colors.down}, {offset: 1, color: colors.down + '66'}])
-                            } 
-                        })) 
+                    {
+                        name: '成交量', type: 'bar', xAxisIndex: 3, yAxisIndex: 3,
+                        data: zsD.map(d => ({
+                            value: d.v,
+                            itemStyle: {
+                                color: d.c >= d.o
+                                    ? new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.up }, { offset: 1, color: colors.up + '66' }])
+                                    : new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: colors.down }, { offset: 1, color: colors.down + '66' }])
+                            }
+                        }))
                     }
                 ]
             };
@@ -2166,7 +2177,7 @@
             const parse = (d) => d.trends.map(t => ({ time: t.split(',')[0].split(' ')[1], pct: ((parseFloat(t.split(',')[2]) - d.prePrice) / d.prePrice * 100).toFixed(2) }));
             const curP = parse(curRes.data);
             const zsP = parse(zsRes.data);
-            
+
             /*
             intradayChart.setOption({
                 backgroundColor: 'transparent',
@@ -2355,24 +2366,24 @@
         window.addEventListener('keydown', (e) => {
             const activeEl = document.activeElement;
             if (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA') return;
-            
+
             // 如果按下了 Ctrl, Cmd 或 Alt 键，不触发自定义快捷键，避免干扰系统功能（如全选 Ctrl+A）
             if (e.ctrlKey || e.metaKey || e.altKey) return;
 
             // 1. 列表切换导航 (上下键)
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
                 e.preventDefault();
-                
+
                 // 确定当前应该导航哪个列表
                 const favBox = document.querySelector('.fav-box');
                 const isFavVisible = favBox && favBox.style.display !== 'none';
-                
+
                 // 根据当前焦点列表和收藏面板是否可见来选择 selector
                 const selector = (window.focusedList === 'right' && isFavVisible) ? '.fav-item' : '.stock-item';
-                
+
                 const items = Array.from(document.querySelectorAll(selector));
                 if (items.length === 0) return;
-                
+
                 const currentIndex = items.findIndex(item => item.classList.contains('active'));
                 let nextIndex = 0;
 
@@ -2541,7 +2552,7 @@
                 icon.setAttribute('color', '#ffd700');
                 if (text) text.style.color = '#ffd700';
                 btn.style.background = 'rgba(255, 215, 0, 0.1)';
-                
+
                 // 刷新收藏列表
                 if (window.FavoritesManager) {
                     window.FavoritesManager.renderPanel();
@@ -2555,11 +2566,11 @@
             lucide.createIcons();
 
             // 强制触发重绘
-             setTimeout(() => {
-                 if (candleChart) {
-                     candleChart.resize();
-                 }
-             }, 50);
+            setTimeout(() => {
+                if (candleChart) {
+                    candleChart.resize();
+                }
+            }, 50);
         });
 
         // Close Button in Fav Box Header
@@ -2572,7 +2583,7 @@
         // ==========================================
         // Stock User System Integration
         // ==========================================
-        (function() {
+        (function () {
             // --- 1. CSS Styles ---
             const styles = `
                 /* Auth Modal */
@@ -2963,7 +2974,7 @@
                 },
                 setupContextMenu() {
                     const menu = document.getElementById('stockContextMenu');
-                    
+
                     // 点击外部关闭
                     document.addEventListener('click', () => menu.style.display = 'none');
                     document.addEventListener('contextmenu', (e) => {
@@ -2989,7 +3000,7 @@
                             const isFav = USER_STATE.favorites.some(f => f.stockId === stockId);
                             cmFav.querySelector('span').innerText = isFav ? '取消收藏' : '收藏股票';
                             cmFav.querySelector('i').setAttribute('fill', isFav ? '#ffd700' : 'none');
-                            
+
                             cmFav.onclick = () => {
                                 FavoritesManager.toggle(stockId, stockName, stockPrice);
                                 menu.style.display = 'none';
@@ -3021,10 +3032,10 @@
                     const pass = document.getElementById('u-pass').value.trim();
                     const email = document.getElementById('u-email').value.trim();
                     if (!user || !pass) return showToast('请填写完整信息');
-                    
+
                     const loader = document.getElementById('u-loading');
                     loader.style.display = 'block';
-                    
+
                     try {
                         if (USER_STATE.isRegisterMode) {
                             if (!email) throw new Error('请填写邮箱');
@@ -3060,7 +3071,7 @@
                         createdAt: new Date()
                     });
                     await StockUserAPI.updateBin(USER_CONFIG.USERS_BIN_ID, { users });
-                    
+
                     this.setSession({ username, userBinId: userBin.metadata.id });
                     showToast('注册成功，已自动登录');
                 },
@@ -3069,9 +3080,9 @@
                     const user = master.record.users.find(u => u.username === username);
                     if (!user) throw new Error('用户不存在');
                     if (user.passwordHash !== this.hash(password)) throw new Error('密码错误');
-                    
+
                     this.setSession({ username: user.username, userBinId: user.userBinId });
-                    
+
                     // Load Data
                     const userData = await StockUserAPI.readBin(user.userBinId);
                     USER_STATE.favorites = userData.record.favorites || [];
@@ -3113,11 +3124,11 @@
                     const container = document.querySelector('.header-actions');
                     let bar = document.getElementById('user-bar');
                     if (bar) bar.remove();
-                    
+
                     bar = document.createElement('div');
                     bar.id = 'user-bar';
                     bar.className = 'user-bar';
-                    
+
                     if (USER_STATE.isLoggedIn) {
                         bar.innerHTML = `
                             <div class="user-avatar">${USER_STATE.currentUser.username[0].toUpperCase()}</div>
@@ -3146,7 +3157,7 @@
             window.FavoritesManager = {
                 async toggle(stockId, stockName, price) {
                     if (!USER_STATE.isLoggedIn) return StockUserManager.showAuth();
-                    
+
                     const idx = USER_STATE.favorites.findIndex(f => f.stockId === stockId);
                     if (idx > -1) {
                         USER_STATE.favorites.splice(idx, 1);
@@ -3157,10 +3168,10 @@
                         });
                         showToast('已加入收藏');
                     }
-                    
+
                     this.renderPanel();
                     // 仅刷新当前虚拟滚动窗口以更新星标，而不重置 vs_data，避免干扰搜索结果
-                    renderVirtualWindow(true); 
+                    renderVirtualWindow(true);
                     this.sync();
                 },
                 async sync() {
@@ -3175,20 +3186,20 @@
                 renderPanel() {
                     const list = document.getElementById('favList');
                     const boxList = document.getElementById('favBoxList');
-                    
+
                     const emptyHtml = '<div style="text-align:center; padding:2rem; color:var(--text-secondary);">暂无收藏股票</div>';
-                    
+
                     if (USER_STATE.favorites.length === 0) {
                         if (list) list.innerHTML = emptyHtml;
                         if (boxList) boxList.innerHTML = emptyHtml;
                         this.updateStats();
                         return;
                     }
-                    
+
                     const itemsHtml = USER_STATE.favorites.map((f, i) => {
                         // 从全局 allStocks 中查找最新行情数据
                         const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
-                        
+
                         // 优先显示当日涨幅(f3)，如果没有实时行情则回滚到持仓盈亏
                         let curPrice = f.currentPrice || f.addedPrice;
                         let pct = '0.00';
@@ -3207,13 +3218,13 @@
                         }
 
                         const isActive = (typeof currentStock !== 'undefined' && f.stockId === currentStock.id) ? 'active' : '';
-                        
+
                         // 市场识别逻辑 (从 stockId 提取市场代码)
                         const mktCode = parseInt(f.stockId.split('.')[0]);
                         const stockCode = f.stockId.split('.')[1];
                         let mktName = '深';
                         let mktClass = 'mkt-sz';
-                        
+
                         if (mktCode === 1) {
                             mktName = '沪';
                             mktClass = 'mkt-sh';
@@ -3241,7 +3252,7 @@
                             mktName = '美';
                             mktClass = 'mkt-amex';
                         }
-                        
+
                         return `
                             <div class="fav-item ${isActive}" data-id="${f.stockId}" onclick="selectStock('${f.stockId}', '${f.stockName}')">
                                 <div style="font-size: 0.8rem; font-weight: 900; color: #FFD700; min-width: 25px; opacity: 1; text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); font-family: 'JetBrains Mono', monospace; margin-right: 8px;">${(i + 1).toString().padStart(2, '0')}</div>
@@ -3265,23 +3276,23 @@
 
                     if (list) list.innerHTML = itemsHtml;
                     if (boxList) boxList.innerHTML = itemsHtml;
-                    
+
                     lucide.createIcons();
                     this.updateStats();
                 },
                 updateStats() {
                     const favs = USER_STATE.favorites;
-                    
+
                     let win = 0, loss = 0, totalPct = 0;
                     favs.forEach(f => {
                         const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
                         const cur = (liveData && liveData.f2 !== '-') ? liveData.f2 : (f.currentPrice || f.addedPrice);
-                        
+
                         if (cur > f.addedPrice) win++;
                         if (cur < f.addedPrice) loss++;
                         if (f.addedPrice > 0) totalPct += (cur - f.addedPrice) / f.addedPrice;
                     });
-                    
+
                     const avg = favs.length > 0 ? (totalPct / favs.length * 100).toFixed(2) : '0.00';
                     const avgStr = (avg > 0 ? '+' : '') + avg + '%';
                     const avgClass = 'fav-stat-val ' + (avg > 0 ? 'up' : avg < 0 ? 'down' : '');
@@ -3321,7 +3332,7 @@
             };
 
             // Global Toast
-            window.showToast = function(msg) {
+            window.showToast = function (msg) {
                 const t = document.getElementById('stockToast');
                 document.getElementById('toastMsg').innerText = msg;
                 t.classList.add('active');
@@ -3329,7 +3340,7 @@
             };
 
             // --- 4. Integration Logic ---
-            window.renderStockList = function(list, isSearch = false) {
+            window.renderStockList = function (list, isSearch = false) {
                 // 更新市场涨跌统计（仅在非搜索模式下更新）
                 if (!isSearch) {
                     const counts = list.reduce((acc, s) => {
@@ -3350,7 +3361,7 @@
                     container.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">未发现匹配股票</div>';
                     return;
                 }
-                
+
                 // Pre-calculate login state
                 const isLoggedIn = USER_STATE.isLoggedIn;
                 const favorites = USER_STATE.favorites;
@@ -3438,10 +3449,10 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 // Render icons
                 if (typeof lucide !== 'undefined') lucide.createIcons();
-                
+
                 // Update favorites prices if logged in
                 if (isLoggedIn) FavoritesManager.refreshAllPrices();
             };
@@ -3516,4 +3527,5 @@
         });
     </script>
 </body>
+
 </html>
