@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>StockPro Mobile</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #05070a;
+            --card-bg: #141823;
+            --accent-color: #3b82f6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --up-color: #f43f5e;
+            --down-color: #10b981;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --nav-height: 60px;
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        [data-theme="light"] {
+            --bg-color: #f1f5f9;
+            --card-bg: #ffffff;
+            --accent-color: #2563eb;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --glass-border: rgba(0, 0, 0, 0.08);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mobile Layout Structure */
+        #app {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .view {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        .view.active { transform: translateX(0); z-index: 20; }
+        /* View transitions optimization */
+        .view.active ~ .view { transform: translateX(100%); }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: calc(var(--nav-height) + var(--safe-area-bottom));
+            background: var(--card-bg);
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-around;
+            padding-bottom: var(--safe-area-bottom);
+            z-index: 999;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 10px;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .nav-item.active { color: var(--accent-color); font-weight: 600; }
+        .nav-item i { transition: transform 0.2s; }
+        .nav-item:active i { transform: scale(0.9); }
+
+        /* Components */
+        .mobile-header {
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 30;
+        }
+
+        .search-box {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: var(--text-primary);
+            width: 100%;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .stock-list {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Stock Item Styling (Reused & Adapted) */
+        .stock-item {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            border-bottom: 1px solid var(--glass-border);
+            background: var(--bg-color);
+        }
+        
+        .stock-item:active { background: rgba(255,255,255,0.05); }
+
+        .stock-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .stock-name-row { display: flex; align-items: center; gap: 8px; }
+        .stock-name { font-size: 16px; font-weight: 600; }
+        .stock-code { font-size: 12px; color: var(--text-secondary); }
+        
+        /* Market Badges */
+        .mkt-badge { 
+            font-size: 9px; 
+            padding: 1px 3px; 
+            border-radius: 3px; 
+            margin-left: 6px; 
+            font-weight: 500;
+            vertical-align: middle;
+        }
+        .mkt-sh { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); } /* Shanghai - Red */
+        .mkt-sz { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); } /* Shenzhen - Blue */
+        .mkt-kc { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); } /* STAR - Purple */
+        .mkt-cy { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); } /* ChiNext - Orange */
+        .mkt-us { background: rgba(255, 255, 255, 0.1); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.2); }
+        
+        .stock-price { font-size: 16px; font-weight: 700; text-align: right; }
+        .stock-pct { font-size: 12px; font-weight: 600; text-align: right; margin-top: 2px; }
+        
+        .up { color: var(--up-color); }
+        .down { color: var(--down-color); }
+
+        /* Chart View Specifics */
+        .chart-header-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            background: linear-gradient(to bottom, var(--card-bg), var(--bg-color));
+        }
+
+        .price-hero { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .pct-hero { font-size: 14px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); margin-top: 8px; }
+        .pct-hero.up { background: rgba(244, 63, 94, 0.15); }
+        .pct-hero.down { background: rgba(16, 185, 129, 0.15); }
+
+        /* View Specific Overrides */
+        #view-chart {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 20px); /* Extra padding for scroll */
+        }
+        
+        #candle-chart { width: 100%; height: 320px; flex-shrink: 0; } /* Prevent chart shrinking */
+
+        .time-ranges {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            scrollbar-width: none;
+        }
+        .time-ranges::-webkit-scrollbar { display: none; }
+        
+        .range-btn {
+            padding: 6px 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .range-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1px;
+            background: var(--glass-border);
+            margin-top: 16px;
+        }
+        
+        .detail-cell {
+            background: var(--bg-color);
+            padding: 12px;
+            text-align: center;
+        }
+        
+        .detail-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .detail-value { font-size: 13px; font-weight: 600; }
+
+        /* Fav View */
+        .fav-stats-card {
+            margin: 16px;
+            padding: 16px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            text-align: center;
+        }
+
+        /* Virtual Scroll Spacer */
+        .virtual-spacer { width: 100%; }
+        .virtual-content { position: absolute; top: 0; left: 0; width: 100%; }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100px);
+            background: var(--card-bg); border: 1px solid var(--accent-color);
+            padding: 10px 20px; border-radius: 20px;
+            color: var(--text-primary);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            transition: transform 0.3s;
+            z-index: 1000;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toast.active { transform: translate(-50%, 0); }
+
+        /* Login Modal */
+        .auth-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            z-index: 2000; display: none;
+            justify-content: center; align-items: center;
+        }
+        .auth-modal.active { display: flex; }
+        .auth-box { width: 85%; background: var(--card-bg); padding: 24px; border-radius: 16px; }
+        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px; }
+        .auth-btn { width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: 600; }
+
+        /* Floating Action Button */
+        .fab-btn {
+            width: 36px; height: 36px;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            position: absolute;
+            top: 12px;
+            z-index: 100;
+        }
+        .fab-user { left: 16px; }
+        .fab-fullscreen { right: 16px; }
+    </style>
+</head>
+<body>
+
+    <!-- App Container -->
+    <div id="app">
+        <!-- Floating User Button -->
+        <div class="fab-btn fab-user" onclick="handleUserClick()">
+            <i data-lucide="user" size="18" color="var(--text-secondary)"></i>
+        </div>
+
+        <!-- Floating Fullscreen Button -->
+        <div class="fab-btn fab-fullscreen" onclick="toggleFullScreen()">
+            <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
+        </div>
+
+        <!-- View 1: Market (List) -->
+        <div id="view-market" class="view active">
+            <div class="mobile-header" style="display: block;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h2 style="font-size:18px; font-weight:700;">行情</h2>
+                    <div class="mkt-switcher" id="mkt-toggle" style="font-size:12px; padding:4px 8px; background:var(--accent-color); border-radius:4px; color:white;">CN</div>
+                </div>
+                <input type="text" class="search-box" id="stock-search" placeholder="搜索股票代码/名称...">
+                <!-- Breadth Bar -->
+                <div style="margin-top:12px; display:flex; height:4px; border-radius:2px; overflow:hidden;">
+                    <div class="breadth-up" style="width:50%; background:var(--up-color); transition:width 1s;"></div>
+                    <div class="breadth-down" style="width:50%; background:var(--down-color); transition:width 1s;"></div>
+                </div>
+            </div>
+            <div class="stock-list" id="stock-list">
+                <!-- Virtual Scroll Container -->
+                <div class="virtual-spacer"></div>
+                <div class="virtual-content"></div>
+            </div>
+        </div>
+
+        <!-- View 2: Chart -->
+        <div id="view-chart" class="view">
+            <div class="chart-header-info" style="flex-shrink: 0;">
+                <div id="kline-header-industry" style="font-size:12px; color:var(--accent-color); margin-bottom:4px;">--</div>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                    <div id="kline-header-name" style="font-size:18px; font-weight:600; margin-bottom:0;">--</div>
+                    <div id="kline-fav-btn" onclick="toggleCurrentFav()">
+                        <i data-lucide="star" size="20" color="var(--text-secondary)"></i>
+                    </div>
+                </div>
+                <div id="price-cur" class="price-hero">--.--</div>
+                <div id="change-cur" class="pct-hero">--.--%</div>
+            </div>
+            
+            <div id="candle-chart"></div>
+            
+            <div class="time-ranges" style="flex-shrink: 0;">
+                <button class="range-btn active" onclick="setTimeRange(125, this)">半年</button>
+                <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
+                <button class="range-btn" onclick="setTimeRange(375, this)">1.5年</button>
+                <button class="range-btn" onclick="setTimeRange(500, this)">2年</button>
+                <button class="range-btn" onclick="setTimeRange(1000, this)">4年</button>
+            </div>
+
+            <div style="flex:1; width:100%;">
+                <div class="detail-grid">
+                    <div class="detail-cell">
+                        <div class="detail-label">今开</div>
+                        <div class="detail-value" id="det-open">--</div>
+                    </div>
+                    <div class="detail-cell">
+                        <div class="detail-label">最高</div>
+                        <div class="detail-value" id="det-high">--</div>
+                    </div>
+                    <div class="detail-cell">
+                        <div class="detail-label">最低</div>
+                        <div class="detail-value" id="det-low">--</div>
+                    </div>
+                    <div class="detail-cell">
+                        <div class="detail-label">成交量</div>
+                        <div class="detail-value" id="vol-cur">--</div>
+                    </div>
+                    <div class="detail-cell">
+                        <div class="detail-label">市盈率</div>
+                        <div class="detail-value" id="det-pe">--</div>
+                    </div>
+                    <div class="detail-cell">
+                        <div class="detail-label">总市值</div>
+                        <div class="detail-value" id="det-zsz">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 3: Favorites -->
+        <div id="view-fav" class="view">
+            <div class="mobile-header">
+                <h2 style="font-size:18px; font-weight:700;">自选</h2>
+            </div>
+            <div class="fav-stats-card">
+                <div>
+                    <div style="font-size:12px; color:var(--text-secondary);">平均涨幅</div>
+                    <div id="fs-avg" style="font-size:20px; font-weight:700; margin-top:4px;">0.00%</div>
+                </div>
+                <div>
+                    <div style="font-size:12px; color:var(--text-secondary);">盈利/亏损</div>
+                    <div style="font-size:14px; margin-top:8px;">
+                        <span class="up" id="fs-win">0</span> / <span class="down" id="fs-loss">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="stock-list" id="favList"></div>
+        </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('view-market', this)">
+            <i data-lucide="bar-chart-2" size="20"></i>
+            <span>行情</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('view-chart', this)">
+            <i data-lucide="activity" size="20"></i>
+            <span>图表</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('view-fav', this)">
+            <i data-lucide="star" size="20"></i>
+            <span>自选</span>
+        </div>
+    </nav>
+
+    <!-- Global Toast -->
+    <div class="toast" id="stockToast">
+        <i data-lucide="info" size="16"></i>
+        <span id="toastMsg"></span>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="auth-modal" id="authModal">
+        <div class="auth-box">
+            <h3 style="margin-bottom:20px; text-align:center;" id="authTitle">登录</h3>
+            <input type="text" class="auth-input" id="u-user" placeholder="用户名">
+            <input type="password" class="auth-input" id="u-pass" placeholder="密码">
+            <button class="auth-btn" id="u-submit">提交</button>
+            <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);" onclick="StockUserManager.hideAuth()">关闭</div>
+        </div>
+    </div>
+
+    <script>
+        // --- Core Logic Ported from Desktop ---
+        
+        // 1. Web Worker (Same as desktop)
+        const workerScript = `
+            importScripts('https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js');
+            let allStocksCache = [];
+            async function getJSON(url) { try { const res = await fetch(url); return await res.json(); } catch (e) { return null; } }
+            self.onmessage = async function(e) {
+                const { id, type, payload } = e.data;
+                try {
+                    let result;
+                    switch (type) {
+                        case 'FETCH_LIST': result = await fetchList(payload); break;
+                        case 'SEARCH': result = search(payload); break;
+                        case 'PROCESS_KLINE': result = processKline(payload); break;
+                    }
+                    self.postMessage({ id, type, data: result });
+                } catch (err) { self.postMessage({ id, type, error: err.message }); }
+            };
+            async function fetchList({ currentRegion }) {
+                const fs = currentRegion === 'CN' ? 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23' : 'm:105,m:106,m:107';
+                const fields = 'f2,f3,f12,f13,f14,f127';
+                const seedUrl = \`https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
+                const seedRes = await getJSON(seedUrl);
+                if (!seedRes?.data) throw new Error('Sync failed');
+                const total = seedRes.data.total;
+                const pageSize = 100;
+                const pageCount = Math.ceil(total / pageSize);
+                const tasks = [];
+                for (let i = 1; i <= pageCount; i++) {
+                    tasks.push(getJSON(\`https://push2.eastmoney.com/api/qt/clist/get?pn=\${i}&pz=\${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`));
+                }
+                const results = await Promise.all(tasks);
+                let combined = [];
+                results.forEach(res => {
+                    if (res?.data?.diff) {
+                        const rawData = Array.isArray(res.data.diff) ? res.data.diff : Object.values(res.data.diff);
+                        combined = combined.concat(rawData.map(s => ({ ...s, f3: parseFloat(s.f3) || 0, f2: s.f2 === '-' ? '-' : parseFloat(s.f2) })));
+                    }
+                });
+                allStocksCache = combined;
+                return combined;
+            }
+            function search({ query }) {
+                let results = allStocksCache;
+                if (query) {
+                    const val = query.toLowerCase();
+                    results = results.filter(s => s.f12.toLowerCase().includes(val) || (s.f14 && s.f14.toLowerCase().includes(val)) || (PinyinMatch && PinyinMatch.match(s.f14 || '', val)));
+                }
+                return results;
+            }
+            function processKline({ curRaw, zsRaw }) {
+                const dates = [...new Set([...curRaw.map(d => d.date), ...zsRaw.map(d => d.date)])].sort();
+                const align = (raw) => { const map = new Map(raw.map(x => [x.date, x])); return dates.map(d => map.get(d) || { o: null, c: null, h: null, l: null, v: 0, pct: 0 }); };
+                const curD = align(curRaw);
+                const zsD = align(zsRaw);
+                const calculateMA = (data, dayCount) => {
+                    let result = [], sum = 0;
+                    for (let i = 0, len = data.length; i < len; i++) {
+                        const price = data[i].c || 0;
+                        sum += price;
+                        if (i >= dayCount) sum -= (data[i - dayCount].c || 0);
+                        if (i < dayCount - 1) result.push('-'); else result.push(+(sum / dayCount).toFixed(2));
+                    }
+                    return result;
+                };
+                return { dates, curD, zsD, curMA5: calculateMA(curD, 5), curMA20: calculateMA(curD, 20), zsMA5: calculateMA(zsD, 5), zsMA20: calculateMA(zsD, 20) };
+            }
+        `;
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        const worker = new Worker(URL.createObjectURL(blob));
+        const workerCallbacks = {};
+        function runWorkerTask(type, payload) {
+            return new Promise((resolve, reject) => {
+                const id = Date.now() + Math.random().toString();
+                workerCallbacks[id] = { resolve, reject };
+                worker.postMessage({ id, type, payload });
+            });
+        }
+        worker.onmessage = (e) => {
+            const { id, data, error } = e.data;
+            if (id && workerCallbacks[id]) {
+                error ? workerCallbacks[id].reject(error) : workerCallbacks[id].resolve(data);
+                delete workerCallbacks[id];
+            }
+        };
+
+        // 2. Global State
+        let currentRegion = 'CN';
+        let currentStock = { id: '1.605296', name: '神农集团' };
+        let ZS_ID = '1.000001';
+        let allStocks = [];
+        let candleChart = null;
+
+        // 3. UI Functions
+        function switchTab(viewId, btnEl) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            if (btnEl) btnEl.classList.add('active');
+            else {
+                // Auto highlight based on viewId
+                const idx = viewId === 'view-market' ? 0 : viewId === 'view-chart' ? 1 : 2;
+                document.querySelectorAll('.nav-item')[idx].classList.add('active');
+            }
+
+            if (viewId === 'view-chart' && candleChart) {
+                setTimeout(() => candleChart.resize(), 100);
+            }
+        }
+
+        function handleUserClick() {
+            if (USER_STATE.isLoggedIn) {
+                if(confirm('确定要退出登录吗？')) StockUserManager.logout();
+            } else {
+                StockUserManager.showAuth();
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('stockToast');
+            document.getElementById('toastMsg').innerText = msg;
+            t.classList.add('active');
+            setTimeout(() => t.classList.remove('active'), 3000);
+        }
+
+        // 4. Virtual Scrolling (Adapted for Mobile)
+        let vs_data = [];
+        const ITEM_HEIGHT = 64;
+        const BUFFER_SIZE = 10;
+        let vs_container = document.getElementById('stock-list');
+        let vs_spacer = vs_container.querySelector('.virtual-spacer');
+        let vs_content = vs_container.querySelector('.virtual-content');
+
+        vs_container.addEventListener('scroll', () => requestAnimationFrame(() => renderVirtualWindow()));
+
+        function renderVirtualWindow(force = false) {
+            if (!vs_data.length) return;
+            const scrollTop = vs_container.scrollTop;
+            const containerHeight = vs_container.clientHeight;
+            const totalHeight = vs_data.length * ITEM_HEIGHT;
+            if (vs_spacer.style.height !== `${totalHeight}px`) vs_spacer.style.height = `${totalHeight}px`;
+
+            const startIndex = Math.max(0, Math.floor(scrollTop / ITEM_HEIGHT) - BUFFER_SIZE);
+            const endIndex = Math.min(vs_data.length, Math.ceil((scrollTop + containerHeight) / ITEM_HEIGHT) + BUFFER_SIZE);
+
+            const visibleItems = vs_data.slice(startIndex, endIndex);
+            vs_content.style.transform = `translate3d(0, ${startIndex * ITEM_HEIGHT}px, 0)`;
+            
+            // Render Items
+            vs_content.innerHTML = visibleItems.map((s, i) => {
+                const globalIndex = startIndex + i;
+                const fullId = `${s.f13}.${s.f12}`;
+                const isFav = USER_STATE.favorites.some(f => f.stockId === fullId);
+                const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
+                
+                // Determine Badge
+                let badge = '';
+                if (s.f13 == 1) {
+                    if (s.f12.startsWith('68')) badge = '<span class="mkt-badge mkt-kc">科</span>';
+                    else badge = '<span class="mkt-badge mkt-sh">沪</span>';
+                } else if (s.f13 == 0) {
+                    if (s.f12.startsWith('30')) badge = '<span class="mkt-badge mkt-cy">创</span>';
+                    else badge = '<span class="mkt-badge mkt-sz">深</span>';
+                } else if (s.f13 >= 100) {
+                    badge = '<span class="mkt-badge mkt-us">美</span>';
+                }
+
+                return `
+                    <div class="stock-item" onclick="selectStock('${fullId}', '${s.f14}')">
+                        <div class="stock-info">
+                            <div class="stock-name-row">
+                                <span class="stock-name">${s.f14}</span>
+                                ${badge}
+                                ${isFav ? '<i data-lucide="star" size="12" fill="#ffd700" color="#ffd700" style="margin-left:4px;"></i>' : ''}
+                            </div>
+                            <div class="stock-code">${s.f12} <span style="margin-left:8px; color:var(--accent-color);">${s.f127||''}</span></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="stock-price ${color}">${s.f2}</div>
+                            <div class="stock-pct ${color}">${s.f3 > 0 ? '+' : ''}${s.f3}%</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        window.renderStockList = function(list, isSearch = false) {
+            // Update Breadth
+            if (!isSearch) {
+                const counts = list.reduce((acc, s) => {
+                    if (s.f3 > 0) acc.up++; else if (s.f3 < 0) acc.down++;
+                    return acc;
+                }, { up: 0, down: 0 });
+                const total = counts.up + counts.down || 1;
+                document.querySelector('.breadth-up').style.width = (counts.up / total * 100).toFixed(1) + '%';
+                document.querySelector('.breadth-down').style.width = (counts.down / total * 100).toFixed(1) + '%';
+            }
+
+            vs_data = list;
+            renderVirtualWindow(true);
+            
+            // Also update Favorites Panel if open/active
+            if (USER_STATE.isLoggedIn) FavoritesManager.renderPanel();
+        };
+
+        async function fetchStockList() {
+            try {
+                allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
+                renderStockList(allStocks);
+                if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
+            } catch (e) { console.error(e); }
+        }
+
+        // 5. Interaction
+        window.selectStock = function(id, name) {
+            currentStock = { id, name };
+            // Update Header Info
+            document.getElementById('kline-header-name').innerText = name;
+            updateChartFavIcon();
+            
+            // Switch to Chart Tab
+            switchTab('view-chart');
+            
+            // Update Data
+            updateAll();
+        };
+
+        window.updateChartFavIcon = function() {
+            const btn = document.getElementById('kline-fav-btn');
+            if (!btn) return;
+            const isFav = USER_STATE.favorites.some(f => f.stockId === currentStock.id);
+            const color = isFav ? '#ffd700' : 'var(--text-secondary)';
+            const fill = isFav ? '#ffd700' : 'none';
+            btn.innerHTML = `<i data-lucide="star" size="20" color="${color}" fill="${fill}"></i>`;
+            lucide.createIcons();
+        };
+
+        window.toggleCurrentFav = function() {
+            const price = document.getElementById('price-cur').innerText;
+            FavoritesManager.toggle(currentStock.id, currentStock.name, price);
+        };
+
+        // 6. Charting
+        async function updateCandle() {
+            if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
+            
+            // Increased limit to 1200 to support up to 4+ years of data (approx 250 trading days/year)
+            const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1200`;
+            const [curRes, zsRes] = await Promise.all([
+                fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`).then(r => r.json()),
+                fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`).then(r => r.json())
+            ]);
+
+            if (!curRes?.data) return;
+
+            const parse = (k) => k.map(x => {
+                const p = x.split(',');
+                return { date: p[0], o: parseFloat(p[1]), c: parseFloat(p[2]), h: parseFloat(p[3]), l: parseFloat(p[4]), v: parseFloat(p[5]), pct: parseFloat(p[6]) };
+            });
+
+            const curRaw = parse(curRes.data.klines);
+            const zsRaw = zsRes?.data ? parse(zsRes.data.klines) : [];
+            
+            const processed = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
+            const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processed;
+            
+            const colors = { up: '#f43f5e', down: '#10b981', accent: '#3b82f6', grid: 'rgba(255,255,255,0.05)', text: '#94a3b8' };
+            if (document.documentElement.getAttribute('data-theme') === 'light') {
+                 colors.grid = 'rgba(0,0,0,0.05)'; colors.text = '#64748b';
+            }
+
+            candleChart.setOption({
+                animation: false,
+                backgroundColor: 'transparent',
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: { type: 'cross', label: { show: false } },
+                    backgroundColor: 'rgba(20, 24, 35, 0.9)',
+                    borderColor: colors.grid,
+                    textStyle: { color: colors.text, fontSize: 10 },
+                    padding: 8,
+                    formatter: function (params) {
+                        if (!params[0]) return '';
+                        const idx = params[0].dataIndex;
+                        const c = curD[idx], z = zsD[idx];
+                        if (!c) return '';
+                        const date = params[0].name;
+                        const pctStr = (p) => {
+                            const val = p !== undefined ? p.toFixed(2) : '--';
+                            const color = p > 0 ? colors.up : (p < 0 ? colors.down : colors.text);
+                            return `<span style="color:${color}">${val}%</span>`;
+                        };
+                        return `
+                            <div style="font-size:10px; margin-bottom:4px;">${date}</div>
+                            <div style="display:flex; justify-content:space-between; gap:12px;">
+                                <span>${currentStock.name}</span>
+                                <span style="font-weight:bold">${c.c.toFixed(2)}</span>
+                                ${pctStr(c.pct)}
+                            </div>
+                            <div style="display:flex; justify-content:space-between; gap:12px;">
+                                <span>${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</span>
+                                <span style="font-weight:bold">${z.c ? z.c.toFixed(2) : '--'}</span>
+                                ${pctStr(z.pct)}
+                            </div>
+                        `;
+                    }
+                },
+                axisPointer: {
+                    link: { xAxisIndex: 'all' }, // Link all x-axes
+                    label: { backgroundColor: '#777' }
+                },
+                grid: [
+                    { left: 0, right: 0, top: '2%', height: '35%' },  // Main Stock K-Line
+                    { left: 0, right: 0, top: '38%', height: '10%' }, // Main Stock Volume
+                    { left: 0, right: 0, top: '53%', height: '35%' }, // Index K-Line
+                    { left: 0, right: 0, top: '89%', height: '10%' }  // Index Volume
+                ],
+                xAxis: [
+                    { type: 'category', data: dates, gridIndex: 0, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } },
+                    { type: 'category', data: dates, gridIndex: 1, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } },
+                    { type: 'category', data: dates, gridIndex: 2, axisLine: { lineStyle: { color: colors.grid } }, axisTick: { show: false }, axisLabel: { show: false } },
+                    { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } }
+                ],
+                yAxis: [
+                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: true, margin: 2 } },
+                    { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
+                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
+                    { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
+                ],
+                dataZoom: [{ type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 85, end: 100 }],
+                series: [
+                    // Main Stock
+                    {
+                        type: 'candlestick',
+                        data: curD.map(d => [d.o, d.c, d.l, d.h]),
+                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
+                        markLine: {
+                            symbol: ['none', 'none'],
+                            label: { fontSize: 10, position: 'end', padding:[2,4], borderRadius:2, color:'#fff' },
+                            lineStyle: { type: 'dashed', opacity: 0.6 },
+                            animation: false,
+                            data: [
+                                // Placeholder for dynamic update
+                            ]
+                        }
+                    },
+                    { type: 'line', data: curMA5, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f59e0b', opacity: 0.7 } },
+                    { type: 'line', data: curMA20, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#3b82f6', opacity: 0.7 } },
+                    
+                    // Main Volume
+                    {
+                        type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
+                        data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
+                    },
+
+                    // Index Comparison (K-Line Chart)
+                    {
+                        type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
+                        name: 'Index K-Line',
+                        data: zsD.map(d => [d.o, d.c, d.l, d.h]),
+                        itemStyle: { 
+                            color: colors.up, color0: colors.down, 
+                            borderColor: colors.up, borderColor0: colors.down,
+                            borderWidth: 1 
+                        },
+                        markLine: {
+                            symbol: ['none', 'none'],
+                            label: { fontSize: 10, position: 'end', padding:[2,4], borderRadius:2, color:'#fff' },
+                            lineStyle: { type: 'dashed', opacity: 0.6 },
+                            animation: false,
+                            data: [
+                                // Placeholder for dynamic update
+                            ]
+                        }
+                    },
+                    { 
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 2, 
+                        data: zsMA5, smooth: true, showSymbol: false, 
+                        lineStyle: { width: 1, color: '#f59e0b', opacity: 0.8 } 
+                    },
+                    { 
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 2, 
+                        data: zsMA20, smooth: true, showSymbol: false, 
+                        lineStyle: { width: 1, color: '#3b82f6', opacity: 0.8 } 
+                    },
+
+                    // Index Volume
+                    {
+                        type: 'bar', xAxisIndex: 3, yAxisIndex: 3,
+                        data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
+                    }
+                ]
+            });
+            
+            // Dynamic MarkLine Update Logic
+            function updateMarkLines() {
+                const opt = candleChart.getOption();
+                if (!opt.dataZoom) return;
+                
+                const start = opt.dataZoom[0].start;
+                const end = opt.dataZoom[0].end;
+                const len = curD.length;
+                
+                const sIdx = Math.floor(start * len / 100);
+                const eIdx = Math.ceil(end * len / 100);
+                
+                // Helper to find min/max in range
+                const findExtremes = (data) => {
+                    let max = -Infinity, min = Infinity;
+                    for (let i = sIdx; i < Math.min(eIdx, data.length); i++) {
+                        const h = data[i][3]; // High
+                        const l = data[i][2]; // Low
+                        if (h > max) max = h;
+                        if (l < min) min = l;
+                    }
+                    return { max, min };
+                };
+
+                const curEx = findExtremes(opt.series[0].data);
+                const zsEx = findExtremes(opt.series[4].data); // Series 4 is Index K-Line
+
+                candleChart.setOption({
+                    series: [
+                        {
+                            markLine: {
+                                data: [
+                                    { yAxis: curEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } },
+                                    { yAxis: curEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } },
+                                    { yAxis: curD[curD.length-1].c, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } }
+                                ]
+                            }
+                        },
+                        {}, {}, {}, // Skip others
+                        {
+                            markLine: {
+                                data: [
+                                    { yAxis: zsEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } },
+                                    { yAxis: zsEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } }
+                                ]
+                            }
+                        }
+                    ]
+                });
+            }
+            
+            candleChart.on('dataZoom', updateMarkLines);
+            updateMarkLines(); // Initial call
+        }
+
+        async function updateStats() {
+            const res = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`).then(r => r.json());
+            if (res?.data) {
+                const d = res.data;
+                const price = (d.f43 / 100).toFixed(2);
+                const pct = (d.f170 / 100).toFixed(2);
+                
+                document.getElementById('price-cur').innerText = price;
+                document.getElementById('change-cur').innerText = (pct>0?'+':'') + pct + '%';
+                document.getElementById('change-cur').className = 'pct-hero ' + (pct>0?'up':pct<0?'down':'');
+                document.getElementById('kline-header-industry').innerText = d.f127 || '--';
+                
+                // Details
+                document.getElementById('det-open').innerText = (d.f46/100).toFixed(2);
+                document.getElementById('det-high').innerText = (d.f44/100).toFixed(2);
+                document.getElementById('det-low').innerText = (d.f45/100).toFixed(2);
+                document.getElementById('vol-cur').innerText = (d.f47/10000).toFixed(1) + '万';
+                document.getElementById('det-pe').innerText = (d.f9/100).toFixed(1);
+                document.getElementById('det-zsz').innerText = (d.f20/100000000).toFixed(0) + '亿';
+                
+                // Update Color
+                const color = pct > 0 ? varColors.up : varColors.down;
+                document.getElementById('price-cur').style.color = color;
+            }
+        }
+        
+        const varColors = { up: '#f43f5e', down: '#10b981' };
+
+        function updateAll() {
+            updateStats();
+            updateCandle();
+            if(window.updateChartFavIcon) updateChartFavIcon();
+        }
+
+        // 7. Search & User System
+        document.getElementById('stock-search').addEventListener('input', (e) => {
+            const val = e.target.value.trim().toLowerCase();
+            const results = val ? allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val) || (PinyinMatch && PinyinMatch.match(s.f14, val))) : allStocks;
+            renderStockList(results, !!val);
+        });
+
+        // 8. User System (Full Implementation)
+        const USER_CONFIG = { JSONBIN_API: 'https://api.jsonbin.io/v3/b', JSONBIN_KEY: '$2a$10$1YGSZtDo6eY.s8EP95baT.dGCrCZGjlx/O/d.9Y.TwB86s1/8Cd6e', USERS_BIN_ID: '6968ec2ed0ea881f406db80a' };
+        const USER_STATE = { currentUser: null, favorites: [], isLoggedIn: false, isRegisterMode: false };
+
+        const StockUserAPI = {
+            async createBin(data, name) {
+                const headers = { 'Content-Type': 'application/json', 'X-Master-Key': USER_CONFIG.JSONBIN_KEY, 'X-Bin-Private': 'false' };
+                if (name) headers['X-Bin-Name'] = name;
+                const res = await fetch(USER_CONFIG.JSONBIN_API, { method: 'POST', headers, body: JSON.stringify(data) });
+                if (!res.ok) throw new Error('API Error');
+                return await res.json();
+            },
+            async readBin(binId) {
+                const res = await fetch(`${USER_CONFIG.JSONBIN_API}/${binId}/latest`, { headers: { 'X-Master-Key': USER_CONFIG.JSONBIN_KEY } });
+                if (!res.ok) throw new Error('API Error');
+                return await res.json();
+            },
+            async updateBin(binId, data) {
+                const res = await fetch(`${USER_CONFIG.JSONBIN_API}/${binId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': USER_CONFIG.JSONBIN_KEY, 'X-Bin-Versioning': 'false' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('API Error');
+                return await res.json();
+            }
+        };
+        
+        window.StockUserManager = {
+            init() { 
+                const s = localStorage.getItem('stock_user_session');
+                if (s) { USER_STATE.currentUser = JSON.parse(s); USER_STATE.isLoggedIn = true; this.loadUserFavorites(); }
+                this.setupListeners();
+            },
+            setupListeners() {
+                // Auth Toggle
+                const toggleBtn = document.createElement('div');
+                toggleBtn.style.cssText = "text-align:center; margin-top:10px; font-size:12px; color:var(--accent-color); cursor:pointer;";
+                toggleBtn.innerText = "没有账户？去注册";
+                toggleBtn.onclick = () => {
+                    USER_STATE.isRegisterMode = !USER_STATE.isRegisterMode;
+                    const isReg = USER_STATE.isRegisterMode;
+                    document.getElementById('authTitle').innerText = isReg ? '注册' : '登录';
+                    document.getElementById('u-submit').innerText = isReg ? '立即注册' : '立即登录';
+                    toggleBtn.innerText = isReg ? '已有账户？去登录' : '没有账户？去注册';
+                    // Add email input if needed, for now just use user/pass for mobile simplicity or add hidden input
+                };
+                document.querySelector('.auth-box').appendChild(toggleBtn);
+            },
+            async loadUserFavorites() {
+                if (!USER_STATE.currentUser) return;
+                try {
+                    const data = await StockUserAPI.readBin(USER_STATE.currentUser.userBinId);
+                    USER_STATE.favorites = data.record.favorites || [];
+                    renderStockList(allStocks);
+                } catch (e) { console.error(e); }
+            },
+            showAuth() { document.getElementById('authModal').classList.add('active'); },
+            hideAuth() { document.getElementById('authModal').classList.remove('active'); },
+            
+            async handleSubmit() {
+                const u = document.getElementById('u-user').value.trim();
+                const p = document.getElementById('u-pass').value.trim();
+                if (!u || !p) return showToast('请输入用户名和密码');
+                
+                const btn = document.getElementById('u-submit');
+                const originalText = btn.innerText;
+                btn.innerText = '处理中...';
+                
+                try {
+                    if (USER_STATE.isRegisterMode) {
+                        await this.register(u, p);
+                    } else {
+                        await this.login(u, p);
+                    }
+                    this.hideAuth();
+                    FavoritesManager.refreshAllPrices();
+                } catch (e) {
+                    showToast(e.message);
+                } finally {
+                    btn.innerText = originalText;
+                }
+            },
+            
+            hash(str) {
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+                return hash.toString(36);
+            },
+
+            async register(username, password) {
+                const master = await StockUserAPI.readBin(USER_CONFIG.USERS_BIN_ID);
+                const users = master.record.users || [];
+                if (users.find(u => u.username === username)) throw new Error('用户名已存在');
+
+                const userBin = await StockUserAPI.createBin({
+                    username, favorites: [], settings: { theme: 'dark' }, updatedAt: new Date()
+                }, `StockUser_${username}`);
+
+                users.push({
+                    username,
+                    passwordHash: this.hash(password),
+                    userBinId: userBin.metadata.id,
+                    createdAt: new Date()
+                });
+                await StockUserAPI.updateBin(USER_CONFIG.USERS_BIN_ID, { users });
+                this.setSession({ username, userBinId: userBin.metadata.id });
+                showToast('注册成功');
+            },
+
+            async login(username, password) {
+                const master = await StockUserAPI.readBin(USER_CONFIG.USERS_BIN_ID);
+                const user = master.record.users.find(u => u.username === username);
+                if (!user) throw new Error('用户不存在');
+                if (user.passwordHash !== this.hash(password)) throw new Error('密码错误');
+                this.setSession({ username: user.username, userBinId: user.userBinId });
+                showToast(`欢迎, ${username}`);
+            },
+
+            setSession(user) {
+                USER_STATE.currentUser = user;
+                USER_STATE.isLoggedIn = true;
+                localStorage.setItem('stock_user_session', JSON.stringify(user));
+                this.loadUserFavorites();
+            },
+
+            logout() {
+                localStorage.removeItem('stock_user_session');
+                USER_STATE.isLoggedIn = false;
+                USER_STATE.currentUser = null;
+                USER_STATE.favorites = [];
+                renderStockList(allStocks);
+                showToast('已退出');
+            }
+        };
+
+        window.FavoritesManager = {
+            async toggle(stockId, stockName, price) {
+                if (!USER_STATE.isLoggedIn) return StockUserManager.showAuth();
+                const idx = USER_STATE.favorites.findIndex(f => f.stockId === stockId);
+                if (idx > -1) {
+                    USER_STATE.favorites.splice(idx, 1);
+                    showToast('已取消收藏');
+                } else {
+                    USER_STATE.favorites.push({ stockId, stockName, addedAt: new Date(), addedPrice: parseFloat(price)||0 });
+                    showToast('已收藏');
+                }
+                this.renderPanel();
+                renderVirtualWindow(true);
+                
+                // Force update chart icon if we are viewing the same stock
+                if(typeof currentStock !== 'undefined' && currentStock.id === stockId && window.updateChartFavIcon) {
+                    updateChartFavIcon();
+                }
+                
+                this.sync();
+            },
+            async sync() {
+                if (!USER_STATE.currentUser) return;
+                try {
+                    await StockUserAPI.updateBin(USER_STATE.currentUser.userBinId, { favorites: USER_STATE.favorites, updatedAt: new Date() });
+                } catch(e) {}
+            },
+            renderPanel() {
+                const list = document.getElementById('favList');
+                if (!USER_STATE.favorites.length) {
+                    list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary);">暂无收藏</div>';
+                    return;
+                }
+                
+                let win=0, loss=0, totalPct=0;
+                
+                list.innerHTML = USER_STATE.favorites.map(f => {
+                    const s = allStocks.find(st => `${st.f13}.${st.f12}` === f.stockId);
+                    const curPrice = s ? s.f2 : f.currentPrice || f.addedPrice;
+                    const pct = s ? s.f3 : 0;
+                    const color = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
+                    
+                    let badge = '';
+                    const mkt = parseInt(f.stockId.split('.')[0]);
+                    const code = f.stockId.split('.')[1];
+                    
+                    if (mkt == 1) {
+                        if (code.startsWith('68')) badge = '<span class="mkt-badge mkt-kc">科</span>';
+                        else badge = '<span class="mkt-badge mkt-sh">沪</span>';
+                    } else if (mkt == 0) {
+                        if (code.startsWith('30')) badge = '<span class="mkt-badge mkt-cy">创</span>';
+                        else badge = '<span class="mkt-badge mkt-sz">深</span>';
+                    } else if (mkt >= 100) {
+                        badge = '<span class="mkt-badge mkt-us">美</span>';
+                    }
+
+                    if (s) {
+                        if (s.f2 > f.addedPrice) win++; else if (s.f2 < f.addedPrice) loss++;
+                        totalPct += pct;
+                    }
+
+                    return `
+                        <div class="stock-item" onclick="selectStock('${f.stockId}', '${f.stockName}')">
+                            <div class="stock-info">
+                                <div class="stock-name-row">
+                                    <span class="stock-name">${f.stockName}</span>
+                                    ${badge}
+                                </div>
+                                <div class="stock-code">${f.stockId.split('.')[1]}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div class="stock-price ${color}">${curPrice}</div>
+                                <div class="stock-pct ${color}">${pct}%</div>
+                            </div>
+                            <div style="padding: 0 0 0 16px; display:flex; align-items:center;" onclick="event.stopPropagation(); FavoritesManager.toggle('${f.stockId}', '${f.stockName}', '${curPrice}')">
+                                <i data-lucide="trash-2" size="18" color="#94a3b8"></i>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                lucide.createIcons();
+                
+                document.getElementById('fs-avg').innerText = (USER_STATE.favorites.length ? (totalPct / USER_STATE.favorites.length).toFixed(2) : '0.00') + '%';
+                document.getElementById('fs-win').innerText = win;
+                document.getElementById('fs-loss').innerText = loss;
+            },
+            refreshAllPrices() { this.renderPanel(); }
+        };
+
+        // Init
+        (async () => {
+            StockUserManager.init();
+            await fetchStockList();
+            // Load initial chart
+            updateAll();
+            lucide.createIcons();
+        })();
+
+        // Auth Logic Binding
+        document.getElementById('u-submit').onclick = () => StockUserManager.handleSubmit();
+        
+        // Time Range
+        window.setTimeRange = function(days, btn) {
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if(candleChart) {
+                const opt = candleChart.getOption();
+                // Series 0 is the main stock candlestick data
+                const dataLen = opt.series && opt.series[0] && opt.series[0].data ? opt.series[0].data.length : 0;
+                
+                if (dataLen > 0) {
+                    // Calculate percentage based on actual data length
+                    let pct = (days / dataLen) * 100;
+                    if (pct > 100) pct = 100; // Cannot zoom out more than 100%
+                    
+                    // start is from 0 to 100. If we want last 'pct'%, start should be 100 - pct
+                    let start = 100 - pct;
+                    if (start < 0) start = 0;
+                    
+                    candleChart.dispatchAction({ type: 'dataZoom', start: start, end: 100 });
+                }
+            }
+        };
+
+        // Full Screen Logic
+        window.toggleFullScreen = function() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.querySelector('.fab-fullscreen i');
+            if (!icon) return;
+            const isFull = !!document.fullscreenElement;
+            // Update icon attribute
+            icon.setAttribute('data-lucide', isFull ? 'minimize' : 'maximize');
+            // Re-render icons
+            lucide.createIcons();
+        });
+
+        // Try auto fullscreen on first interaction
+        document.addEventListener('click', function initFS() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            document.removeEventListener('click', initFS);
+        }, { once: true });
+
+    </script>
+</body>
+</html>
