@@ -151,9 +151,13 @@
         }
         .mkt-sh { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); } /* Shanghai - Red */
         .mkt-sz { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); } /* Shenzhen - Blue */
-        .mkt-kc { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); } /* STAR - Purple */
-        .mkt-cy { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); } /* ChiNext - Orange */
+        .mkt-kcb { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); } /* STAR - Purple */
+        .mkt-cyb { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); } /* ChiNext - Orange */
         .mkt-us { background: rgba(255, 255, 255, 0.1); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.2); }
+        .mkt-nasdaq { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .mkt-nyse { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .mkt-amex { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
+        .mkt-bj { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); } /* Beijing - Cyan */
         
         .stock-price { font-size: 16px; font-weight: 700; text-align: right; }
         .stock-pct { font-size: 12px; font-weight: 600; text-align: right; margin-top: 2px; }
@@ -531,6 +535,10 @@
                 document.querySelectorAll('.nav-item')[idx].classList.add('active');
             }
 
+            if (viewId === 'view-fav') {
+                if (window.FavoritesManager) FavoritesManager.renderPanel();
+            }
+
             if (viewId === 'view-chart' && candleChart) {
                 setTimeout(() => candleChart.resize(), 100);
             }
@@ -543,6 +551,12 @@
                 StockUserManager.showAuth();
             }
         }
+
+        window.toggleCurrentFav = function() {
+            if (!currentStock) return;
+            const price = document.getElementById('price-cur').innerText;
+            FavoritesManager.toggle(currentStock.id, currentStock.name, price);
+        };
 
         function showToast(msg) {
             const t = document.getElementById('stockToast');
@@ -673,6 +687,14 @@
         async function updateCandle() {
             if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
             
+            // 提取当前缩放级别，实现“缩放记忆”功能
+            const currentOpt = candleChart.getOption();
+            let zoomStart = 85, zoomEnd = 100;
+            if (currentOpt && currentOpt.dataZoom && currentOpt.dataZoom[0]) {
+                zoomStart = currentOpt.dataZoom[0].start;
+                zoomEnd = currentOpt.dataZoom[0].end;
+            }
+
             // Increased limit to 1200 to support up to 4+ years of data (approx 250 trading days/year)
             const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1200`;
             const [curRes, zsRes] = await Promise.all([
@@ -756,7 +778,9 @@
                     { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
                     { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
                 ],
-                dataZoom: [{ type: 'inside', xAxisIndex: [0, 1, 2, 3], start: 85, end: 100 }],
+                dataZoom: [
+                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd }
+                ],
                 series: [
                     // Main Stock
                     {
@@ -970,8 +994,16 @@
                 if (!USER_STATE.currentUser) return;
                 try {
                     const data = await StockUserAPI.readBin(USER_STATE.currentUser.userBinId);
-                    USER_STATE.favorites = data.record.favorites || [];
+                    let favs = data.record.favorites || [];
+                    // 兼容处理：如果存储的是字符串则解析
+                    USER_STATE.favorites = favs.map(f => {
+                        try { return typeof f === 'string' ? JSON.parse(f) : f; }
+                        catch(e) { return f; }
+                    });
                     renderStockList(allStocks);
+                    if (window.FavoritesManager) {
+                        FavoritesManager.renderPanel();
+                    }
                 } catch (e) { console.error(e); }
             },
             showAuth() { document.getElementById('authModal').classList.add('active'); },
@@ -1056,76 +1088,118 @@
         window.FavoritesManager = {
             async toggle(stockId, stockName, price) {
                 if (!USER_STATE.isLoggedIn) return StockUserManager.showAuth();
+                
                 const idx = USER_STATE.favorites.findIndex(f => f.stockId === stockId);
                 if (idx > -1) {
                     USER_STATE.favorites.splice(idx, 1);
                     showToast('已取消收藏');
                 } else {
-                    USER_STATE.favorites.push({ stockId, stockName, addedAt: new Date(), addedPrice: parseFloat(price)||0 });
-                    showToast('已收藏');
+                    USER_STATE.favorites.push({
+                        stockId, stockName, addedAt: new Date(), addedPrice: parseFloat(price) || 0
+                    });
+                    showToast('已加入收藏');
                 }
+                
                 this.renderPanel();
-                renderVirtualWindow(true);
+                renderVirtualWindow(true); 
                 
                 // Force update chart icon if we are viewing the same stock
                 if(typeof currentStock !== 'undefined' && currentStock.id === stockId && window.updateChartFavIcon) {
                     updateChartFavIcon();
                 }
-                
+
                 this.sync();
             },
             async sync() {
                 if (!USER_STATE.currentUser) return;
                 try {
-                    await StockUserAPI.updateBin(USER_STATE.currentUser.userBinId, { favorites: USER_STATE.favorites, updatedAt: new Date() });
-                } catch(e) {}
+                    await StockUserAPI.updateBin(USER_STATE.currentUser.userBinId, {
+                        favorites: USER_STATE.favorites,
+                        updatedAt: new Date()
+                    });
+                } catch (e) { console.error('Sync failed', e); }
             },
             renderPanel() {
                 const list = document.getElementById('favList');
-                if (!USER_STATE.favorites.length) {
-                    list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-secondary);">暂无收藏</div>';
+                const boxList = document.getElementById('favBoxList');
+                
+                const emptyHtml = '<div style="padding:40px; text-align:center; color:var(--text-secondary);"><i data-lucide="star-off" size="32" style="opacity:0.3; margin-bottom:12px;"></i><br/>暂无收藏股票</div>';
+                
+                if (!USER_STATE.favorites || USER_STATE.favorites.length === 0) {
+                    if (list) list.innerHTML = emptyHtml;
+                    if (boxList) boxList.innerHTML = emptyHtml;
+                    this.updateStats();
+                    lucide.createIcons();
                     return;
                 }
                 
-                let win=0, loss=0, totalPct=0;
-                
-                list.innerHTML = USER_STATE.favorites.map(f => {
-                    const s = allStocks.find(st => `${st.f13}.${st.f12}` === f.stockId);
-                    const curPrice = s ? s.f2 : f.currentPrice || f.addedPrice;
-                    const pct = s ? s.f3 : 0;
-                    const color = pct > 0 ? 'up' : pct < 0 ? 'down' : 'neutral';
+                const itemsHtml = USER_STATE.favorites.map((f, i) => {
+                    const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
                     
-                    let badge = '';
-                    const mkt = parseInt(f.stockId.split('.')[0]);
-                    const code = f.stockId.split('.')[1];
-                    
-                    if (mkt == 1) {
-                        if (code.startsWith('68')) badge = '<span class="mkt-badge mkt-kc">科</span>';
-                        else badge = '<span class="mkt-badge mkt-sh">沪</span>';
-                    } else if (mkt == 0) {
-                        if (code.startsWith('30')) badge = '<span class="mkt-badge mkt-cy">创</span>';
-                        else badge = '<span class="mkt-badge mkt-sz">深</span>';
-                    } else if (mkt >= 100) {
-                        badge = '<span class="mkt-badge mkt-us">美</span>';
+                    let curPrice = f.currentPrice || f.addedPrice;
+                    let pct = '0.00';
+                    let color = '';
+                    let sign = '';
+
+                    if (liveData) {
+                        curPrice = liveData.f2 !== '-' ? liveData.f2 : curPrice;
+                        pct = (typeof liveData.f3 === 'number') ? liveData.f3.toFixed(2) : '0.00';
+                        color = liveData.f3 > 0 ? 'up' : liveData.f3 < 0 ? 'down' : '';
+                        sign = liveData.f3 > 0 ? '+' : '';
+                    } else {
+                        pct = f.addedPrice > 0 ? ((curPrice - f.addedPrice) / f.addedPrice * 100).toFixed(2) : '0.00';
+                        color = pct > 0 ? 'up' : pct < 0 ? 'down' : '';
+                        sign = pct > 0 ? '+' : '';
                     }
 
-                    if (s) {
-                        if (s.f2 > f.addedPrice) win++; else if (s.f2 < f.addedPrice) loss++;
-                        totalPct += pct;
+                    const isActive = (typeof currentStock !== 'undefined' && f.stockId === currentStock.id) ? 'active' : '';
+                    
+                    const mktCode = parseInt(f.stockId.split('.')[0]);
+                    const stockCode = f.stockId.split('.')[1];
+                    let mktName = '深';
+                    let mktClass = 'mkt-sz';
+                    
+                    if (mktCode === 1) {
+                        mktName = '沪';
+                        mktClass = 'mkt-sh';
+                        if (stockCode.startsWith('688')) {
+                            mktName = '科';
+                            mktClass = 'mkt-kcb';
+                        }
+                    } else if (mktCode === 0) {
+                        mktName = '深';
+                        mktClass = 'mkt-sz';
+                        if (stockCode.startsWith('300') || stockCode.startsWith('301')) {
+                            mktName = '创';
+                            mktClass = 'mkt-cyb';
+                        }
+                    } else if (mktCode === 80) {
+                        mktName = '京';
+                        mktClass = 'mkt-bj';
+                    } else if (mktCode === 105) {
+                        mktName = '纳';
+                        mktClass = 'mkt-nasdaq';
+                    } else if (mktCode === 106) {
+                        mktName = '纽';
+                        mktClass = 'mkt-nyse';
+                    } else if (mktCode === 107) {
+                        mktName = '美';
+                        mktClass = 'mkt-amex';
                     }
-
+                    
                     return `
-                        <div class="stock-item" onclick="selectStock('${f.stockId}', '${f.stockName}')">
+                        <div class="stock-item ${isActive}" data-id="${f.stockId}" onclick="selectStock('${f.stockId}', '${f.stockName}')">
+                            <div style="font-size: 0.75rem; font-weight: 700; color: var(--accent-color); min-width: 24px; opacity: 0.6; font-family: 'JetBrains Mono', monospace;">${(i + 1).toString().padStart(2, '0')}</div>
                             <div class="stock-info">
                                 <div class="stock-name-row">
                                     <span class="stock-name">${f.stockName}</span>
-                                    ${badge}
+                                    <span class="mkt-badge ${mktClass}">${mktName}</span>
                                 </div>
                                 <div class="stock-code">${f.stockId.split('.')[1]}</div>
                             </div>
                             <div style="text-align:right;">
                                 <div class="stock-price ${color}">${curPrice}</div>
-                                <div class="stock-pct ${color}">${pct}%</div>
+                                <div class="stock-pct ${color}">${sign}${pct}%</div>
                             </div>
                             <div style="padding: 0 0 0 16px; display:flex; align-items:center;" onclick="event.stopPropagation(); FavoritesManager.toggle('${f.stockId}', '${f.stockName}', '${curPrice}')">
                                 <i data-lucide="trash-2" size="18" color="#94a3b8"></i>
@@ -1133,14 +1207,55 @@
                         </div>
                     `;
                 }).join('');
-                
+
+                if (list) list.innerHTML = itemsHtml;
+                if (boxList) boxList.innerHTML = itemsHtml;
                 lucide.createIcons();
-                
-                document.getElementById('fs-avg').innerText = (USER_STATE.favorites.length ? (totalPct / USER_STATE.favorites.length).toFixed(2) : '0.00') + '%';
-                document.getElementById('fs-win').innerText = win;
-                document.getElementById('fs-loss').innerText = loss;
+                this.updateStats();
             },
-            refreshAllPrices() { this.renderPanel(); }
+            updateStats() {
+                const favs = USER_STATE.favorites || [];
+                let win = 0, loss = 0, totalPct = 0;
+                
+                favs.forEach(f => {
+                    const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
+                    const cur = (liveData && liveData.f2 !== '-') ? liveData.f2 : (f.currentPrice || f.addedPrice);
+                    
+                    if (cur > f.addedPrice) win++;
+                    if (cur < f.addedPrice) loss++;
+                    if (f.addedPrice > 0) totalPct += (cur - f.addedPrice) / f.addedPrice;
+                });
+                
+                const avg = favs.length > 0 ? (totalPct / favs.length * 100).toFixed(2) : '0.00';
+                const avgStr = (avg > 0 ? '+' : '') + avg + '%';
+                const avgClass = avg > 0 ? 'up' : avg < 0 ? 'down' : '';
+
+                // Update Panel Stats
+                const fsAvg = document.getElementById('fs-avg');
+                if (fsAvg) {
+                    fsAvg.innerText = avgStr;
+                    fsAvg.className = 'fav-stat-val ' + avgClass;
+                }
+                if (document.getElementById('fs-win')) document.getElementById('fs-win').innerText = win;
+                if (document.getElementById('fs-loss')) document.getElementById('fs-loss').innerText = loss;
+
+                // Update Box Stats (if elements exist)
+                const fbAvg = document.getElementById('fb-avg');
+                if (fbAvg) {
+                    fbAvg.innerText = avgStr;
+                    fbAvg.className = 'fav-stat-val ' + avgClass;
+                }
+                if (document.getElementById('fb-win')) document.getElementById('fb-win').innerText = win;
+                if (document.getElementById('fb-loss')) document.getElementById('fb-loss').innerText = loss;
+            },
+            async refreshAllPrices() {
+                if (USER_STATE.favorites.length === 0) return;
+                USER_STATE.favorites.forEach(f => {
+                    const s = allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId);
+                    if (s) f.currentPrice = s.f2;
+                });
+                this.renderPanel();
+            }
         };
 
         // Init
@@ -1155,27 +1270,68 @@
         // Auth Logic Binding
         document.getElementById('u-submit').onclick = () => StockUserManager.handleSubmit();
         
-        // Time Range
+        // Time Range (完全同步桌面端逻辑)
         window.setTimeRange = function(days, btn) {
+            if (typeof AudioFX !== 'undefined') AudioFX.play('click');
+            if (!candleChart) return;
+
+            const option = candleChart.getOption();
+            const data = option.series[0].data;
+            if (!data) return;
+
+            const total = data.length;
+
+            // Calculate target range in percentage (0-100)
+            // If total < days, show all (0-100). Else show last 'days' amount.
+            let targetStartPct = 0;
+            if (total > days) {
+                targetStartPct = ((total - days) / total) * 100;
+            }
+            const targetEndPct = 100;
+
+            // 切换按钮状态
             document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            if(candleChart) {
-                const opt = candleChart.getOption();
-                // Series 0 is the main stock candlestick data
-                const dataLen = opt.series && opt.series[0] && opt.series[0].data ? opt.series[0].data.length : 0;
-                
-                if (dataLen > 0) {
-                    // Calculate percentage based on actual data length
-                    let pct = (days / dataLen) * 100;
-                    if (pct > 100) pct = 100; // Cannot zoom out more than 100%
-                    
-                    // start is from 0 to 100. If we want last 'pct'%, start should be 100 - pct
-                    let start = 100 - pct;
-                    if (start < 0) start = 0;
-                    
-                    candleChart.dispatchAction({ type: 'dataZoom', start: start, end: 100 });
+            if (btn) btn.classList.add('active');
+
+            // Animation Logic
+            const currentZoom = option.dataZoom[0];
+            const currentStart = currentZoom.start;
+            const currentEnd = currentZoom.end;
+
+            // If change is very small, minimal jump
+            if (Math.abs(currentStart - targetStartPct) < 0.1 && Math.abs(currentEnd - targetEndPct) < 0.1) {
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: targetStartPct,
+                    end: targetEndPct
+                });
+                return;
+            }
+
+            const duration = 800;
+            const startTime = performance.now();
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Ease Out Quart
+                const ease = 1 - Math.pow(1 - progress, 4);
+
+                const newStart = currentStart + (targetStartPct - currentStart) * ease;
+                const newEnd = currentEnd + (targetEndPct - currentEnd) * ease;
+
+                candleChart.dispatchAction({
+                    type: 'dataZoom',
+                    start: newStart,
+                    end: newEnd
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
                 }
             }
+            requestAnimationFrame(animate);
         };
 
         // Full Screen Logic
