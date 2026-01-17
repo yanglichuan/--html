@@ -612,6 +612,105 @@
             text-align: center;
         }
 
+        /* Settings View */
+        .settings-group {
+            margin: 0 16px 16px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .settings-group-title {
+            padding: 16px 16px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .settings-item {
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-item i {
+            color: var(--text-secondary);
+        }
+
+        .log-list {
+            padding: 0 16px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .log-item {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .log-stock {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .log-status {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        .log-status.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+        .log-status.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+        .log-time {
+            font-family: 'JetBrains Mono', monospace;
+            opacity: 0.6;
+        }
+
+        .log-url {
+            margin-top: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--accent-color);
+            word-break: break-all;
+            opacity: 0.8;
+        }
+
+        .view-header-title {
+            padding: 16px;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         /* Virtual Scroll Spacer */
         .virtual-spacer {
             width: 100%;
@@ -987,6 +1086,96 @@
             </div>
             <div class="stock-list" id="favList"></div>
         </div>
+
+        <!-- View 4: Settings -->
+        <div id="view-settings" class="view">
+            <div class="mobile-header" style="padding-top: 8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="header-btn" onclick="handleUserClick()">
+                            <i data-lucide="user" size="18" color="var(--text-secondary)"></i>
+                        </div>
+                        <h2 style="font-size:18px; font-weight:700; letter-spacing: -0.5px;">应用设置</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group-title">个性化</div>
+              <div class="settings-group">
+                <div class="settings-item" onclick="document.getElementById('themeModal').classList.add('active')">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="palette" size="20"></i>
+                        <span>界面主题</span>
+                    </div>
+                    <i data-lucide="chevron-right" size="18"></i>
+                </div>
+                <div class="settings-item" onclick="toggleFullScreen()">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="maximize" size="20"></i>
+                         <span>全屏模式</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
+             </div>
+
+             <div class="settings-group-title">账户设置</div>
+             <div class="settings-group">
+                 <div class="settings-item" onclick="handleUserClick()">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="user-circle" size="20"></i>
+                         <span id="settings-user-status">账户管理</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
+             </div>
+
+             <div class="settings-group-title">数据管理</div>
+             <div class="settings-group">
+                 <div class="settings-item" onclick="if(confirm('确定要清除所有本地缓存吗？')) { localStorage.clear(); location.reload(); }">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="database" size="20"></i>
+                         <span>清除本地缓存</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
+                 <div class="settings-item" onclick="APILogger.export()">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="download" size="20"></i>
+                         <span>导出日志 (JSON)</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
+             </div>
+
+             <div class="settings-group-title">关于</div>
+             <div class="settings-group">
+                 <div class="settings-item" onclick="showToast('当前版本: v2.4.0 (Pro)')">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="info" size="20"></i>
+                         <span>应用信息</span>
+                     </div>
+                     <span style="font-size:12px; color:var(--text-secondary);">v2.4.0</span>
+                 </div>
+             </div>
+
+            <div class="view-header-title">
+                 <div style="display:flex; align-items:center; gap:10px; flex:1;">
+                     <i data-lucide="scroll-text" size="22" color="var(--accent-color)"></i>
+                     API 调用日志
+                 </div>
+                 <div onclick="APILogger.clear()" style="font-size:12px; font-weight:normal; color:var(--text-secondary); cursor:pointer; display:flex; align-items:center; gap:4px;">
+                     <i data-lucide="trash-2" size="14"></i>
+                     清空
+                 </div>
+             </div>
+
+            <div id="api-log-list" class="log-list">
+                <!-- Logs will be injected here -->
+                <div style="text-align:center; padding:40px; color:var(--text-secondary); font-size:13px;">
+                    暂无调用记录
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Nav -->
@@ -1002,6 +1191,10 @@
         <div class="nav-item" onclick="switchTab('view-fav', this)">
             <i data-lucide="star" size="20"></i>
             <span>自选</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('view-settings', this)">
+            <i data-lucide="settings" size="20"></i>
+            <span>设置</span>
         </div>
     </nav>
 
@@ -1084,6 +1277,87 @@
     </div>
 
     <script>
+        // --- API Logger for Settings Tab ---
+        const APILogger = {
+            logs: [],
+            maxLogs: 50,
+            counter: 0,
+
+            log(stockName, stockId, url, status, type = 'API') {
+                this.counter++;
+                const entry = {
+                    id: this.counter,
+                    time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+                    stockName: stockName || '系统',
+                    stockId: stockId || '--',
+                    url: url,
+                    status: status, // 'success' or 'error'
+                    type: type
+                };
+                this.logs.unshift(entry);
+                if (this.logs.length > this.maxLogs) this.logs.pop();
+                
+                // If we are currently on the settings tab, re-render
+                if (document.getElementById('view-settings').classList.contains('active')) {
+                    this.render();
+                }
+            },
+
+            clear() {
+                if (confirm('确定要清空所有调用日志吗？')) {
+                    this.logs = [];
+                    this.render();
+                }
+            },
+
+            export() {
+                if (this.logs.length === 0) {
+                    showToast('暂无日志可供导出');
+                    return;
+                }
+                const blob = new Blob([JSON.stringify(this.logs, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `stock_api_logs_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast('日志已导出');
+            },
+
+            render() {
+                const container = document.getElementById('api-log-list');
+                if (!container) return;
+
+                if (this.logs.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-secondary); font-size:13px;">暂无调用记录</div>`;
+                    return;
+                }
+
+                container.innerHTML = this.logs.map(log => `
+                    <div class="log-item">
+                        <div class="log-header">
+                            <div>
+                                <span style="opacity:0.5; margin-right:4px;">#${log.id}</span>
+                                <span class="log-stock">${log.stockName} (${log.stockId})</span>
+                            </div>
+                            <span class="log-status ${log.status}">${log.status === 'success' ? '成功' : '失败'}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:10px; opacity:0.6;">${log.type} 调用</span>
+                            <span class="log-time">${log.time}</span>
+                        </div>
+                        <div class="log-url">${log.url.split('?')[0]}...</div>
+                    </div>
+                `).join('');
+                
+                // Refresh icons if any (though we didn't use any in the map)
+                if (window.lucide) lucide.createIcons();
+            }
+        };
+
         // --- Core Logic Ported from Desktop ---
 
         // 1. Web Worker (Same as desktop)
@@ -1159,13 +1433,23 @@
         function runWorkerTask(type, payload) {
             return new Promise((resolve, reject) => {
                 const id = Date.now() + Math.random().toString();
-                workerCallbacks[id] = { resolve, reject };
+                workerCallbacks[id] = { resolve, reject, type, payload, startTime: Date.now() };
                 worker.postMessage({ id, type, payload });
             });
         }
         worker.onmessage = (e) => {
             const { id, data, error } = e.data;
             if (id && workerCallbacks[id]) {
+                const { type, payload, startTime } = workerCallbacks[id];
+                const duration = Date.now() - startTime;
+                
+                if (type === 'FETCH_LIST' || type === 'SEARCH') {
+                    APILogger.log(type === 'SEARCH' ? `搜索: ${payload?.query || ''}` : '列表更新', 
+                                 currentRegion, `Worker: ${type}`, 
+                                 error ? 'error' : 'success', 
+                                 `后台任务 (${duration}ms)`);
+                }
+
                 error ? workerCallbacks[id].reject(error) : workerCallbacks[id].resolve(data);
                 delete workerCallbacks[id];
             }
@@ -1187,9 +1471,18 @@
 
         function scrollToBottom() {
             const list = document.getElementById('stock-list');
-            if (list) {
-                const totalHeight = vs_data.length * ITEM_HEIGHT;
-                list.scrollTo({ top: totalHeight });
+            if (list) list.scrollTo({ top: list.scrollHeight });
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    showToast(`无法开启全屏: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
             }
         }
 
@@ -1216,12 +1509,17 @@
             if (btnEl) btnEl.classList.add('active');
             else {
                 // Auto highlight based on viewId
-                const idx = viewId === 'view-market' ? 0 : viewId === 'view-chart' ? 1 : 2;
+                const mapping = { 'view-market': 0, 'view-chart': 1, 'view-fav': 2, 'view-settings': 3 };
+                const idx = mapping[viewId] ?? 0;
                 document.querySelectorAll('.nav-item')[idx].classList.add('active');
             }
 
             if (viewId === 'view-fav') {
                 if (window.FavoritesManager) FavoritesManager.renderPanel();
+            }
+
+            if (viewId === 'view-settings') {
+                if (window.APILogger) APILogger.render();
             }
 
             if (viewId === 'view-chart' && candleChart) {
@@ -1379,11 +1677,17 @@
 
         async function fetchStockList() {
             try {
+                const url = `(WebWorker Tasks)`;
                 allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
+                APILogger.log('沪深/美股全列表', currentRegion, url, allStocks ? 'success' : 'error', '全列表请求');
+                
                 if (isReversed) allStocks.reverse();
                 renderStockList(allStocks);
                 if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
-            } catch (e) { console.error(e); }
+            } catch (e) { 
+                console.error(e);
+                APILogger.log('列表请求', currentRegion, 'N/A', 'error', '异常');
+            }
         }
 
         // 5. Interaction
@@ -1461,10 +1765,19 @@
             // 使用与 gupiao_new.html 相同的 lmt=1000，并添加 ut 参数
             const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1000&ut=fa5fd1943c7b386f172d6893dbf24fe0`;
             
+            const curUrl = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`;
+            const zsUrl = `https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`;
+
             try {
                 const [curRes, zsRes] = await Promise.all([
-                    fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`).then(r => r.json()),
-                    fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`).then(r => r.json())
+                    fetch(curUrl).then(r => r.json()).then(res => {
+                        APILogger.log(currentStock.name, currentStock.id, curUrl, res?.data ? 'success' : 'error', 'K线数据');
+                        return res;
+                    }),
+                    fetch(zsUrl).then(r => r.json()).then(res => {
+                        APILogger.log(currentRegion === 'CN' ? '上证指数' : '纳斯达克', ZS_ID, zsUrl, res?.data ? 'success' : 'error', '指数K线');
+                        return res;
+                    })
                 ]);
 
                 candleChart.hideLoading();
@@ -1670,7 +1983,11 @@
         }
 
         async function updateStats() {
-            const res = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`).then(r => r.json());
+            const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`;
+            const res = await fetch(url).then(r => r.json());
+            
+            APILogger.log(currentStock.name, currentStock.id, url, res?.data ? 'success' : 'error', '行情详情');
+
             if (res?.data) {
                 const d = res.data;
                 const price = (d.f43 / 100).toFixed(2);
@@ -1790,6 +2107,7 @@
                 const s = localStorage.getItem('stock_user_session');
                 if (s) { USER_STATE.currentUser = JSON.parse(s); USER_STATE.isLoggedIn = true; this.loadUserFavorites(); }
                 this.setupListeners();
+                this.updateSettingsUI();
             },
             setupListeners() {
                 // Auth Toggle
@@ -1889,6 +2207,7 @@
                 USER_STATE.isLoggedIn = true;
                 localStorage.setItem('stock_user_session', JSON.stringify(user));
                 this.loadUserFavorites();
+                this.updateSettingsUI();
             },
 
             logout() {
@@ -1898,6 +2217,14 @@
                 USER_STATE.favorites = [];
                 renderStockList(allStocks);
                 showToast('已退出');
+                this.updateSettingsUI();
+            },
+
+            updateSettingsUI() {
+                const el = document.getElementById('settings-user-status');
+                if (el) {
+                    el.innerText = USER_STATE.isLoggedIn ? `账户: ${USER_STATE.currentUser.username}` : '点击登录账户';
+                }
             }
         };
 
