@@ -1637,34 +1637,43 @@
         });
 
         // Time Range (完全同步桌面端逻辑)
+        // 切换图表时间范围优化版
+        let rangeAnimationId = null;
         window.setTimeRange = function (days, btn) {
             if (!candleChart) return;
 
+            // 1. 取消上一次正在进行的动画，防止叠加卡死
+            if (rangeAnimationId) {
+                cancelAnimationFrame(rangeAnimationId);
+                rangeAnimationId = null;
+            }
+
             const option = candleChart.getOption();
+            if (!option.series || !option.series[0] || !option.series[0].data) return;
+
             const data = option.series[0].data;
-            if (!data) return;
-
             const total = data.length;
+            if (total === 0) return;
 
-            // Calculate target range in percentage (0-100)
-            // If total < days, show all (0-100). Else show last 'days' amount.
+            // 2. 计算目标范围
+            // 如果数据量不足请求的天数，则显示全部 (0-100)
             let targetStartPct = 0;
             if (total > days) {
                 targetStartPct = ((total - days) / total) * 100;
             }
             const targetEndPct = 100;
 
-            // 切换按钮状态
+            // 3. 切换按钮状态
             document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
 
-            // Animation Logic
+            // 4. 获取当前缩放位置
             const currentZoom = option.dataZoom[0];
             const currentStart = currentZoom.start;
             const currentEnd = currentZoom.end;
 
-            // If change is very small, minimal jump
-            if (Math.abs(currentStart - targetStartPct) < 0.1 && Math.abs(currentEnd - targetEndPct) < 0.1) {
+            // 如果已经在目标位置附近，直接跳转并退出
+            if (Math.abs(currentStart - targetStartPct) < 0.5 && Math.abs(currentEnd - targetEndPct) < 0.5) {
                 candleChart.dispatchAction({
                     type: 'dataZoom',
                     start: targetStartPct,
@@ -1673,15 +1682,16 @@
                 return;
             }
 
-            const duration = 800;
+            // 5. 动画逻辑
+            const duration = 400; // 缩短动画时间，从 800ms 降至 400ms，增加响应感
             const startTime = performance.now();
 
             function animate(now) {
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
 
-                // Ease Out Quart
-                const ease = 1 - Math.pow(1 - progress, 4);
+                // Ease Out Quad - 比 Quart 更平滑且计算量更小
+                const ease = progress * (2 - progress);
 
                 const newStart = currentStart + (targetStartPct - currentStart) * ease;
                 const newEnd = currentEnd + (targetEndPct - currentEnd) * ease;
@@ -1693,10 +1703,12 @@
                 });
 
                 if (progress < 1) {
-                    requestAnimationFrame(animate);
+                    rangeAnimationId = requestAnimationFrame(animate);
+                } else {
+                    rangeAnimationId = null;
                 }
             }
-            requestAnimationFrame(animate);
+            rangeAnimationId = requestAnimationFrame(animate);
         };
 
         // Full Screen Logic
