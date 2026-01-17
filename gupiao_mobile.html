@@ -1622,11 +1622,15 @@
         // Auth Logic Binding
         document.getElementById('u-submit').onclick = () => StockUserManager.handleSubmit();
 
-        // Keyboard Shortcut: Esc to go back to market from chart
+        // Keyboard Shortcut: Esc to go back to market from chart or favorites
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 const chartView = document.getElementById('view-chart');
-                if (chartView && chartView.classList.contains('active')) {
+                const favView = document.getElementById('view-fav');
+                const isChartActive = chartView && chartView.classList.contains('active');
+                const isFavActive = favView && favView.classList.contains('active');
+                
+                if (isChartActive || isFavActive) {
                     switchTab('view-market');
                 }
             }
