@@ -705,6 +705,7 @@
                     <div id="kline-header-industry"
                         style="font-size:10px; color:var(--text-secondary); background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 4px; margin-top: 2px;">
                         --</div>
+                    <div id="update-time" style="font-size:9px; color:var(--text-secondary); opacity: 0.6; margin-top: 2px;">更新: --:--:--</div>
                 </div>
             </div>
 
@@ -901,7 +902,68 @@
             }
         };
 
-        // 2. Global State
+        // 2. Data Management & Caching
+        const DataManager = {
+            isMarketOpen(region = 'CN') {
+                const now = new Date();
+                const day = now.getDay();
+                if (day === 0 || day === 6) return false; 
+                const hour = now.getHours();
+                const min = now.getMinutes();
+                const timeStr = hour * 100 + min;
+                if (region === 'CN') {
+                    return (timeStr >= 915 && timeStr <= 1135) || (timeStr >= 1255 && timeStr <= 1505);
+                } else {
+                    return timeStr >= 2125 || timeStr <= 405;
+                }
+            },
+            save(key, data) {
+                try {
+                    const entry = { data, timestamp: Date.now() };
+                    localStorage.setItem(key, JSON.stringify(entry));
+                } catch (e) { console.warn('Cache save failed', e); }
+            },
+            load(key) {
+                try {
+                    const str = localStorage.getItem(key);
+                    return str ? JSON.parse(str) : null;
+                } catch (e) { return null; }
+            },
+            shouldUpdate(key, region = 'CN', staleMs = 30000) {
+                const entry = this.load(key);
+                if (!entry) return true;
+                const now = Date.now();
+                const age = now - entry.timestamp;
+                if (this.isMarketOpen(region)) {
+                    return age >= staleMs;
+                } else {
+                    const lastTradeEnd = this.getLastTradeEndTime(region);
+                    return entry.timestamp < lastTradeEnd;
+                }
+            },
+            getLastTradeEndTime(region) {
+                const now = new Date();
+                const end = new Date(now);
+                if (region === 'CN') {
+                    end.setHours(15, 5, 0);
+                    if (now.getHours() < 15) end.setDate(end.getDate() - 1);
+                } else {
+                    end.setHours(4, 5, 0);
+                    if (now.getHours() >= 4 && now.getHours() < 21) end.setDate(end.getDate() - 1);
+                }
+                return end.getTime();
+            },
+            updateTimeUI(timestamp) {
+                const el = document.getElementById('update-time');
+                if (el) {
+                    if (!timestamp) { el.innerText = '更新: --:--:--'; return; }
+                    const d = new Date(timestamp);
+                    el.innerText = `更新: ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+                }
+            }
+        };
+
+        // 3. Global State
         let currentRegion = 'CN';
         let currentStock = { id: '1.605296', name: '神农集团' };
         let ZS_ID = '1.000001';
@@ -1107,8 +1169,21 @@
         };
 
         async function fetchStockList() {
+            const cacheKey = `stock_list_${currentRegion}`;
+            if (!DataManager.shouldUpdate(cacheKey, currentRegion)) {
+                const cached = DataManager.load(cacheKey);
+                if (cached) {
+                    allStocks = cached.data;
+                    if (isReversed) allStocks.reverse();
+                    renderStockList(allStocks);
+                    if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
+                    return;
+                }
+            }
+
             try {
                 allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
+                DataManager.save(cacheKey, allStocks);
                 if (isReversed) allStocks.reverse();
                 renderStockList(allStocks);
                 if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
@@ -1155,6 +1230,16 @@
         // 6. Charting
         async function updateCandle() {
             if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
+
+            const cacheKey = `kline_${currentStock.id}`;
+            const cached = DataManager.load(cacheKey);
+            
+            // 如果在非交易时间且有缓存，直接用缓存
+            if (!DataManager.shouldUpdate(cacheKey, currentRegion) && cached) {
+                renderKline(cached.data);
+                DataManager.updateTimeUI(cached.timestamp);
+                return;
+            }
 
             const colors = { 
                 up: '#f43f5e', 
@@ -1220,8 +1305,17 @@
                 const zsRaw = zsRes?.data ? parse(zsRes.data.klines) : [];
 
                 const processed = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
-                const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processed;
+                
+                DataManager.save(cacheKey, processed);
+                DataManager.updateTimeUI(Date.now());
+                renderKline(processed);
+            } catch (err) {
+                console.error('Update candle failed:', err);
+                candleChart.hideLoading();
+            }
 
+            function renderKline(data) {
+                const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = data;
                 candleChart.setOption({
                     animation: false,
                     backgroundColor: 'transparent',
@@ -1340,14 +1434,11 @@
                     try {
                         const opt = candleChart.getOption();
                         if (!opt.dataZoom) return;
-
                         const start = opt.dataZoom[0].start;
                         const end = opt.dataZoom[0].end;
                         const len = curD.length;
-
                         const sIdx = Math.max(0, Math.floor(start * len / 100));
                         const eIdx = Math.min(len, Math.ceil(end * len / 100));
-
                         const findExtremes = (data) => {
                             let max = -Infinity, min = Infinity;
                             for (let i = sIdx; i < eIdx; i++) {
@@ -1359,20 +1450,16 @@
                             }
                             return { max: max === -Infinity ? null : max, min: min === Infinity ? null : min };
                         };
-
                         const curEx = findExtremes(opt.series[0].data);
                         const zsEx = findExtremes(opt.series[4].data);
-
                         const lastPrice = curD[curD.length - 1]?.c;
                         const markLineData = [];
                         if (curEx.max !== null) markLineData.push({ yAxis: curEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } });
                         if (curEx.min !== null) markLineData.push({ yAxis: curEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } });
                         if (lastPrice !== null && lastPrice !== undefined) markLineData.push({ yAxis: lastPrice, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } });
-
                         const zsMarkLineData = [];
                         if (zsEx.max !== null) zsMarkLineData.push({ yAxis: zsEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } });
                         if (zsEx.min !== null) zsMarkLineData.push({ yAxis: zsEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } });
-
                         candleChart.setOption({
                             series: [
                                 { markLine: { data: markLineData } },
@@ -1380,44 +1467,47 @@
                                 { markLine: { data: zsMarkLineData } }
                             ]
                         });
-                    } catch (e) {
-                        console.warn('updateMarkLines failed:', e);
-                    }
+                    } catch (e) { console.warn('updateMarkLines failed:', e); }
                 }
-
-                candleChart.off('dataZoom'); // Prevent duplicate listeners
+                candleChart.off('dataZoom');
                 candleChart.on('dataZoom', updateMarkLines);
                 updateMarkLines();
-            } catch (err) {
-                console.error('Update candle failed:', err);
-                candleChart.hideLoading();
             }
         }
 
         async function updateStats() {
-            const res = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`).then(r => r.json());
-            if (res?.data) {
-                const d = res.data;
-                const price = (d.f43 / 100).toFixed(2);
-                const pct = (d.f170 / 100).toFixed(2);
+            // 同步与 gupiao_new.html 类似的 stats 更新逻辑
+            try {
+                const res = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`).then(r => r.json());
+                if (res?.data) {
+                    const d = res.data;
+                    const price = (d.f43 / 100).toFixed(2);
+                    const pct = (d.f170 / 100).toFixed(2);
 
-                document.getElementById('price-cur').innerText = price;
-                document.getElementById('change-cur').innerText = (pct > 0 ? '+' : '') + pct + '%';
-                document.getElementById('change-cur').className = 'pct-hero ' + (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
-                document.getElementById('kline-header-industry').innerText = d.f127 || '--';
+                    const priceEl = document.getElementById('price-cur');
+                    const changeEl = document.getElementById('change-cur');
+                    const industryEl = document.getElementById('kline-header-industry');
 
-                // Details
-                document.getElementById('det-open').innerText = (d.f46 / 100).toFixed(2);
-                document.getElementById('det-high').innerText = (d.f44 / 100).toFixed(2);
-                document.getElementById('det-low').innerText = (d.f45 / 100).toFixed(2);
-                document.getElementById('vol-cur').innerText = (d.f47 / 10000).toFixed(1) + '万';
-                document.getElementById('det-pe').innerText = (d.f9 / 100).toFixed(1);
-                document.getElementById('det-zsz').innerText = (d.f20 / 100000000).toFixed(0) + '亿';
+                    if (priceEl) {
+                        priceEl.innerText = price;
+                        priceEl.style.color = pct > 0 ? varColors.up : pct < 0 ? varColors.down : 'var(--text-primary)';
+                    }
+                    if (changeEl) {
+                        changeEl.innerText = (pct > 0 ? '+' : '') + pct + '%';
+                        changeEl.className = 'pct-hero ' + (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
+                    }
+                    if (industryEl) industryEl.innerText = d.f127 || '--';
 
-                // Update Color
-                const color = pct > 0 ? varColors.up : varColors.down;
-                document.getElementById('price-cur').style.color = color;
-            }
+                    // Details
+                    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+                    setVal('det-open', (d.f46 / 100).toFixed(2));
+                    setVal('det-high', (d.f44 / 100).toFixed(2));
+                    setVal('det-low', (d.f45 / 100).toFixed(2));
+                    setVal('vol-cur', (d.f47 / 10000).toFixed(1) + '万');
+                    setVal('det-pe', (d.f9 / 100).toFixed(1));
+                    setVal('det-zsz', (d.f20 / 100000000).toFixed(0) + '亿');
+                }
+            } catch (e) { console.error('Stats update failed:', e); }
         }
 
         const varColors = { up: '#f43f5e', down: '#10b981' };
