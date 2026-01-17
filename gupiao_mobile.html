@@ -1008,15 +1008,23 @@
 
         // 5. Interaction
         window.selectStock = function (id, name) {
+            console.log('Selecting stock:', id, name);
             currentStock = { id, name };
-            // Update Header Info
-            document.getElementById('kline-header-name').innerText = name;
+            
+            // 根据股票代码判断区域和指数
+            if (id.startsWith('105.') || id.startsWith('106.') || id.startsWith('107.')) {
+                currentRegion = 'US';
+                ZS_ID = '100.UDI';
+            } else {
+                currentRegion = 'CN';
+                ZS_ID = '1.000001';
+            }
+            
+            const headerName = document.getElementById('kline-header-name');
+            if (headerName) headerName.innerText = name;
+            
             updateChartFavIcon();
-
-            // Switch to Chart Tab
             switchTab('view-chart');
-
-            // Update Data
             updateAll();
         };
 
@@ -1039,217 +1047,242 @@
         async function updateCandle() {
             if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
 
+            const colors = { 
+                up: '#f43f5e', 
+                down: '#10b981', 
+                accent: '#3b82f6', 
+                grid: 'rgba(255,255,255,0.05)', 
+                text: '#94a3b8' 
+            };
+            if (document.documentElement.getAttribute('data-theme') === 'light') {
+                colors.grid = 'rgba(0,0,0,0.05)'; 
+                colors.text = '#64748b';
+            }
+
+            // 显示加载状态
+            candleChart.showLoading({
+                text: '',
+                color: colors.accent,
+                maskColor: 'rgba(0,0,0,0.1)',
+                zlevel: 100
+            });
+
             // 提取当前缩放级别，实现“缩放记忆”功能
             const currentOpt = candleChart.getOption();
-            let zoomStart = 85, zoomEnd = 100;
+            let zoomStart = 95, zoomEnd = 100;
             if (currentOpt && currentOpt.dataZoom && currentOpt.dataZoom[0]) {
                 zoomStart = currentOpt.dataZoom[0].start;
                 zoomEnd = currentOpt.dataZoom[0].end;
             }
 
-            // Increased limit to 1200 to support up to 4+ years of data (approx 250 trading days/year)
-            const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1200`;
-            const [curRes, zsRes] = await Promise.all([
-                fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`).then(r => r.json()),
-                fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`).then(r => r.json())
-            ]);
+            // 使用与 gupiao_new.html 相同的 lmt=1000，并添加 ut 参数
+            const common = `fields1=f1,f2&fields2=f51,f52,f53,f54,f55,f56,f59&klt=101&fqt=1&end=20500101&lmt=1000&ut=fa5fd1943c7b386f172d6893dbf24fe0`;
+            
+            try {
+                const [curRes, zsRes] = await Promise.all([
+                    fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${currentStock.id}&${common}`).then(r => r.json()),
+                    fetch(`https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=${ZS_ID}&${common}`).then(r => r.json())
+                ]);
 
-            if (!curRes?.data) return;
+                candleChart.hideLoading();
 
-            const parse = (k) => k.map(x => {
-                const p = x.split(',');
-                return { date: p[0], o: parseFloat(p[1]), c: parseFloat(p[2]), h: parseFloat(p[3]), l: parseFloat(p[4]), v: parseFloat(p[5]), pct: parseFloat(p[6]) };
-            });
-
-            const curRaw = parse(curRes.data.klines);
-            const zsRaw = zsRes?.data ? parse(zsRes.data.klines) : [];
-
-            const processed = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
-            const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processed;
-
-            const colors = { up: '#f43f5e', down: '#10b981', accent: '#3b82f6', grid: 'rgba(255,255,255,0.05)', text: '#94a3b8' };
-            if (document.documentElement.getAttribute('data-theme') === 'light') {
-                colors.grid = 'rgba(0,0,0,0.05)'; colors.text = '#64748b';
-            }
-
-            candleChart.setOption({
-                animation: false,
-                backgroundColor: 'transparent',
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: { type: 'cross', label: { show: false } },
-                    backgroundColor: 'rgba(20, 24, 35, 0.9)',
-                    borderColor: colors.grid,
-                    textStyle: { color: colors.text, fontSize: 10 },
-                    padding: 8,
-                    formatter: function (params) {
-                        if (!params[0]) return '';
-                        const idx = params[0].dataIndex;
-                        const c = curD[idx], z = zsD[idx];
-                        if (!c) return '';
-                        const date = params[0].name;
-                        const pctStr = (p) => {
-                            const val = p !== undefined ? p.toFixed(2) : '--';
-                            const color = p > 0 ? colors.up : (p < 0 ? colors.down : colors.text);
-                            return `<span style="color:${color}">${val}%</span>`;
-                        };
-                        return `
-                            <div style="font-size:10px; margin-bottom:4px;">${date}</div>
-                            <div style="display:flex; justify-content:space-between; gap:12px;">
-                                <span>${currentStock.name}</span>
-                                <span style="font-weight:bold">${c.c.toFixed(2)}</span>
-                                ${pctStr(c.pct)}
-                            </div>
-                            <div style="display:flex; justify-content:space-between; gap:12px;">
-                                <span>${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</span>
-                                <span style="font-weight:bold">${z.c ? z.c.toFixed(2) : '--'}</span>
-                                ${pctStr(z.pct)}
-                            </div>
-                        `;
-                    }
-                },
-                axisPointer: {
-                    link: { xAxisIndex: 'all' }, // Link all x-axes
-                    label: { backgroundColor: '#777' }
-                },
-                grid: [
-                    { left: 15, right: 35, top: '2%', height: '42%' },  // Main Stock K-Line (Increased)
-                    { left: 15, right: 35, top: '46%', height: '8%' }, // Main Stock Volume
-                    { left: 15, right: 35, top: '56%', height: '33%' }, // Index K-Line
-                    { left: 15, right: 35, top: '91%', height: '8%' }  // Index Volume
-                ],
-                xAxis: [
-                    { type: 'category', data: dates, gridIndex: 0, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
-                    { type: 'category', data: dates, gridIndex: 1, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
-                    { type: 'category', data: dates, gridIndex: 2, axisLine: { lineStyle: { color: colors.grid } }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
-                    { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true }
-                ],
-                yAxis: [
-                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: false, margin: 4 } },
-                    { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
-                    { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
-                    { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
-                ],
-                dataZoom: [
-                    { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd }
-                ],
-                series: [
-                    // Main Stock
-                    {
-                        type: 'candlestick',
-                        data: curD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
-                        markLine: {
-                            symbol: ['none', 'none'],
-                            label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
-                            lineStyle: { type: 'dashed', opacity: 0.6 },
-                            animation: false,
-                            data: [
-                                // Placeholder for dynamic update
-                            ]
+                if (!curRes?.data) {
+                    console.warn('No kline data for', currentStock.name, currentStock.id);
+                    candleChart.setOption({
+                        title: {
+                            show: true,
+                            text: '暂无 K 线数据',
+                            left: 'center',
+                            top: 'center',
+                            textStyle: { color: colors.text, fontSize: 14 }
                         }
-                    },
-                    { type: 'line', data: curMA5, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f59e0b', opacity: 0.7 } },
-                    { type: 'line', data: curMA20, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#3b82f6', opacity: 0.7 } },
+                    });
+                    return;
+                }
 
-                    // Main Volume
-                    {
-                        type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
-                        data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
-                    },
+                candleChart.setOption({ title: { show: false } });
 
-                    // Index Comparison (K-Line Chart)
-                    {
-                        type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
-                        name: 'Index K-Line',
-                        data: zsD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: {
-                            color: colors.up, color0: colors.down,
-                            borderColor: colors.up, borderColor0: colors.down,
-                            borderWidth: 1
-                        },
-                        markLine: {
-                            symbol: ['none', 'none'],
-                            label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
-                            lineStyle: { type: 'dashed', opacity: 0.6 },
-                            animation: false,
-                            data: [
-                                // Placeholder for dynamic update
-                            ]
-                        }
-                    },
-                    {
-                        type: 'line', xAxisIndex: 2, yAxisIndex: 2,
-                        data: zsMA5, smooth: true, showSymbol: false,
-                        lineStyle: { width: 1, color: '#f59e0b', opacity: 0.8 }
-                    },
-                    {
-                        type: 'line', xAxisIndex: 2, yAxisIndex: 2,
-                        data: zsMA20, smooth: true, showSymbol: false,
-                        lineStyle: { width: 1, color: '#3b82f6', opacity: 0.8 }
-                    },
+                const parse = (k) => k.map(x => {
+                    const p = x.split(',');
+                    return { date: p[0], o: parseFloat(p[1]), c: parseFloat(p[2]), h: parseFloat(p[3]), l: parseFloat(p[4]), v: parseFloat(p[5]), pct: parseFloat(p[6]) };
+                });
 
-                    // Index Volume
-                    {
-                        type: 'bar', xAxisIndex: 3, yAxisIndex: 3,
-                        data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
-                    }
-                ]
-            });
+                const curRaw = parse(curRes.data.klines);
+                const zsRaw = zsRes?.data ? parse(zsRes.data.klines) : [];
 
-            // Dynamic MarkLine Update Logic
-            function updateMarkLines() {
-                const opt = candleChart.getOption();
-                if (!opt.dataZoom) return;
-
-                const start = opt.dataZoom[0].start;
-                const end = opt.dataZoom[0].end;
-                const len = curD.length;
-
-                const sIdx = Math.floor(start * len / 100);
-                const eIdx = Math.ceil(end * len / 100);
-
-                // Helper to find min/max in range
-                const findExtremes = (data) => {
-                    let max = -Infinity, min = Infinity;
-                    for (let i = sIdx; i < Math.min(eIdx, data.length); i++) {
-                        const h = data[i][3]; // High
-                        const l = data[i][2]; // Low
-                        if (h > max) max = h;
-                        if (l < min) min = l;
-                    }
-                    return { max, min };
-                };
-
-                const curEx = findExtremes(opt.series[0].data);
-                const zsEx = findExtremes(opt.series[4].data); // Series 4 is Index K-Line
+                const processed = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
+                const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processed;
 
                 candleChart.setOption({
+                    animation: false,
+                    backgroundColor: 'transparent',
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross', label: { show: false } },
+                        backgroundColor: 'rgba(20, 24, 35, 0.9)',
+                        borderColor: colors.grid,
+                        textStyle: { color: colors.text, fontSize: 10 },
+                        padding: 8,
+                        formatter: function (params) {
+                            if (!params[0]) return '';
+                            const idx = params[0].dataIndex;
+                            const c = curD[idx], z = zsD[idx];
+                            if (!c || c.c === null) return '';
+                            const date = params[0].name;
+                            const pctStr = (p) => {
+                                const val = (p !== undefined && p !== null) ? p.toFixed(2) : '--';
+                                const color = p > 0 ? colors.up : (p < 0 ? colors.down : colors.text);
+                                return `<span style="color:${color}">${val}%</span>`;
+                            };
+                            return `
+                                <div style="font-size:10px; margin-bottom:4px;">${date}</div>
+                                <div style="display:flex; justify-content:space-between; gap:12px;">
+                                    <span>${currentStock.name}</span>
+                                    <span style="font-weight:bold">${c.c.toFixed(2)}</span>
+                                    ${pctStr(c.pct)}
+                                </div>
+                                <div style="display:flex; justify-content:space-between; gap:12px;">
+                                    <span>${currentRegion === 'CN' ? '上证指数' : '纳斯达克'}</span>
+                                    <span style="font-weight:bold">${z.c ? z.c.toFixed(2) : '--'}</span>
+                                    ${pctStr(z.pct)}
+                                </div>
+                            `;
+                        }
+                    },
+                    axisPointer: {
+                        link: { xAxisIndex: 'all' },
+                        label: { backgroundColor: '#777' }
+                    },
+                    grid: [
+                        { left: 15, right: 35, top: '2%', height: '42%' },
+                        { left: 15, right: 35, top: '46%', height: '8%' },
+                        { left: 15, right: 35, top: '56%', height: '33%' },
+                        { left: 15, right: 35, top: '91%', height: '8%' }
+                    ],
+                    xAxis: [
+                        { type: 'category', data: dates, gridIndex: 0, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                        { type: 'category', data: dates, gridIndex: 1, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                        { type: 'category', data: dates, gridIndex: 2, axisLine: { lineStyle: { color: colors.grid } }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                        { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true }
+                    ],
+                    yAxis: [
+                        { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: false, margin: 4 } },
+                        { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
+                        { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
+                        { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
+                    ],
+                    dataZoom: [
+                        { type: 'inside', xAxisIndex: [0, 1, 2, 3], start: zoomStart, end: zoomEnd }
+                    ],
                     series: [
                         {
+                            type: 'candlestick',
+                            data: curD.map(d => [d.o, d.c, d.l, d.h]),
+                            itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
                             markLine: {
-                                data: [
-                                    { yAxis: curEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } },
-                                    { yAxis: curEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } },
-                                    { yAxis: curD[curD.length - 1].c, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } }
-                                ]
+                                symbol: ['none', 'none'],
+                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
+                                lineStyle: { type: 'dashed', opacity: 0.6 },
+                                animation: false,
+                                data: []
                             }
                         },
-                        {}, {}, {}, // Skip others
+                        { type: 'line', data: curMA5, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f59e0b', opacity: 0.7 } },
+                        { type: 'line', data: curMA20, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#3b82f6', opacity: 0.7 } },
                         {
+                            type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
+                            data: curD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
+                        },
+                        {
+                            type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
+                            name: 'Index K-Line',
+                            data: zsD.map(d => [d.o, d.c, d.l, d.h]),
+                            itemStyle: {
+                                color: colors.up, color0: colors.down,
+                                borderColor: colors.up, borderColor0: colors.down,
+                                borderWidth: 1
+                            },
                             markLine: {
-                                data: [
-                                    { yAxis: zsEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } },
-                                    { yAxis: zsEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } }
-                                ]
+                                symbol: ['none', 'none'],
+                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
+                                lineStyle: { type: 'dashed', opacity: 0.6 },
+                                animation: false,
+                                data: []
                             }
+                        },
+                        {
+                            type: 'line', xAxisIndex: 2, yAxisIndex: 2,
+                            data: zsMA5, smooth: true, showSymbol: false,
+                            lineStyle: { width: 1, color: '#f59e0b', opacity: 0.8 }
+                        },
+                        {
+                            type: 'line', xAxisIndex: 2, yAxisIndex: 2,
+                            data: zsMA20, smooth: true, showSymbol: false,
+                            lineStyle: { width: 1, color: '#3b82f6', opacity: 0.8 }
+                        },
+                        {
+                            type: 'bar', xAxisIndex: 3, yAxisIndex: 3,
+                            data: zsD.map(d => ({ value: d.v, itemStyle: { color: d.c >= d.o ? colors.up : colors.down } }))
                         }
                     ]
                 });
-            }
 
-            candleChart.on('dataZoom', updateMarkLines);
-            updateMarkLines(); // Initial call
+                function updateMarkLines() {
+                    try {
+                        const opt = candleChart.getOption();
+                        if (!opt.dataZoom) return;
+
+                        const start = opt.dataZoom[0].start;
+                        const end = opt.dataZoom[0].end;
+                        const len = curD.length;
+
+                        const sIdx = Math.max(0, Math.floor(start * len / 100));
+                        const eIdx = Math.min(len, Math.ceil(end * len / 100));
+
+                        const findExtremes = (data) => {
+                            let max = -Infinity, min = Infinity;
+                            for (let i = sIdx; i < eIdx; i++) {
+                                if (!data[i]) continue;
+                                const h = data[i][3];
+                                const l = data[i][2];
+                                if (h !== null && !isNaN(h) && h > max) max = h;
+                                if (l !== null && !isNaN(l) && l < min) min = l;
+                            }
+                            return { max: max === -Infinity ? null : max, min: min === Infinity ? null : min };
+                        };
+
+                        const curEx = findExtremes(opt.series[0].data);
+                        const zsEx = findExtremes(opt.series[4].data);
+
+                        const lastPrice = curD[curD.length - 1]?.c;
+                        const markLineData = [];
+                        if (curEx.max !== null) markLineData.push({ yAxis: curEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } });
+                        if (curEx.min !== null) markLineData.push({ yAxis: curEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } });
+                        if (lastPrice !== null && lastPrice !== undefined) markLineData.push({ yAxis: lastPrice, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } });
+
+                        const zsMarkLineData = [];
+                        if (zsEx.max !== null) zsMarkLineData.push({ yAxis: zsEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } });
+                        if (zsEx.min !== null) zsMarkLineData.push({ yAxis: zsEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } });
+
+                        candleChart.setOption({
+                            series: [
+                                { markLine: { data: markLineData } },
+                                {}, {}, {},
+                                { markLine: { data: zsMarkLineData } }
+                            ]
+                        });
+                    } catch (e) {
+                        console.warn('updateMarkLines failed:', e);
+                    }
+                }
+
+                candleChart.off('dataZoom'); // Prevent duplicate listeners
+                candleChart.on('dataZoom', updateMarkLines);
+                updateMarkLines();
+            } catch (err) {
+                console.error('Update candle failed:', err);
+                candleChart.hideLoading();
+            }
         }
 
         async function updateStats() {
@@ -1281,9 +1314,13 @@
         const varColors = { up: '#f43f5e', down: '#10b981' };
 
         function updateAll() {
-            updateStats();
-            updateCandle();
-            if (window.updateChartFavIcon) updateChartFavIcon();
+            try {
+                updateStats().catch(e => console.error('Stats update failed:', e));
+                updateCandle().catch(e => console.error('Candle update failed:', e));
+                if (window.updateChartFavIcon) updateChartFavIcon();
+            } catch (err) {
+                console.error('Update all failed:', err);
+            }
         }
 
         // 7. Search & User System
@@ -1636,13 +1673,11 @@
             }
         });
 
-        // Time Range (完全同步桌面端逻辑)
-        // 切换图表时间范围优化版
+        // Time Range (完全同步 gupiao_new.html 逻辑)
         let rangeAnimationId = null;
         window.setTimeRange = function (days, btn) {
             if (!candleChart) return;
 
-            // 1. 取消上一次正在进行的动画，防止叠加卡死
             if (rangeAnimationId) {
                 cancelAnimationFrame(rangeAnimationId);
                 rangeAnimationId = null;
@@ -1655,25 +1690,22 @@
             const total = data.length;
             if (total === 0) return;
 
-            // 2. 计算目标范围
-            // 如果数据量不足请求的天数，则显示全部 (0-100)
+            // Calculate target range in percentage (0-100)
             let targetStartPct = 0;
             if (total > days) {
                 targetStartPct = ((total - days) / total) * 100;
             }
             const targetEndPct = 100;
 
-            // 3. 切换按钮状态
+            // 切换按钮状态
             document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
             if (btn) btn.classList.add('active');
 
-            // 4. 获取当前缩放位置
-            const currentZoom = option.dataZoom[0];
-            const currentStart = currentZoom.start;
-            const currentEnd = currentZoom.end;
+            const currentZoom = option.dataZoom && option.dataZoom[0] ? option.dataZoom[0] : { start: 0, end: 100 };
+            const currentStart = currentZoom.start ?? 0;
+            const currentEnd = currentZoom.end ?? 100;
 
-            // 如果已经在目标位置附近，直接跳转并退出
-            if (Math.abs(currentStart - targetStartPct) < 0.5 && Math.abs(currentEnd - targetEndPct) < 0.5) {
+            if (Math.abs(currentStart - targetStartPct) < 0.1 && Math.abs(currentEnd - targetEndPct) < 0.1) {
                 candleChart.dispatchAction({
                     type: 'dataZoom',
                     start: targetStartPct,
@@ -1682,16 +1714,15 @@
                 return;
             }
 
-            // 5. 动画逻辑
-            const duration = 400; // 缩短动画时间，从 800ms 降至 400ms，增加响应感
+            const duration = 800;
             const startTime = performance.now();
 
             function animate(now) {
                 const elapsed = now - startTime;
                 const progress = Math.min(elapsed / duration, 1);
-
-                // Ease Out Quad - 比 Quart 更平滑且计算量更小
-                const ease = progress * (2 - progress);
+                
+                // Ease Out Quart (与 gupiao_new.html 一致)
+                const ease = 1 - Math.pow(1 - progress, 4);
 
                 const newStart = currentStart + (targetStartPct - currentStart) * ease;
                 const newEnd = currentEnd + (targetEndPct - currentEnd) * ease;
@@ -1705,6 +1736,11 @@
                 if (progress < 1) {
                     rangeAnimationId = requestAnimationFrame(animate);
                 } else {
+                    candleChart.dispatchAction({
+                        type: 'dataZoom',
+                        start: targetStartPct,
+                        end: targetEndPct
+                    });
                     rangeAnimationId = null;
                 }
             }
