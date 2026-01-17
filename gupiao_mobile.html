@@ -167,6 +167,11 @@
             background: rgba(255, 255, 255, 0.05);
         }
 
+        .stock-item.selected {
+            background: rgba(59, 130, 246, 0.15) !important;
+            border-left: 3px solid var(--accent-color);
+        }
+
         .stock-info {
             flex: 1;
             display: flex;
@@ -1097,6 +1102,7 @@
                 const globalIndex = startIndex + i;
                 const fullId = `${s.f13}.${s.f12}`;
                 const isFav = USER_STATE.favorites.some(f => f.stockId === fullId);
+                const isSelected = (typeof currentStock !== 'undefined' && currentStock && currentStock.id === fullId) ? 'selected' : '';
                 const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
 
                 // Determine Badge and BG Class
@@ -1123,7 +1129,7 @@
                 }
 
                 return `
-                    <div class="stock-item ${bgClass}" onclick="selectStock('${fullId}', '${s.f14}')">
+                    <div class="stock-item ${bgClass} ${isSelected}" onclick="selectStock('${fullId}', '${s.f14}')">
                         <div class="stock-index">${(globalIndex + 1).toString().padStart(2, '0')}</div>
                         <div class="stock-info">
                             <div class="stock-name-row">
@@ -1208,6 +1214,11 @@
             if (headerName) headerName.innerText = name;
             
             updateChartFavIcon();
+            
+            // 刷新列表显示选中状态
+            renderVirtualWindow(true);
+            if (USER_STATE.isLoggedIn) FavoritesManager.renderPanel();
+
             switchTab('view-chart');
             updateAll();
         };
@@ -1761,7 +1772,7 @@
                         sign = pct > 0 ? '+' : '';
                     }
 
-                    const isActive = (typeof currentStock !== 'undefined' && f.stockId === currentStock.id) ? 'active' : '';
+                    const isSelected = (typeof currentStock !== 'undefined' && currentStock && f.stockId === currentStock.id) ? 'selected' : '';
 
                     const mktCode = parseInt(f.stockId.split('.')[0]);
                     const stockCode = f.stockId.split('.')[1];
@@ -1797,7 +1808,7 @@
                     }
 
                     return `
-                        <div class="stock-item ${isActive}" data-id="${f.stockId}" onclick="selectStock('${f.stockId}', '${f.stockName}')">
+                        <div class="stock-item ${isSelected}" data-id="${f.stockId}" onclick="selectStock('${f.stockId}', '${f.stockName}')">
                             <div class="stock-index">${(i + 1).toString().padStart(2, '0')}</div>
                             <div class="stock-info">
                                 <div class="stock-name-row">
