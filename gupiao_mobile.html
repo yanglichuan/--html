@@ -573,6 +573,43 @@
             background: rgba(255, 255, 255, 0.1);
             transform: scale(0.95);
         }
+
+        /* Float Buttons */
+        .float-btns {
+            position: fixed;
+            right: 16px;
+            bottom: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .float-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .float-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .float-btn.active {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
     </style>
 </head>
 
@@ -616,9 +653,9 @@
                     </div>
                     <div
                         style="height:4px; background: rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; display: flex;">
-                        <div class="breadth-up" style="width:50%; background:var(--up-color); transition:width 1s;">
+                        <div class="breadth-up" style="width:50%; background:var(--up-color); transition:width 0.3s;">
                         </div>
-                        <div class="breadth-down" style="width:50%; background:var(--down-color); transition:width 1s;">
+                        <div class="breadth-down" style="width:50%; background:var(--down-color); transition:width 0.3s;">
                         </div>
                     </div>
                 </div>
@@ -627,6 +664,19 @@
                 <!-- Virtual Scroll Container -->
                 <div class="virtual-spacer"></div>
                 <div class="virtual-content"></div>
+            </div>
+
+            <!-- Floating Action Buttons for Market List -->
+            <div class="float-btns">
+                <div class="float-btn" onclick="scrollToTop()" title="回到顶部">
+                    <i data-lucide="chevrons-up" size="20"></i>
+                </div>
+                <div class="float-btn" id="sort-toggle-btn" onclick="toggleSortOrder()" title="切换排序">
+                    <i data-lucide="arrow-down-narrow-wide" size="20"></i>
+                </div>
+                <div class="float-btn" onclick="scrollToBottom()" title="到底部">
+                    <i data-lucide="chevrons-down" size="20"></i>
+                </div>
             </div>
         </div>
 
@@ -856,8 +906,37 @@
         let ZS_ID = '1.000001';
         let allStocks = [];
         let candleChart = null;
+        let isReversed = false;
 
         // 3. UI Functions
+        function scrollToTop() {
+            const list = document.getElementById('stock-list');
+            if (list) list.scrollTo({ top: 0 });
+        }
+
+        function scrollToBottom() {
+            const list = document.getElementById('stock-list');
+            if (list) {
+                const totalHeight = vs_data.length * ITEM_HEIGHT;
+                list.scrollTo({ top: totalHeight });
+            }
+        }
+
+        function toggleSortOrder() {
+            isReversed = !isReversed;
+            const btn = document.getElementById('sort-toggle-btn');
+            if (btn) {
+                btn.classList.toggle('active', isReversed);
+                btn.innerHTML = `<i data-lucide="${isReversed ? 'arrow-up-wide-narrow' : 'arrow-down-narrow-wide'}" size="20"></i>`;
+                lucide.createIcons();
+            }
+            
+            // 对当前数据进行倒序处理并重新渲染
+            // 注意：这里是对 vs_data 进行反转，如果是搜索结果则反转搜索结果
+            vs_data.reverse();
+            renderVirtualWindow(true);
+            showToast(isReversed ? '已切换为倒序' : '已恢复正序');
+        }
         function switchTab(viewId, btnEl, fromBack = false) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
@@ -1029,6 +1108,7 @@
         async function fetchStockList() {
             try {
                 allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
+                if (isReversed) allStocks.reverse();
                 renderStockList(allStocks);
                 if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
             } catch (e) { console.error(e); }
@@ -1354,7 +1434,15 @@
         // 7. Search & User System
         document.getElementById('stock-search').addEventListener('input', (e) => {
             const val = e.target.value.trim().toLowerCase();
-            const results = val ? allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val) || (PinyinMatch && PinyinMatch.match(s.f14, val))) : allStocks;
+            let results = val ? allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val) || (PinyinMatch && PinyinMatch.match(s.f14, val))) : [...allStocks];
+            
+            // 搜索时也保持当前的倒序状态
+            if (isReversed && val) {
+                // 如果是搜索结果，且当前是倒序状态，保持搜索结果的顺序逻辑
+                // 这里简单处理：如果当前是倒序，搜索出的结果也反转
+                results.reverse();
+            }
+            
             renderStockList(results, !!val);
         });
 
@@ -1755,7 +1843,7 @@
                 return;
             }
 
-            const duration = 800;
+            const duration = 400;
             const startTime = performance.now();
 
             function animate(now) {
