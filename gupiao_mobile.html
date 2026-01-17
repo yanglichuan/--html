@@ -242,11 +242,31 @@
             font-size: 10px;
             gap: 4px;
             cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
         }
 
         .nav-item.active {
-            color: var(--accent-color);
+            color: var(--accent-color) !important;
             font-weight: 600;
+            background: rgba(59, 130, 246, 0.1); /* Light blue background for active state */
+        }
+        
+        .nav-item.active i,
+        .nav-item.active span {
+            color: var(--accent-color) !important;
+        }
+        
+        /* Add a top indicator for active tab */
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            width: 60%;
+            height: 2px;
+            background: var(--accent-color);
+            border-radius: 0 0 4px 4px;
         }
 
         .nav-item i {
@@ -714,6 +734,11 @@
 
         .log-status.success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
         .log-status.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+        .idb-cache-log {
+            background: rgba(245, 158, 11, 0.08) !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+        }
 
         .log-time {
             font-family: 'JetBrains Mono', monospace;
@@ -1193,14 +1218,14 @@
              </div>
 
              <div class="settings-group-title">数据管理</div>
-             <div class="settings-group">
-                 <div class="settings-item" onclick="if(confirm('确定要清除所有本地缓存吗？')) { localStorage.clear(); location.reload(); }">
-                     <div style="display:flex; align-items:center; gap:12px;">
-                         <i data-lucide="database" size="20"></i>
-                         <span>清除本地缓存</span>
-                     </div>
-                     <i data-lucide="chevron-right" size="18"></i>
-                 </div>
+            <div class="settings-group">
+                <div class="settings-item" onclick="if(confirm('确定要清除所有本地缓存吗？')) { if(window.StockDB) window.StockDB.clear().then(()=>{ localStorage.clear(); location.reload(); }); else { localStorage.clear(); location.reload(); } }">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <i data-lucide="database" size="20"></i>
+                        <span>清除本地缓存</span>
+                    </div>
+                    <i data-lucide="chevron-right" size="18"></i>
+                </div>
                  <div class="settings-item" onclick="APILogger.log('测试条目', 'TEST', 'https://api.test.com/v1/data', 'success', '人工测试'); showToast('已发送测试日志');">
                      <div style="display:flex; align-items:center; gap:12px;">
                          <i data-lucide="test-tube-2" size="20"></i>
@@ -1212,6 +1237,17 @@
                      <div style="display:flex; align-items:center; gap:12px;">
                          <i data-lucide="download" size="20"></i>
                          <span>导出日志 (JSON)</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
+             </div>
+
+             <div class="settings-group-title">开发文档</div>
+             <div class="settings-group">
+                 <div class="settings-item" onclick="document.getElementById('apiDocModal').classList.add('active')">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="book-open" size="20"></i>
+                         <span>API 参数详解</span>
                      </div>
                      <i data-lucide="chevron-right" size="18"></i>
                  </div>
@@ -1346,6 +1382,79 @@
         </div>
     </div>
 
+    <!-- API Doc Modal -->
+    <div class="theme-modal" id="apiDocModal">
+        <div class="theme-box" style="max-width: 90%; height: 80vh; display: flex; flex-direction: column; padding: 0; overflow: hidden;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="font-size: 18px; margin: 0;">API 参数详解</h3>
+                <i data-lucide="x" size="24" onclick="document.getElementById('apiDocModal').classList.remove('active')" style="cursor: pointer;"></i>
+            </div>
+            <div style="flex: 1; overflow-y: auto; padding: 20px;">
+                
+                <h4 style="color: var(--accent-color); margin-bottom: 10px;">1. K线数据接口</h4>
+                <div style="background: var(--bg-color); border-radius: 8px; padding: 10px; margin-bottom: 20px; font-size: 13px;">
+                    <p style="margin-bottom: 5px;"><strong>URL:</strong> .../api/qt/stock/kline/get</p>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr style="border-bottom: 1px solid var(--glass-border);">
+                            <th style="text-align: left; padding: 8px; color: var(--text-secondary);">参数</th>
+                            <th style="text-align: left; padding: 8px; color: var(--text-secondary);">说明</th>
+                        </tr>
+                        <tr><td style="padding: 8px;">secid</td><td style="padding: 8px;">证券代码 (1.600xxx=沪, 0.00xxxx=深)</td></tr>
+                        <tr><td style="padding: 8px;">klt</td><td style="padding: 8px;">K线周期 (101=日, 102=周, 103=月)</td></tr>
+                        <tr><td style="padding: 8px;">fqt</td><td style="padding: 8px;">复权方式 (1=前复权, 0=不复权)</td></tr>
+                        <tr><td style="padding: 8px;">lmt</td><td style="padding: 8px;">请求数量限制 (如 1000)</td></tr>
+                        <tr><td style="padding: 8px;">fields1</td><td style="padding: 8px;">元数据字段 (f1,f2...)</td></tr>
+                        <tr><td style="padding: 8px;">fields2</td><td style="padding: 8px;">数据字段 (f51=日期, f53=收盘...)</td></tr>
+                    </table>
+                </div>
+
+                <h4 style="color: var(--accent-color); margin-bottom: 10px;">2. 常用字段映射 (Fields)</h4>
+                <div style="background: var(--bg-color); border-radius: 8px; padding: 10px; margin-bottom: 20px; font-size: 13px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div><span style="color: var(--text-secondary);">f2:</span> 最新价</div>
+                        <div><span style="color: var(--text-secondary);">f3:</span> 涨跌幅</div>
+                        <div><span style="color: var(--text-secondary);">f4:</span> 涨跌额</div>
+                        <div><span style="color: var(--text-secondary);">f5:</span> 成交量(手)</div>
+                        <div><span style="color: var(--text-secondary);">f6:</span> 成交额</div>
+                        <div><span style="color: var(--text-secondary);">f9:</span> 市盈率(TTM)</div>
+                        <div><span style="color: var(--text-secondary);">f12:</span> 股票代码</div>
+                        <div><span style="color: var(--text-secondary);">f14:</span> 股票名称</div>
+                        <div><span style="color: var(--text-secondary);">f20:</span> 总市值</div>
+                        <div><span style="color: var(--text-secondary);">f21:</span> 流通市值</div>
+                        <div><span style="color: var(--text-secondary);">f23:</span> 市净率</div>
+                        <div><span style="color: var(--text-secondary);">f51:</span> 日期</div>
+                        <div><span style="color: var(--text-secondary);">f52:</span> 开盘价</div>
+                        <div><span style="color: var(--text-secondary);">f53:</span> 收盘价</div>
+                        <div><span style="color: var(--text-secondary);">f54:</span> 最高价</div>
+                        <div><span style="color: var(--text-secondary);">f55:</span> 最低价</div>
+                        <div><span style="color: var(--text-secondary);">f58:</span> 股票名称(详情)</div>
+                        <div><span style="color: var(--text-secondary);">f127:</span> 行业板块</div>
+                    </div>
+                </div>
+
+                 <h4 style="color: var(--accent-color); margin-bottom: 10px;">3. 常量定义</h4>
+                <div style="background: var(--bg-color); border-radius: 8px; padding: 10px; margin-bottom: 20px; font-size: 13px;">
+                    <p style="margin-bottom: 5px;"><strong>市场类型 (Market Types):</strong></p>
+                    <ul style="padding-left: 20px; margin: 0;">
+                        <li>CN: 中国A股 (沪/深/北/科/创)</li>
+                        <li>US: 美股 (纳斯达克/纽交所)</li>
+                        <li>HK: 港股 (部分支持)</li>
+                    </ul>
+                     <p style="margin-top: 10px; margin-bottom: 5px;"><strong>缓存策略:</strong></p>
+                    <ul style="padding-left: 20px; margin: 0;">
+                        <li>盘中 (9:15-15:00): 实时网络请求</li>
+                        <li>休市: 优先读取本地缓存</li>
+                    </ul>
+                </div>
+
+            </div>
+            <div style="padding: 16px; border-top: 1px solid var(--glass-border); text-align: center;">
+                 <button class="auth-btn" style="background:rgba(255,255,255,0.05); color:var(--text-primary); margin:0;" 
+                onclick="document.getElementById('apiDocModal').classList.remove('active')">关闭文档</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- API Logger for Settings Tab ---
         window.APILogger = {
@@ -1353,7 +1462,7 @@
             maxLogs: 50,
             counter: 0,
 
-            log(stockName, stockId, url, status, type = 'API') {
+            log(stockName, stockId, url, status, type = 'API', dataTime = null) {
                 this.counter++;
                 const entry = {
                     id: this.counter,
@@ -1362,7 +1471,8 @@
                     stockId: stockId || '--',
                     url: url,
                     status: status, // 'success' or 'error'
-                    type: type
+                    type: type,
+                    dataTime: dataTime // Timestamp of the cached data
                 };
                 this.logs.unshift(entry);
                 if (this.logs.length > this.maxLogs) this.logs.pop();
@@ -1426,8 +1536,24 @@
                         // fallback
                     }
 
+                    const isIdbCache = log.type && log.type.includes('IDB Cache');
+                    const extraClass = isIdbCache ? 'idb-cache-log' : '';
+
+                    let typeSuffix = '';
+                    if (log.dataTime) {
+                        const dt = new Date(log.dataTime);
+                        const timeStr = dt.toLocaleTimeString('zh-CN', { hour12: false }) + '.' + dt.getMilliseconds().toString().padStart(3, '0');
+                        const dateStr = (dt.getMonth() + 1) + '-' + dt.getDate() + ' ' + timeStr;
+                        
+                        // User requested to add it after [IDB Cache] (which is usually part of type)
+                        // and requested prominent background
+                        typeSuffix = ` <span style="color:#f59e0b; background:rgba(245, 158, 11, 0.15); padding:1px 4px; border-radius:3px; font-weight:bold; margin-left:4px;">${dateStr}</span>`;
+                    } else if (isIdbCache) {
+                        typeSuffix = ` <span style="color:var(--text-secondary); font-size:10px; margin-left:4px;">(旧缓存: 无时间戳)</span>`;
+                    }
+
                     return `
-                    <div class="log-item">
+                    <div class="log-item ${extraClass}">
                         <div class="log-header">
                             <div style="display:flex; align-items:center;">
                                 <span class="log-id">#${log.id}</span>
@@ -1439,7 +1565,7 @@
                         <div class="log-details">
                              <div class="log-row">
                                 <span class="log-label">TYPE</span>
-                                <span class="log-value">${log.type}</span>
+                                <span class="log-value">${log.type}${typeSuffix}</span>
                             </div>
                             <div class="log-row">
                                 <span class="log-label">TIME</span>
@@ -1464,7 +1590,60 @@
         const workerScript = `
             importScripts('https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js');
             let allStocksCache = [];
+            
+            // --- Worker IndexedDB Helper ---
+            const DB_NAME = 'StockCacheDB';
+            const STORE_NAME = 'api_cache';
+            const DB_VERSION = 1;
+
+            function openDB() {
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(DB_NAME, DB_VERSION);
+                    req.onsuccess = e => resolve(e.target.result);
+                    req.onerror = e => reject(e);
+                    req.onupgradeneeded = e => {
+                        const db = e.target.result;
+                        if(!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+                    };
+                });
+            }
+
+            async function getCache(key) {
+                try {
+                    const db = await openDB();
+                    return new Promise(resolve => {
+                        const tx = db.transaction(STORE_NAME, 'readonly');
+                        const req = tx.objectStore(STORE_NAME).get(key);
+                        req.onsuccess = () => resolve(req.result);
+                        req.onerror = () => resolve(null);
+                    });
+                } catch(e) { return null; }
+            }
+
+            async function setCache(key, val) {
+                try {
+                    const db = await openDB();
+                    const tx = db.transaction(STORE_NAME, 'readwrite');
+                    tx.objectStore(STORE_NAME).put(val, key);
+                } catch(e) {}
+            }
+
+            // Trading Time Logic (Simplified for Worker)
+            function isTradingTime(region) {
+                const now = new Date();
+                const day = now.getDay(); 
+                const hour = now.getHours();
+                const minute = now.getMinutes();
+                const t = hour * 100 + minute;
+                if (day === 0 || day === 6) return false;
+                if (region === 'CN') {
+                    return (t >= 915 && t <= 1130) || (t >= 1300 && t <= 1500);
+                }
+                return true; 
+            }
+
             async function getJSON(url) { try { const res = await fetch(url); return await res.json(); } catch (e) { return null; } }
+            
             self.onmessage = async function(e) {
                 const { id, type, payload } = e.data;
                 try {
@@ -1477,7 +1656,29 @@
                     self.postMessage({ id, type, data: result });
                 } catch (err) { self.postMessage({ id, type, error: err.message }); }
             };
+
             async function fetchList({ currentRegion }) {
+                const cacheKey = 'LIST_' + currentRegion;
+                const isOpen = isTradingTime(currentRegion);
+                let fromCache = false;
+
+                // 1. Try Cache
+                if (!isOpen) {
+                    const cached = await getCache(cacheKey);
+                    if (cached) {
+                        // Check wrapped format
+                        if (cached && typeof cached === 'object' && cached.timestamp && cached.data) {
+                            allStocksCache = cached.data;
+                            return { list: cached.data, fromCache: true };
+                        } else if (Array.isArray(cached) && cached.length > 0) {
+                            // Legacy format
+                            allStocksCache = cached;
+                            return { list: cached, fromCache: true };
+                        }
+                    }
+                }
+
+                // 2. Network
                 const fs = currentRegion === 'CN' ? 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23' : 'm:105,m:106,m:107';
                 const fields = 'f2,f3,f12,f13,f14,f127';
                 const seedUrl = \`https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
@@ -1498,8 +1699,20 @@
                         combined = combined.concat(rawData.map(s => ({ ...s, f3: parseFloat(s.f3) || 0, f2: s.f2 === '-' ? '-' : parseFloat(s.f2) })));
                     }
                 });
+                
                 allStocksCache = combined;
-                return combined;
+                
+                // Save to Cache
+                if (combined.length > 0) {
+                    // Save with timestamp
+                    const cacheObj = {
+                        timestamp: Date.now(),
+                        data: combined
+                    };
+                    await setCache(cacheKey, cacheObj);
+                }
+                
+                return { list: combined, fromCache: false };
             }
             function search({ query }) {
                 let results = allStocksCache;
@@ -1531,10 +1744,68 @@
         const worker = new Worker(URL.createObjectURL(blob));
         const workerCallbacks = {};
         
-        // --- Smart Caching System for Data Flow Transparency ---
+        // --- IndexedDB Wrapper for Large Storage ---
+        const StockDB = {
+            dbName: 'StockCacheDB',
+            version: 1,
+            storeName: 'api_cache',
+            db: null,
+
+            async init() {
+                if (this.db) return this.db;
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.version);
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName);
+                        }
+                    };
+                    request.onsuccess = (event) => {
+                        this.db = event.target.result;
+                        resolve(this.db);
+                    };
+                    request.onerror = (event) => reject(event.target.error);
+                });
+            },
+
+            async get(key) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readonly');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async set(key, value) {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.put(value, key);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async clear() {
+                await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction([this.storeName], 'readwrite');
+                    const store = transaction.objectStore(this.storeName);
+                    const request = store.clear();
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            }
+        };
+        window.StockDB = StockDB;
+
+        // --- Smart Caching System (Powered by IndexedDB) ---
         const SmartFetch = {
-            cache: new Map(),
-            
             // Helper to determine if market is open (simplified)
             isTradingTime(region) {
                 const now = new Date();
@@ -1542,11 +1813,14 @@
                 const hour = now.getHours();
                 const minute = now.getMinutes();
                 const t = hour * 100 + minute;
+
+                // Weekend check (Global)
+                if (day === 0 || day === 6) return false;
+
                 if (region === 'CN') {
-                    if (day === 0 || day === 6) return false;
                     return (t >= 915 && t <= 1130) || (t >= 1300 && t <= 1500);
                 }
-                // Default to true for others for simplicity or add more rules
+                // Add simple US market check if needed, otherwise default open
                 return true; 
             },
 
@@ -1555,15 +1829,35 @@
                 let source = 'NETWORK';
                 let status = 'success';
                 let data = null;
+                const cacheKey = url; // IndexedDB supports long keys
+                let logSuffix = '';
 
-                // 1. Check Cache
-                if (!isOpen && this.cache.has(url)) {
-                    source = 'CACHE';
-                    data = JSON.parse(this.cache.get(url));
-                    
-                    // Log the cache hit
-                    if (window.APILogger) window.APILogger.log(stockName, region, url, 'success', type + ' [CACHE]');
-                    return data;
+                // 1. Check Cache (IndexedDB)
+                if (!isOpen) {
+                    try {
+                        const cached = await StockDB.get(cacheKey);
+                        if (cached) {
+                            let dataTime = null;
+                            // Check if it's our wrapped format
+                            if (cached && typeof cached === 'object' && cached.timestamp && cached.data) {
+                                data = cached.data;
+                                dataTime = cached.timestamp;
+                            } else {
+                                // Legacy format
+                                data = cached;
+                            }
+                            
+                            if (window.APILogger) window.APILogger.log(stockName, region, url, 'success', type + ' [IDB Cache]', dataTime);
+                            return data;
+                        } else {
+                            logSuffix = ' (IDB Miss)';
+                        }
+                    } catch (e) {
+                        console.error('IDB Read Error', e);
+                        logSuffix = ' (IDB Error)';
+                    }
+                } else {
+                    logSuffix = ' (Market Open)';
                 }
 
                 // 2. Network Request
@@ -1572,17 +1866,30 @@
                     data = await res.json();
                     
                     if (data) {
-                        this.cache.set(url, JSON.stringify(data)); // Update cache
+                        // Save to IndexedDB (No strict size limit)
+                        try {
+                            // Wrap data with timestamp
+                            const cacheObj = {
+                                timestamp: Date.now(),
+                                data: data
+                            };
+                            await StockDB.set(cacheKey, cacheObj);
+                            logSuffix += ' [IDB Saved]';
+                        } catch (e) {
+                            console.error('IDB Write Failed', e);
+                            logSuffix += ' [IDB Fail]';
+                        }
                     } else {
                         status = 'error';
                     }
                 } catch (e) {
                     status = 'error';
                     console.error('Fetch failed', e);
+                    logSuffix += ' [Fetch Fail]';
                 }
 
-                // Log the network request
-                if (window.APILogger) window.APILogger.log(stockName, region, url, status, type + ' [API]');
+                // Log the network request with reason
+                if (window.APILogger) window.APILogger.log(stockName, region, url, status, type + ' [API]' + logSuffix);
                 return data;
             }
         };
@@ -1837,8 +2144,20 @@
         async function fetchStockList() {
             try {
                 const url = `(WebWorker Tasks)`;
-                allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
-                if (window.APILogger) window.APILogger.log('沪深/美股全列表', currentRegion, url, allStocks ? 'success' : 'error', '全列表请求');
+                const res = await runWorkerTask('FETCH_LIST', { currentRegion });
+                
+                // Handle new worker response format { list: [...], fromCache: boolean }
+                if (res && res.list) {
+                    allStocks = res.list;
+                } else if (Array.isArray(res)) {
+                    allStocks = res; // Fallback
+                } else {
+                    allStocks = [];
+                }
+                
+                const source = (res && res.fromCache) ? 'Worker [IDB Cache]' : 'Worker [API]';
+
+                if (window.APILogger) window.APILogger.log('沪深/美股全列表', currentRegion, url, allStocks.length > 0 ? 'success' : 'error', '全列表请求 ' + source);
                 
                 if (isReversed) allStocks.reverse();
                 renderStockList(allStocks);
