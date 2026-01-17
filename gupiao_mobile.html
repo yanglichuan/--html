@@ -10,7 +10,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
     <link
-        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&family=IBM+Plex+Serif:wght@400;600&display=swap"
         rel="stylesheet">
     <style>
         :root {
@@ -25,23 +25,156 @@
             --nav-height: 60px;
             --safe-area-top: env(safe-area-inset-top, 0px);
             --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+            --font-main: 'Outfit', 'Noto Sans SC', sans-serif;
         }
 
-        [data-theme="light"] {
-            --bg-color: #f1f5f9;
+        /* 1. Midnight (Default Dark) */
+        [data-theme="midnight"] {
+            --bg-color: #05070a;
+            --card-bg: #141823;
+            --accent-color: #3b82f6;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        /* 2. Arctic (Professional Light) */
+        [data-theme="arctic"] {
+            --bg-color: #f8fafc;
             --card-bg: #ffffff;
             --accent-color: #2563eb;
             --text-primary: #0f172a;
             --text-secondary: #64748b;
-            --glass-border: rgba(0, 0, 0, 0.08);
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --up-color: #e11d48;
+            --down-color: #059669;
+        }
+
+        /* 3. Onyx (OLED Pure Black) */
+        [data-theme="onyx"] {
+            --bg-color: #000000;
+            --card-bg: #0a0a0a;
+            --accent-color: #60a5fa;
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        /* 4. Graphite (Slate Grey) */
+        [data-theme="graphite"] {
+            --bg-color: #1e293b;
+            --card-bg: #334155;
+            --accent-color: #38bdf8;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 5. Amethyst (Royal Purple) */
+        [data-theme="amethyst"] {
+            --bg-color: #0f0a1f;
+            --card-bg: #1c1433;
+            --accent-color: #a855f7;
+            --text-primary: #f3e8ff;
+            --text-secondary: #a78bfa;
+            --glass-border: rgba(168, 85, 247, 0.15);
+        }
+
+        /* 6. Emerald (Forest Green) */
+        [data-theme="emerald"] {
+            --bg-color: #061110;
+            --card-bg: #0d1f1d;
+            --accent-color: #10b981;
+            --text-primary: #ecfdf5;
+            --text-secondary: #6ee7b7;
+            --glass-border: rgba(16, 185, 129, 0.15);
+        }
+
+        /* 7. Quant (Hacker Data) */
+        [data-theme="quant"] {
+            --bg-color: #000000;
+            --card-bg: #050505;
+            --accent-color: #00ff41;
+            --text-primary: #00ff41;
+            --text-secondary: #008f11;
+            --glass-border: rgba(0, 255, 65, 0.1);
+            --font-main: 'JetBrains Mono', monospace;
+            --up-color: #00ff41;
+            --down-color: #ff0000;
+        }
+
+        /* 8. Journal (Classic Paper) */
+        [data-theme="journal"] {
+            --bg-color: #f4f1ea;
+            --card-bg: #ffffff;
+            --accent-color: #1a1a1a;
+            --text-primary: #121212;
+            --text-secondary: #5f5f5f;
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --font-main: 'IBM Plex Serif', serif;
+            --up-color: #b91c1c;
+            --down-color: #15803d;
+        }
+
+        /* 9. Swiss (Modern Clean) */
+        [data-theme="swiss"] {
+            --bg-color: #ffffff;
+            --card-bg: #f5f5f7;
+            --accent-color: #000000;
+            --text-primary: #000000;
+            --text-secondary: #86868b;
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --font-main: 'Inter', sans-serif;
+            --up-color: #ff3b30;
+            --down-color: #34c759;
+        }
+
+        /* 10. Cyberpunk (Neon Night) */
+        [data-theme="cyberpunk"] {
+            --bg-color: #0d0221;
+            --card-bg: #240b36;
+            --accent-color: #00f3ff;
+            --text-primary: #ffffff;
+            --text-secondary: #ff00ff;
+            --glass-border: rgba(0, 243, 255, 0.2);
+            --font-main: 'Outfit', sans-serif;
+            --up-color: #00f3ff;
+            --down-color: #ff00ff;
+        }
+
+        /* 11. Eye Care (Soft Sepia) */
+        [data-theme="eyecare"] {
+            --bg-color: #fdf6e3;
+            --card-bg: #eee8d5;
+            --accent-color: #b58900;
+            --text-primary: #586e75;
+            --text-secondary: #93a1a1;
+            --glass-border: rgba(181, 137, 0, 0.1);
+            --font-main: 'Inter', sans-serif;
+            --up-color: #dc322f;
+            --down-color: #859900;
+        }
+
+        /* 12. High Contrast (Accessibility) */
+        [data-theme="high-contrast"] {
+            --bg-color: #000000;
+            --card-bg: #1a1a1a;
+            --accent-color: #ffff00;
+            --text-primary: #ffff00;
+            --text-secondary: #ffffff;
+            --glass-border: rgba(255, 255, 0, 0.3);
+            --font-main: 'Inter', sans-serif;
+            --up-color: #00ff00;
+            --down-color: #ff0000;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            font-family: var(--font-main);
             -webkit-tap-highlight-color: transparent;
+            letter-spacing: -0.01em;
         }
 
         body {
@@ -616,6 +749,75 @@
             color: var(--accent-color);
             border-color: var(--accent-color);
         }
+
+        /* Theme Modal Styles */
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 16px 0;
+        }
+
+        .theme-option {
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(255,255,255,0.03);
+            align-items: center;
+        }
+
+        .theme-option.active {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .theme-preview {
+            width: 100%;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-name {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .theme-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .theme-modal.active {
+            display: flex;
+        }
+
+        .theme-box {
+            background: var(--card-bg);
+            border-radius: 24px;
+            width: 100%;
+            max-width: 320px;
+            padding: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--glass-border);
+        }
     </style>
 </head>
 
@@ -639,6 +841,9 @@
                         <div class="mkt-switcher" id="mkt-toggle"
                             style="font-size:12px; font-weight:700; padding:4px 10px; background:var(--accent-color); border-radius:6px; color:white; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
                             CN</div>
+                        <div class="header-btn" onclick="document.getElementById('themeModal').classList.add('active')">
+                            <i data-lucide="palette" size="18" color="var(--text-secondary)"></i>
+                        </div>
                         <div class="header-btn" onclick="toggleFullScreen()">
                             <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
                         </div>
@@ -815,6 +1020,66 @@
             <button class="auth-btn" id="u-submit">提交</button>
             <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);"
                 onclick="StockUserManager.hideAuth()">关闭</div>
+        </div>
+    </div>
+
+    <!-- Theme Modal -->
+    <div class="theme-modal" id="themeModal">
+        <div class="theme-box">
+            <h3 style="margin-bottom:10px; text-align:center; font-size: 18px;">界面主题</h3>
+            <p style="text-align:center; color:var(--text-secondary); font-size:12px; margin-bottom:10px;">选择一个符合您审美的专业配色</p>
+            <div class="theme-grid">
+                <div class="theme-option" onclick="ThemeManager.set('midnight')" data-theme-id="midnight">
+                    <div class="theme-preview" style="background:#05070a;"><div style="width:30%; background:#141823;"></div><div style="flex:1; border-left:1px solid #3b82f6;"></div></div>
+                    <span class="theme-name">深邃蓝</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('arctic')" data-theme-id="arctic">
+                    <div class="theme-preview" style="background:#f8fafc;"><div style="width:30%; background:#ffffff;"></div><div style="flex:1; border-left:1px solid #2563eb;"></div></div>
+                    <span class="theme-name">极地白</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('onyx')" data-theme-id="onyx">
+                    <div class="theme-preview" style="background:#000000;"><div style="width:30%; background:#0a0a0a;"></div><div style="flex:1; border-left:1px solid #60a5fa;"></div></div>
+                    <span class="theme-name">曜石黑</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('graphite')" data-theme-id="graphite">
+                    <div class="theme-preview" style="background:#1e293b;"><div style="width:30%; background:#334155;"></div><div style="flex:1; border-left:1px solid #38bdf8;"></div></div>
+                    <span class="theme-name">石墨灰</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('amethyst')" data-theme-id="amethyst">
+                    <div class="theme-preview" style="background:#0f0a1f;"><div style="width:30%; background:#1c1433;"></div><div style="flex:1; border-left:1px solid #a855f7;"></div></div>
+                    <span class="theme-name">紫罗兰</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('emerald')" data-theme-id="emerald">
+                    <div class="theme-preview" style="background:#061110;"><div style="width:30%; background:#0d1f1d;"></div><div style="flex:1; border-left:1px solid #10b981;"></div></div>
+                    <span class="theme-name">祖母绿</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('quant')" data-theme-id="quant">
+                    <div class="theme-preview" style="background:#000000; font-family:'JetBrains Mono', monospace; display:flex; align-items:center; justify-content:center; color:#00ff41; font-size:10px;">01</div>
+                    <span class="theme-name">量化绿</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('journal')" data-theme-id="journal">
+                    <div class="theme-preview" style="background:#f4f1ea; font-family:'IBM Plex Serif', serif; display:flex; align-items:center; justify-content:center; color:#121212; font-size:10px;">Aa</div>
+                    <span class="theme-name">华尔街</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('swiss')" data-theme-id="swiss">
+                    <div class="theme-preview" style="background:#ffffff; font-family:'Inter', sans-serif; display:flex; align-items:center; justify-content:center; color:#000000; font-size:10px;">Aa</div>
+                    <span class="theme-name">瑞士极简</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('cyberpunk')" data-theme-id="cyberpunk">
+                    <div class="theme-preview" style="background:#0d0221; border:1px solid #00f3ff; display:flex; align-items:center; justify-content:center; color:#ff00ff; font-size:10px;">霓虹</div>
+                    <span class="theme-name">赛博</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('eyecare')" data-theme-id="eyecare">
+                    <div class="theme-preview" style="background:#fdf6e3; display:flex; align-items:center; justify-content:center; color:#586e75; font-size:10px;">护眼</div>
+                    <span class="theme-name">护眼</span>
+                </div>
+                <div class="theme-option" onclick="ThemeManager.set('high-contrast')" data-theme-id="high-contrast">
+                    <div class="theme-preview" style="background:#000000; border:1px solid #ffff00; display:flex; align-items:center; justify-content:center; color:#ffff00; font-size:10px;">高亮</div>
+                    <span class="theme-name">高对比</span>
+                </div>
+            </div>
+            <button class="auth-btn" style="background:rgba(255,255,255,0.05); color:var(--text-primary); margin-top:10px;" 
+                onclick="document.getElementById('themeModal').classList.remove('active')">取消</button>
         </div>
     </div>
 
@@ -1167,23 +1432,21 @@
         async function updateCandle() {
             if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
 
-            const colors = { 
-                up: '#f43f5e', 
-                down: '#10b981', 
-                accent: '#3b82f6', 
-                grid: 'rgba(255,255,255,0.05)', 
-                text: '#94a3b8' 
+            // Get colors from CSS variables
+            const style = getComputedStyle(document.documentElement);
+            const colors = {
+                up: style.getPropertyValue('--up-color').trim() || '#f43f5e',
+                down: style.getPropertyValue('--down-color').trim() || '#10b981',
+                accent: style.getPropertyValue('--accent-color').trim() || '#3b82f6',
+                grid: 'rgba(128,128,128,0.1)',
+                text: style.getPropertyValue('--text-secondary').trim() || '#94a3b8',
+                font: style.getPropertyValue('--font-main').trim() || 'sans-serif'
             };
-            if (document.documentElement.getAttribute('data-theme') === 'light') {
-                colors.grid = 'rgba(0,0,0,0.05)'; 
-                colors.text = '#64748b';
-            }
-
             // 显示加载状态
             candleChart.showLoading({
                 text: '',
                 color: colors.accent,
-                maskColor: 'rgba(0,0,0,0.1)',
+                maskColor: style.getPropertyValue('--bg-color').trim() || 'rgba(0,0,0,0.1)',
                 zlevel: 100
             });
 
@@ -1235,13 +1498,14 @@
 
                 candleChart.setOption({
                     animation: false,
+                    textStyle: { fontFamily: colors.font },
                     backgroundColor: 'transparent',
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: { type: 'cross', label: { show: false } },
-                        backgroundColor: 'rgba(20, 24, 35, 0.9)',
+                        backgroundColor: colors.cardBg || 'rgba(20, 24, 35, 0.9)',
                         borderColor: colors.grid,
-                        textStyle: { color: colors.text, fontSize: 10 },
+                        textStyle: { color: colors.text, fontSize: 10, fontFamily: colors.font },
                         padding: 8,
                         formatter: function (params) {
                             if (!params[0]) return '';
@@ -1286,7 +1550,7 @@
                         { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true }
                     ],
                     yAxis: [
-                        { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: false, margin: 4 } },
+                        { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: false, margin: 4, fontFamily: colors.font } },
                         { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
                         { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
                         { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
@@ -1301,7 +1565,7 @@
                             itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
                             markLine: {
                                 symbol: ['none', 'none'],
-                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
+                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff', fontFamily: colors.font },
                                 lineStyle: { type: 'dashed', opacity: 0.6 },
                                 animation: false,
                                 data: []
@@ -1324,7 +1588,7 @@
                             },
                             markLine: {
                                 symbol: ['none', 'none'],
-                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
+                                label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff', fontFamily: colors.font },
                                 lineStyle: { type: 'dashed', opacity: 0.6 },
                                 animation: false,
                                 data: []
@@ -1486,8 +1750,43 @@
             }
         };
 
+        window.ThemeManager = {
+            init() {
+                const saved = localStorage.getItem('app_theme') || 'midnight';
+                this.set(saved);
+            },
+            set(themeId) {
+                document.documentElement.setAttribute('data-theme', themeId);
+                localStorage.setItem('app_theme', themeId);
+                
+                // Update UI state
+                document.querySelectorAll('.theme-option').forEach(opt => {
+                    opt.classList.toggle('active', opt.dataset.themeId === themeId);
+                });
+
+                // Update chart colors if exists
+                if (window.candleChart) {
+                    const style = getComputedStyle(document.documentElement);
+                    const upColor = style.getPropertyValue('--up-color').trim() || '#f43f5e';
+                    const downColor = style.getPropertyValue('--down-color').trim() || '#10b981';
+                    const fontMain = style.getPropertyValue('--font-main').trim() || 'sans-serif';
+                    
+                    // We can't easily update just the font in ECharts without a full setOption
+                    // but updateCandle() will call echarts.init/setOption with fresh colors/fonts
+                    if (typeof updateCandle === 'function') updateCandle();
+                }
+
+                // Close modal after selection with small delay for visual feedback
+                setTimeout(() => {
+                    const modal = document.getElementById('themeModal');
+                    if (modal) modal.classList.remove('active');
+                }, 300);
+            }
+        };
+
         window.StockUserManager = {
             init() {
+                ThemeManager.init();
                 const s = localStorage.getItem('stock_user_session');
                 if (s) { USER_STATE.currentUser = JSON.parse(s); USER_STATE.isLoggedIn = true; this.loadUserFavorites(); }
                 this.setupListeners();
