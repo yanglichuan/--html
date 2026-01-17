@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>StockPro Mobile</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #05070a;
@@ -31,8 +35,14 @@
             --glass-border: rgba(0, 0, 0, 0.08);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Noto Sans SC', sans-serif; -webkit-tap-highlight-color: transparent; }
-        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-primary);
@@ -51,7 +61,10 @@
 
         .view {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
@@ -60,9 +73,15 @@
             z-index: 10;
         }
 
-        .view.active { transform: translateX(0); z-index: 20; }
+        .view.active {
+            transform: translateX(0);
+            z-index: 20;
+        }
+
         /* View transitions optimization */
-        .view.active ~ .view { transform: translateX(100%); }
+        .view.active~.view {
+            transform: translateX(100%);
+        }
 
         /* Bottom Navigation */
         .bottom-nav {
@@ -91,9 +110,18 @@
             cursor: pointer;
         }
 
-        .nav-item.active { color: var(--accent-color); font-weight: 600; }
-        .nav-item i { transition: transform 0.2s; }
-        .nav-item:active i { transform: scale(0.9); }
+        .nav-item.active {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .nav-item i {
+            transition: transform 0.2s;
+        }
+
+        .nav-item:active i {
+            transform: scale(0.9);
+        }
 
         /* Components */
         .mobile-header {
@@ -107,7 +135,7 @@
         }
 
         .search-box {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--glass-border);
             border-radius: 8px;
             padding: 8px 12px;
@@ -132,62 +160,194 @@
             border-bottom: 1px solid var(--glass-border);
             background: var(--bg-color);
         }
-        
-        .stock-item:active { background: rgba(255,255,255,0.05); }
 
-        .stock-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        .stock-name-row { display: flex; align-items: center; gap: 8px; }
-        .stock-name { font-size: 16px; font-weight: 600; }
-        .stock-code { font-size: 12px; color: var(--text-secondary); }
-        
-        /* Market Badges */
-        .mkt-badge { 
-            font-size: 9px; 
-            padding: 1px 3px; 
-            border-radius: 3px; 
-            margin-left: 6px; 
-            font-weight: 500;
-            vertical-align: middle;
+        .stock-item:active {
+            background: rgba(255, 255, 255, 0.05);
         }
-        .mkt-sh { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); } /* Shanghai - Red */
-        .mkt-sz { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); } /* Shenzhen - Blue */
-        .mkt-kcb { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); } /* STAR - Purple */
-        .mkt-cyb { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); } /* ChiNext - Orange */
-        .mkt-us { background: rgba(255, 255, 255, 0.1); color: #94a3b8; border: 1px solid rgba(255, 255, 255, 0.2); }
-        .mkt-nasdaq { background: rgba(59, 130, 246, 0.15); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
-        .mkt-nyse { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-        .mkt-amex { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.3); }
-        .mkt-bj { background: rgba(6, 182, 212, 0.15); color: #06b6d4; border: 1px solid rgba(6, 182, 212, 0.3); } /* Beijing - Cyan */
-        
-        .stock-price { font-size: 16px; font-weight: 700; text-align: right; }
-        .stock-pct { font-size: 12px; font-weight: 600; text-align: right; margin-top: 2px; }
-        
-        .up { color: var(--up-color); }
-        .down { color: var(--down-color); }
+
+        .stock-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stock-name-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stock-name {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .stock-code {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Market Badges */
+        .mkt-badge {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-left: 4px;
+        }
+
+        .mkt-sh { background: #ef4444; color: #fff; }
+        .mkt-sz { background: #3b82f6; color: #fff; }
+        .mkt-kcb { 
+            background: #a855f7; 
+            color: #fff; 
+            box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .mkt-cyb { 
+            background: #f97316; 
+            color: #fff; 
+            box-shadow: 0 0 6px rgba(249, 115, 22, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .mkt-us { background: #94a3b8; color: #fff; }
+        .mkt-bj { background: #06b6d4; color: #fff; }
+
+        .stock-item {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+            height: 64px;
+            box-sizing: border-box;
+        }
+
+        .stock-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .stock-name-row {
+            display: flex;
+            align-items: center;
+            min-width: 0;
+        }
+
+        .stock-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
+        .stock-price-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .stock-price {
+            font-size: 17px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            min-width: 75px;
+            text-align: right;
+        }
+
+        .stock-pct {
+            font-size: 13px;
+            font-weight: 700;
+            min-width: 68px;
+            text-align: right;
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .stock-pct.up { background: rgba(244, 63, 94, 0.15); color: var(--up-color); }
+        .stock-pct.down { background: rgba(16, 185, 129, 0.15); color: var(--down-color); }
+        .stock-pct.neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
+
+        .up {
+            color: var(--up-color);
+        }
+
+        .down {
+            color: var(--down-color);
+        }
 
         /* Chart View Specifics */
         .chart-header-info {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            padding: 16px 0;
+            justify-content: space-between;
+            padding: 12px 16px;
             background: linear-gradient(to bottom, var(--card-bg), var(--bg-color));
+            border-bottom: 1px solid var(--glass-border);
         }
 
-        .price-hero { font-size: 32px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
-        .pct-hero { font-size: 14px; font-weight: 600; padding: 4px 8px; border-radius: 4px; background: rgba(255,255,255,0.05); margin-top: 8px; }
-        .pct-hero.up { background: rgba(244, 63, 94, 0.15); }
-        .pct-hero.down { background: rgba(16, 185, 129, 0.15); }
+        .header-left-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .header-right-group {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .price-hero {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .pct-hero {
+            font-size: 13px;
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .pct-hero.up {
+            background: rgba(244, 63, 94, 0.15);
+        }
+
+        .pct-hero.down {
+            background: rgba(16, 185, 129, 0.15);
+        }
 
         /* View Specific Overrides */
         #view-chart {
             overflow-y: auto;
             display: flex;
             flex-direction: column;
-            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 20px); /* Extra padding for scroll */
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom) + 20px);
+            /* Extra padding for scroll */
         }
-        
-        #candle-chart { width: 100%; height: 420px; flex-shrink: 0; } /* Prevent chart shrinking */
+
+        #candle-chart {
+            width: 100%;
+            height: 580px;
+            flex-shrink: 0;
+        }
+
+        /* Prevent chart shrinking */
 
         .time-ranges {
             display: flex;
@@ -197,8 +357,11 @@
             border-bottom: 1px solid var(--glass-border);
             scrollbar-width: none;
         }
-        .time-ranges::-webkit-scrollbar { display: none; }
-        
+
+        .time-ranges::-webkit-scrollbar {
+            display: none;
+        }
+
         .range-btn {
             padding: 6px 12px;
             background: var(--card-bg);
@@ -208,7 +371,12 @@
             font-size: 12px;
             white-space: nowrap;
         }
-        .range-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); }
+
+        .range-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
 
         .detail-grid {
             display: grid;
@@ -217,15 +385,23 @@
             background: var(--glass-border);
             margin-top: 16px;
         }
-        
+
         .detail-cell {
             background: var(--bg-color);
             padding: 12px;
             text-align: center;
         }
-        
-        .detail-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
-        .detail-value { font-size: 13px; font-weight: 600; }
+
+        .detail-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 13px;
+            font-weight: 600;
+        }
 
         /* Fav View */
         .fav-stats-card {
@@ -240,76 +416,152 @@
         }
 
         /* Virtual Scroll Spacer */
-        .virtual-spacer { width: 100%; }
-        .virtual-content { position: absolute; top: 0; left: 0; width: 100%; }
+        .virtual-spacer {
+            width: 100%;
+        }
+
+        .virtual-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
 
         /* Toast */
         .toast {
-            position: fixed; top: 20px; left: 50%; transform: translate(-50%, -100px);
-            background: var(--card-bg); border: 1px solid var(--accent-color);
-            padding: 10px 20px; border-radius: 20px;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translate(-50%, -100px);
+            background: var(--card-bg);
+            border: 1px solid var(--accent-color);
+            padding: 10px 20px;
+            border-radius: 20px;
             color: var(--text-primary);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s;
             z-index: 1000;
-            display: flex; align-items: center; gap: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .toast.active { transform: translate(-50%, 0); }
+
+        .toast.active {
+            transform: translate(-50%, 0);
+        }
 
         /* Login Modal */
         .auth-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
-            z-index: 2000; display: none;
-            justify-content: center; align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            justify-content: center;
+            align-items: center;
         }
-        .auth-modal.active { display: flex; }
-        .auth-box { width: 85%; background: var(--card-bg); padding: 24px; border-radius: 16px; }
-        .auth-input { width: 100%; padding: 12px; margin-bottom: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white; border-radius: 8px; }
-        .auth-btn { width: 100%; padding: 12px; background: var(--accent-color); color: white; border: none; border-radius: 8px; font-weight: 600; }
 
-        /* Floating Action Button */
-        .fab-btn {
-            width: 36px; height: 36px;
-            background: var(--card-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            position: absolute;
-            top: 12px;
-            z-index: 100;
+        .auth-modal.active {
+            display: flex;
         }
-        .fab-user { left: 16px; }
-        .fab-fullscreen { right: 16px; }
+
+        .auth-box {
+            width: 85%;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            border-radius: 8px;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+
+        /* Floating User/FS Buttons replaced by header integration */
+        .header-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .header-btn:active {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(0.95);
+        }
     </style>
 </head>
+
 <body>
 
     <!-- App Container -->
     <div id="app">
-        <!-- Floating User Button -->
-        <div class="fab-btn fab-user" onclick="handleUserClick()">
-            <i data-lucide="user" size="18" color="var(--text-secondary)"></i>
-        </div>
 
-        <!-- Floating Fullscreen Button -->
-        <div class="fab-btn fab-fullscreen" onclick="toggleFullScreen()">
-            <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
-        </div>
 
         <!-- View 1: Market (List) -->
         <div id="view-market" class="view active">
-            <div class="mobile-header" style="display: block;">
+            <div class="mobile-header" style="display: block; padding-top: 8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h2 style="font-size:18px; font-weight:700;">行情</h2>
-                    <div class="mkt-switcher" id="mkt-toggle" style="font-size:12px; padding:4px 8px; background:var(--accent-color); border-radius:4px; color:white;">CN</div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="header-btn" onclick="handleUserClick()">
+                            <i data-lucide="user" size="18" color="var(--text-secondary)"></i>
+                        </div>
+                        <h2 style="font-size:18px; font-weight:700; letter-spacing: -0.5px;">实时行情</h2>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="mkt-switcher" id="mkt-toggle"
+                            style="font-size:12px; font-weight:700; padding:4px 10px; background:var(--accent-color); border-radius:6px; color:white; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);">
+                            CN</div>
+                        <div class="header-btn" onclick="toggleFullScreen()">
+                            <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
+                        </div>
+                    </div>
                 </div>
-                <input type="text" class="search-box" id="stock-search" placeholder="搜索股票代码/名称...">
+                <div style="position: relative;">
+                    <i data-lucide="search" size="14" color="var(--text-secondary)"
+                        style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%);"></i>
+                    <input type="text" class="search-box" id="stock-search" placeholder="搜索代码/拼音/名称..."
+                        style="padding-left: 35px;">
+                </div>
                 <!-- Breadth Bar -->
-                <div style="margin-top:12px; display:flex; height:4px; border-radius:2px; overflow:hidden;">
-                    <div class="breadth-up" style="width:50%; background:var(--up-color); transition:width 1s;"></div>
-                    <div class="breadth-down" style="width:50%; background:var(--down-color); transition:width 1s;"></div>
+                <div style="margin-top:12px; display:flex; flex-direction: column; gap: 4px;">
+                    <div
+                        style="display:flex; justify-content: space-between; font-size: 10px; color: var(--text-secondary); font-weight: 500;">
+                        <span class="up-text">上涨: --</span>
+                        <span class="down-text">下跌: --</span>
+                    </div>
+                    <div
+                        style="height:4px; background: rgba(255,255,255,0.05); border-radius:2px; overflow:hidden; display: flex;">
+                        <div class="breadth-up" style="width:50%; background:var(--up-color); transition:width 1s;">
+                        </div>
+                        <div class="breadth-down" style="width:50%; background:var(--down-color); transition:width 1s;">
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="stock-list" id="stock-list">
@@ -321,20 +573,33 @@
 
         <!-- View 2: Chart -->
         <div id="view-chart" class="view">
-            <div class="chart-header-info" style="flex-shrink: 0;">
-                <div id="kline-header-industry" style="font-size:12px; color:var(--accent-color); margin-bottom:4px;">--</div>
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                    <div id="kline-header-name" style="font-size:18px; font-weight:600; margin-bottom:0;">--</div>
-                    <div id="kline-fav-btn" onclick="toggleCurrentFav()">
-                        <i data-lucide="star" size="20" color="var(--text-secondary)"></i>
+            <div class="chart-header-info" style="flex-shrink: 0; padding-top: 8px;">
+                <div class="header-left-group">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div class="header-btn" onclick="switchTab('view-market')"
+                            style="width: 28px; height: 28px; border-radius: 6px;">
+                            <i data-lucide="chevron-left" size="18" color="var(--text-secondary)"></i>
+                        </div>
+                        <div id="kline-header-name" style="font-size:18px; font-weight:700; letter-spacing: -0.5px;">--
+                        </div>
+                        <div id="kline-fav-btn" onclick="toggleCurrentFav()" style="padding: 4px; display: flex;">
+                            <i data-lucide="star" size="18" color="var(--text-secondary)"></i>
+                        </div>
                     </div>
                 </div>
-                <div id="price-cur" class="price-hero">--.--</div>
-                <div id="change-cur" class="pct-hero">--.--%</div>
+                <div class="header-right-group" style="flex-direction: column; align-items: flex-end; gap: 0;">
+                    <div style="display: flex; align-items: baseline; gap: 6px;">
+                        <div id="price-cur" class="price-hero">--.--</div>
+                        <div id="change-cur" class="pct-hero">--.--%</div>
+                    </div>
+                    <div id="kline-header-industry"
+                        style="font-size:10px; color:var(--text-secondary); background: rgba(255,255,255,0.05); padding: 1px 6px; border-radius: 4px; margin-top: 2px;">
+                        --</div>
+                </div>
             </div>
-            
+
             <div id="candle-chart"></div>
-            
+
             <div class="time-ranges" style="flex-shrink: 0;">
                 <button class="range-btn active" onclick="setTimeRange(125, this)">半年</button>
                 <button class="range-btn" onclick="setTimeRange(250, this)">1年</button>
@@ -375,8 +640,18 @@
 
         <!-- View 3: Favorites -->
         <div id="view-fav" class="view">
-            <div class="mobile-header">
-                <h2 style="font-size:18px; font-weight:700;">自选</h2>
+            <div class="mobile-header" style="padding-top: 8px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="header-btn" onclick="handleUserClick()">
+                            <i data-lucide="user" size="18" color="var(--text-secondary)"></i>
+                        </div>
+                        <h2 style="font-size:18px; font-weight:700; letter-spacing: -0.5px;">我的自选</h2>
+                    </div>
+                    <div class="header-btn" onclick="toggleFullScreen()">
+                        <i data-lucide="maximize" size="18" color="var(--text-secondary)"></i>
+                    </div>
+                </div>
             </div>
             <div class="fav-stats-card">
                 <div>
@@ -423,13 +698,14 @@
             <input type="text" class="auth-input" id="u-user" placeholder="用户名">
             <input type="password" class="auth-input" id="u-pass" placeholder="密码">
             <button class="auth-btn" id="u-submit">提交</button>
-            <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);" onclick="StockUserManager.hideAuth()">关闭</div>
+            <div style="text-align:center; margin-top:16px; font-size:12px; color:var(--text-secondary);"
+                onclick="StockUserManager.hideAuth()">关闭</div>
         </div>
     </div>
 
     <script>
         // --- Core Logic Ported from Desktop ---
-        
+
         // 1. Web Worker (Same as desktop)
         const workerScript = `
             importScripts('https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js');
@@ -526,7 +802,7 @@
         function switchTab(viewId, btnEl) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
-            
+
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             if (btnEl) btnEl.classList.add('active');
             else {
@@ -546,13 +822,13 @@
 
         function handleUserClick() {
             if (USER_STATE.isLoggedIn) {
-                if(confirm('确定要退出登录吗？')) StockUserManager.logout();
+                if (confirm('确定要退出登录吗？')) StockUserManager.logout();
             } else {
                 StockUserManager.showAuth();
             }
         }
 
-        window.toggleCurrentFav = function() {
+        window.toggleCurrentFav = function () {
             if (!currentStock) return;
             const price = document.getElementById('price-cur').innerText;
             FavoritesManager.toggle(currentStock.id, currentStock.name, price);
@@ -587,21 +863,21 @@
 
             const visibleItems = vs_data.slice(startIndex, endIndex);
             vs_content.style.transform = `translate3d(0, ${startIndex * ITEM_HEIGHT}px, 0)`;
-            
+
             // Render Items
             vs_content.innerHTML = visibleItems.map((s, i) => {
                 const globalIndex = startIndex + i;
                 const fullId = `${s.f13}.${s.f12}`;
                 const isFav = USER_STATE.favorites.some(f => f.stockId === fullId);
                 const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
-                
+
                 // Determine Badge
                 let badge = '';
                 if (s.f13 == 1) {
-                    if (s.f12.startsWith('68')) badge = '<span class="mkt-badge mkt-kc">科</span>';
+                    if (s.f12.startsWith('68')) badge = '<span class="mkt-badge mkt-kcb">科</span>';
                     else badge = '<span class="mkt-badge mkt-sh">沪</span>';
                 } else if (s.f13 == 0) {
-                    if (s.f12.startsWith('30')) badge = '<span class="mkt-badge mkt-cy">创</span>';
+                    if (s.f12.startsWith('30')) badge = '<span class="mkt-badge mkt-cyb">创</span>';
                     else badge = '<span class="mkt-badge mkt-sz">深</span>';
                 } else if (s.f13 >= 100) {
                     badge = '<span class="mkt-badge mkt-us">美</span>';
@@ -615,9 +891,9 @@
                                 ${badge}
                                 ${isFav ? '<i data-lucide="star" size="12" fill="#ffd700" color="#ffd700" style="margin-left:4px;"></i>' : ''}
                             </div>
-                            <div class="stock-code">${s.f12} <span style="margin-left:8px; color:var(--accent-color);">${s.f127||''}</span></div>
+                            <div class="stock-code">${s.f12} <span style="margin-left:8px; color:var(--accent-color);">${s.f127 || ''}</span></div>
                         </div>
-                        <div style="text-align:right;">
+                        <div class="stock-price-group">
                             <div class="stock-price ${color}">${s.f2}</div>
                             <div class="stock-pct ${color}">${s.f3 > 0 ? '+' : ''}${s.f3}%</div>
                         </div>
@@ -627,7 +903,7 @@
             lucide.createIcons();
         }
 
-        window.renderStockList = function(list, isSearch = false) {
+        window.renderStockList = function (list, isSearch = false) {
             // Update Breadth
             if (!isSearch) {
                 const counts = list.reduce((acc, s) => {
@@ -637,11 +913,17 @@
                 const total = counts.up + counts.down || 1;
                 document.querySelector('.breadth-up').style.width = (counts.up / total * 100).toFixed(1) + '%';
                 document.querySelector('.breadth-down').style.width = (counts.down / total * 100).toFixed(1) + '%';
+
+                // Update text家数
+                const upText = document.querySelector('.up-text');
+                const downText = document.querySelector('.down-text');
+                if (upText) upText.innerText = `上涨: ${counts.up}`;
+                if (downText) downText.innerText = `下跌: ${counts.down}`;
             }
 
             vs_data = list;
             renderVirtualWindow(true);
-            
+
             // Also update Favorites Panel if open/active
             if (USER_STATE.isLoggedIn) FavoritesManager.renderPanel();
         };
@@ -655,20 +937,20 @@
         }
 
         // 5. Interaction
-        window.selectStock = function(id, name) {
+        window.selectStock = function (id, name) {
             currentStock = { id, name };
             // Update Header Info
             document.getElementById('kline-header-name').innerText = name;
             updateChartFavIcon();
-            
+
             // Switch to Chart Tab
             switchTab('view-chart');
-            
+
             // Update Data
             updateAll();
         };
 
-        window.updateChartFavIcon = function() {
+        window.updateChartFavIcon = function () {
             const btn = document.getElementById('kline-fav-btn');
             if (!btn) return;
             const isFav = USER_STATE.favorites.some(f => f.stockId === currentStock.id);
@@ -678,7 +960,7 @@
             lucide.createIcons();
         };
 
-        window.toggleCurrentFav = function() {
+        window.toggleCurrentFav = function () {
             const price = document.getElementById('price-cur').innerText;
             FavoritesManager.toggle(currentStock.id, currentStock.name, price);
         };
@@ -686,7 +968,7 @@
         // 6. Charting
         async function updateCandle() {
             if (!candleChart) candleChart = echarts.init(document.getElementById('candle-chart'));
-            
+
             // 提取当前缩放级别，实现“缩放记忆”功能
             const currentOpt = candleChart.getOption();
             let zoomStart = 85, zoomEnd = 100;
@@ -711,13 +993,13 @@
 
             const curRaw = parse(curRes.data.klines);
             const zsRaw = zsRes?.data ? parse(zsRes.data.klines) : [];
-            
+
             const processed = await runWorkerTask('PROCESS_KLINE', { curRaw, zsRaw });
             const { dates, curD, zsD, curMA5, curMA20, zsMA5, zsMA20 } = processed;
-            
+
             const colors = { up: '#f43f5e', down: '#10b981', accent: '#3b82f6', grid: 'rgba(255,255,255,0.05)', text: '#94a3b8' };
             if (document.documentElement.getAttribute('data-theme') === 'light') {
-                 colors.grid = 'rgba(0,0,0,0.05)'; colors.text = '#64748b';
+                colors.grid = 'rgba(0,0,0,0.05)'; colors.text = '#64748b';
             }
 
             candleChart.setOption({
@@ -761,19 +1043,19 @@
                     label: { backgroundColor: '#777' }
                 },
                 grid: [
-                    { left: 0, right: 0, top: '2%', height: '35%' },  // Main Stock K-Line
-                    { left: 0, right: 0, top: '38%', height: '10%' }, // Main Stock Volume
-                    { left: 0, right: 0, top: '53%', height: '35%' }, // Index K-Line
-                    { left: 0, right: 0, top: '89%', height: '10%' }  // Index Volume
+                    { left: 15, right: 35, top: '2%', height: '42%' },  // Main Stock K-Line (Increased)
+                    { left: 15, right: 35, top: '46%', height: '8%' }, // Main Stock Volume
+                    { left: 15, right: 35, top: '56%', height: '33%' }, // Index K-Line
+                    { left: 15, right: 35, top: '91%', height: '8%' }  // Index Volume
                 ],
                 xAxis: [
-                    { type: 'category', data: dates, gridIndex: 0, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } },
-                    { type: 'category', data: dates, gridIndex: 1, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } },
-                    { type: 'category', data: dates, gridIndex: 2, axisLine: { lineStyle: { color: colors.grid } }, axisTick: { show: false }, axisLabel: { show: false } },
-                    { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false } }
+                    { type: 'category', data: dates, gridIndex: 0, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                    { type: 'category', data: dates, gridIndex: 1, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                    { type: 'category', data: dates, gridIndex: 2, axisLine: { lineStyle: { color: colors.grid } }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true },
+                    { type: 'category', data: dates, gridIndex: 3, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { show: false }, boundaryGap: true }
                 ],
                 yAxis: [
-                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: true, margin: 2 } },
+                    { scale: true, gridIndex: 0, splitLine: { lineStyle: { color: colors.grid } }, position: 'right', axisLabel: { color: colors.text, fontSize: 9, inside: false, margin: 4 } },
                     { scale: true, gridIndex: 1, splitLine: { show: false }, axisLabel: { show: false } },
                     { scale: true, gridIndex: 2, splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } }, position: 'right', axisLabel: { show: false } },
                     { scale: true, gridIndex: 3, splitLine: { show: false }, axisLabel: { show: false } }
@@ -789,7 +1071,7 @@
                         itemStyle: { color: colors.up, color0: colors.down, borderColor: colors.up, borderColor0: colors.down },
                         markLine: {
                             symbol: ['none', 'none'],
-                            label: { fontSize: 10, position: 'end', padding:[2,4], borderRadius:2, color:'#fff' },
+                            label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
                             lineStyle: { type: 'dashed', opacity: 0.6 },
                             animation: false,
                             data: [
@@ -799,7 +1081,7 @@
                     },
                     { type: 'line', data: curMA5, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#f59e0b', opacity: 0.7 } },
                     { type: 'line', data: curMA20, smooth: true, showSymbol: false, lineStyle: { width: 1, color: '#3b82f6', opacity: 0.7 } },
-                    
+
                     // Main Volume
                     {
                         type: 'bar', xAxisIndex: 1, yAxisIndex: 1,
@@ -811,14 +1093,14 @@
                         type: 'candlestick', xAxisIndex: 2, yAxisIndex: 2,
                         name: 'Index K-Line',
                         data: zsD.map(d => [d.o, d.c, d.l, d.h]),
-                        itemStyle: { 
-                            color: colors.up, color0: colors.down, 
+                        itemStyle: {
+                            color: colors.up, color0: colors.down,
                             borderColor: colors.up, borderColor0: colors.down,
-                            borderWidth: 1 
+                            borderWidth: 1
                         },
                         markLine: {
                             symbol: ['none', 'none'],
-                            label: { fontSize: 10, position: 'end', padding:[2,4], borderRadius:2, color:'#fff' },
+                            label: { fontSize: 10, position: 'end', padding: [2, 4], borderRadius: 2, color: '#fff' },
                             lineStyle: { type: 'dashed', opacity: 0.6 },
                             animation: false,
                             data: [
@@ -826,15 +1108,15 @@
                             ]
                         }
                     },
-                    { 
-                        type: 'line', xAxisIndex: 2, yAxisIndex: 2, 
-                        data: zsMA5, smooth: true, showSymbol: false, 
-                        lineStyle: { width: 1, color: '#f59e0b', opacity: 0.8 } 
+                    {
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 2,
+                        data: zsMA5, smooth: true, showSymbol: false,
+                        lineStyle: { width: 1, color: '#f59e0b', opacity: 0.8 }
                     },
-                    { 
-                        type: 'line', xAxisIndex: 2, yAxisIndex: 2, 
-                        data: zsMA20, smooth: true, showSymbol: false, 
-                        lineStyle: { width: 1, color: '#3b82f6', opacity: 0.8 } 
+                    {
+                        type: 'line', xAxisIndex: 2, yAxisIndex: 2,
+                        data: zsMA20, smooth: true, showSymbol: false,
+                        lineStyle: { width: 1, color: '#3b82f6', opacity: 0.8 }
                     },
 
                     // Index Volume
@@ -844,19 +1126,19 @@
                     }
                 ]
             });
-            
+
             // Dynamic MarkLine Update Logic
             function updateMarkLines() {
                 const opt = candleChart.getOption();
                 if (!opt.dataZoom) return;
-                
+
                 const start = opt.dataZoom[0].start;
                 const end = opt.dataZoom[0].end;
                 const len = curD.length;
-                
+
                 const sIdx = Math.floor(start * len / 100);
                 const eIdx = Math.ceil(end * len / 100);
-                
+
                 // Helper to find min/max in range
                 const findExtremes = (data) => {
                     let max = -Infinity, min = Infinity;
@@ -879,7 +1161,7 @@
                                 data: [
                                     { yAxis: curEx.max, label: { formatter: '{c}', backgroundColor: colors.up }, lineStyle: { color: colors.up } },
                                     { yAxis: curEx.min, label: { formatter: '{c}', backgroundColor: colors.down }, lineStyle: { color: colors.down } },
-                                    { yAxis: curD[curD.length-1].c, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } }
+                                    { yAxis: curD[curD.length - 1].c, label: { show: false }, lineStyle: { color: colors.accent, type: 'dashed', width: 1 } }
                                 ]
                             }
                         },
@@ -895,7 +1177,7 @@
                     ]
                 });
             }
-            
+
             candleChart.on('dataZoom', updateMarkLines);
             updateMarkLines(); // Initial call
         }
@@ -906,32 +1188,32 @@
                 const d = res.data;
                 const price = (d.f43 / 100).toFixed(2);
                 const pct = (d.f170 / 100).toFixed(2);
-                
+
                 document.getElementById('price-cur').innerText = price;
-                document.getElementById('change-cur').innerText = (pct>0?'+':'') + pct + '%';
-                document.getElementById('change-cur').className = 'pct-hero ' + (pct>0?'up':pct<0?'down':'');
+                document.getElementById('change-cur').innerText = (pct > 0 ? '+' : '') + pct + '%';
+                document.getElementById('change-cur').className = 'pct-hero ' + (pct > 0 ? 'up' : pct < 0 ? 'down' : '');
                 document.getElementById('kline-header-industry').innerText = d.f127 || '--';
-                
+
                 // Details
-                document.getElementById('det-open').innerText = (d.f46/100).toFixed(2);
-                document.getElementById('det-high').innerText = (d.f44/100).toFixed(2);
-                document.getElementById('det-low').innerText = (d.f45/100).toFixed(2);
-                document.getElementById('vol-cur').innerText = (d.f47/10000).toFixed(1) + '万';
-                document.getElementById('det-pe').innerText = (d.f9/100).toFixed(1);
-                document.getElementById('det-zsz').innerText = (d.f20/100000000).toFixed(0) + '亿';
-                
+                document.getElementById('det-open').innerText = (d.f46 / 100).toFixed(2);
+                document.getElementById('det-high').innerText = (d.f44 / 100).toFixed(2);
+                document.getElementById('det-low').innerText = (d.f45 / 100).toFixed(2);
+                document.getElementById('vol-cur').innerText = (d.f47 / 10000).toFixed(1) + '万';
+                document.getElementById('det-pe').innerText = (d.f9 / 100).toFixed(1);
+                document.getElementById('det-zsz').innerText = (d.f20 / 100000000).toFixed(0) + '亿';
+
                 // Update Color
                 const color = pct > 0 ? varColors.up : varColors.down;
                 document.getElementById('price-cur').style.color = color;
             }
         }
-        
+
         const varColors = { up: '#f43f5e', down: '#10b981' };
 
         function updateAll() {
             updateStats();
             updateCandle();
-            if(window.updateChartFavIcon) updateChartFavIcon();
+            if (window.updateChartFavIcon) updateChartFavIcon();
         }
 
         // 7. Search & User System
@@ -968,9 +1250,9 @@
                 return await res.json();
             }
         };
-        
+
         window.StockUserManager = {
-            init() { 
+            init() {
                 const s = localStorage.getItem('stock_user_session');
                 if (s) { USER_STATE.currentUser = JSON.parse(s); USER_STATE.isLoggedIn = true; this.loadUserFavorites(); }
                 this.setupListeners();
@@ -998,7 +1280,7 @@
                     // 兼容处理：如果存储的是字符串则解析
                     USER_STATE.favorites = favs.map(f => {
                         try { return typeof f === 'string' ? JSON.parse(f) : f; }
-                        catch(e) { return f; }
+                        catch (e) { return f; }
                     });
                     renderStockList(allStocks);
                     if (window.FavoritesManager) {
@@ -1008,16 +1290,16 @@
             },
             showAuth() { document.getElementById('authModal').classList.add('active'); },
             hideAuth() { document.getElementById('authModal').classList.remove('active'); },
-            
+
             async handleSubmit() {
                 const u = document.getElementById('u-user').value.trim();
                 const p = document.getElementById('u-pass').value.trim();
                 if (!u || !p) return showToast('请输入用户名和密码');
-                
+
                 const btn = document.getElementById('u-submit');
                 const originalText = btn.innerText;
                 btn.innerText = '处理中...';
-                
+
                 try {
                     if (USER_STATE.isRegisterMode) {
                         await this.register(u, p);
@@ -1032,7 +1314,7 @@
                     btn.innerText = originalText;
                 }
             },
-            
+
             hash(str) {
                 let hash = 0;
                 for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
@@ -1088,7 +1370,7 @@
         window.FavoritesManager = {
             async toggle(stockId, stockName, price) {
                 if (!USER_STATE.isLoggedIn) return StockUserManager.showAuth();
-                
+
                 const idx = USER_STATE.favorites.findIndex(f => f.stockId === stockId);
                 if (idx > -1) {
                     USER_STATE.favorites.splice(idx, 1);
@@ -1099,12 +1381,12 @@
                     });
                     showToast('已加入收藏');
                 }
-                
+
                 this.renderPanel();
-                renderVirtualWindow(true); 
-                
+                renderVirtualWindow(true);
+
                 // Force update chart icon if we are viewing the same stock
-                if(typeof currentStock !== 'undefined' && currentStock.id === stockId && window.updateChartFavIcon) {
+                if (typeof currentStock !== 'undefined' && currentStock.id === stockId && window.updateChartFavIcon) {
                     updateChartFavIcon();
                 }
 
@@ -1122,9 +1404,9 @@
             renderPanel() {
                 const list = document.getElementById('favList');
                 const boxList = document.getElementById('favBoxList');
-                
+
                 const emptyHtml = '<div style="padding:40px; text-align:center; color:var(--text-secondary);"><i data-lucide="star-off" size="32" style="opacity:0.3; margin-bottom:12px;"></i><br/>暂无收藏股票</div>';
-                
+
                 if (!USER_STATE.favorites || USER_STATE.favorites.length === 0) {
                     if (list) list.innerHTML = emptyHtml;
                     if (boxList) boxList.innerHTML = emptyHtml;
@@ -1132,10 +1414,10 @@
                     lucide.createIcons();
                     return;
                 }
-                
+
                 const itemsHtml = USER_STATE.favorites.map((f, i) => {
                     const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
-                    
+
                     let curPrice = f.currentPrice || f.addedPrice;
                     let pct = '0.00';
                     let color = '';
@@ -1153,12 +1435,12 @@
                     }
 
                     const isActive = (typeof currentStock !== 'undefined' && f.stockId === currentStock.id) ? 'active' : '';
-                    
+
                     const mktCode = parseInt(f.stockId.split('.')[0]);
                     const stockCode = f.stockId.split('.')[1];
                     let mktName = '深';
                     let mktClass = 'mkt-sz';
-                    
+
                     if (mktCode === 1) {
                         mktName = '沪';
                         mktClass = 'mkt-sh';
@@ -1186,7 +1468,7 @@
                         mktName = '美';
                         mktClass = 'mkt-amex';
                     }
-                    
+
                     return `
                         <div class="stock-item ${isActive}" data-id="${f.stockId}" onclick="selectStock('${f.stockId}', '${f.stockName}')">
                             <div style="font-size: 0.75rem; font-weight: 700; color: var(--accent-color); min-width: 24px; opacity: 0.6; font-family: 'JetBrains Mono', monospace;">${(i + 1).toString().padStart(2, '0')}</div>
@@ -1197,7 +1479,7 @@
                                 </div>
                                 <div class="stock-code">${f.stockId.split('.')[1]}</div>
                             </div>
-                            <div style="text-align:right;">
+                            <div class="stock-price-group">
                                 <div class="stock-price ${color}">${curPrice}</div>
                                 <div class="stock-pct ${color}">${sign}${pct}%</div>
                             </div>
@@ -1216,16 +1498,16 @@
             updateStats() {
                 const favs = USER_STATE.favorites || [];
                 let win = 0, loss = 0, totalPct = 0;
-                
+
                 favs.forEach(f => {
                     const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
                     const cur = (liveData && liveData.f2 !== '-') ? liveData.f2 : (f.currentPrice || f.addedPrice);
-                    
+
                     if (cur > f.addedPrice) win++;
                     if (cur < f.addedPrice) loss++;
                     if (f.addedPrice > 0) totalPct += (cur - f.addedPrice) / f.addedPrice;
                 });
-                
+
                 const avg = favs.length > 0 ? (totalPct / favs.length * 100).toFixed(2) : '0.00';
                 const avgStr = (avg > 0 ? '+' : '') + avg + '%';
                 const avgClass = avg > 0 ? 'up' : avg < 0 ? 'down' : '';
@@ -1269,9 +1551,9 @@
 
         // Auth Logic Binding
         document.getElementById('u-submit').onclick = () => StockUserManager.handleSubmit();
-        
+
         // Time Range (完全同步桌面端逻辑)
-        window.setTimeRange = function(days, btn) {
+        window.setTimeRange = function (days, btn) {
             if (typeof AudioFX !== 'undefined') AudioFX.play('click');
             if (!candleChart) return;
 
@@ -1335,7 +1617,7 @@
         };
 
         // Full Screen Logic
-        window.toggleFullScreen = function() {
+        window.toggleFullScreen = function () {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(e => console.log(e));
             } else {
@@ -1356,11 +1638,12 @@
         // Try auto fullscreen on first interaction
         document.addEventListener('click', function initFS() {
             if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
+                document.documentElement.requestFullscreen().catch(() => { });
             }
             document.removeEventListener('click', initFS);
         }, { once: true });
 
     </script>
 </body>
+
 </html>
