@@ -858,7 +858,7 @@
         let candleChart = null;
 
         // 3. UI Functions
-        function switchTab(viewId, btnEl) {
+        function switchTab(viewId, btnEl, fromBack = false) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.getElementById(viewId).classList.add('active');
 
@@ -877,7 +877,18 @@
             if (viewId === 'view-chart' && candleChart) {
                 setTimeout(() => candleChart.resize(), 100);
             }
+
+            // 处理返回键逻辑：如果不是通过返回键触发的切换，且切换到非行情页，则推送历史记录
+            if (!fromBack && viewId !== 'view-market') {
+                history.pushState({ viewId: viewId }, "");
+            }
         }
+
+        // 监听返回键
+        window.addEventListener('popstate', (event) => {
+            const viewId = (event.state && event.state.viewId) ? event.state.viewId : 'view-market';
+            switchTab(viewId, null, true);
+        });
 
         function handleUserClick() {
             if (USER_STATE.isLoggedIn) {
