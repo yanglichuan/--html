@@ -8,6 +8,8 @@
     <title>StockPro Mobile</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Use 360 CDN for better stability in China -->
+    <script src="https://lib.baomitu.com/html2canvas/1.4.1/html2canvas.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;700&family=IBM+Plex+Serif:wght@400;600&display=swap"
@@ -1091,6 +1093,90 @@
             padding: 24px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             border: 1px solid var(--glass-border);
+        }
+        /* Screenshot FAB */
+        .fab-screenshot {
+            position: fixed;
+            left: 20px;
+            bottom: 100px;
+            width: 44px;
+            height: 44px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 999;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #fff;
+        }
+
+        .fab-screenshot:active {
+            transform: scale(0.95);
+            opacity: 0.9;
+        }
+
+        /* Screenshot Modal */
+        .screenshot-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 10000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .screenshot-modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .screenshot-preview {
+            max-width: 85%;
+            max-height: 70%;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .screenshot-tip {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .screenshot-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .screenshot-btn {
+            padding: 10px 24px;
+            background: var(--accent-color);
+            color: #fff;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .screenshot-btn.secondary {
+            background: rgba(255,255,255,0.1);
         }
     </style>
 </head>
@@ -3511,7 +3597,133 @@
 
 
 
+        // Screenshot Logic
+        let currentBlob = null;
+
+        function takeScreenshot() {
+            if (typeof html2canvas === 'undefined') {
+                showToast('截屏组件未加载，请检查网络');
+                return;
+            }
+            const btn = document.querySelector('.fab-screenshot');
+            if (btn) btn.style.display = 'none'; // Hide button during capture
+            
+            showToast('正在生成截图...');
+            
+            html2canvas(document.body, {
+                useCORS: true,
+                scale: 2, // High resolution
+                backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg-color').trim(),
+                ignoreElements: (element) => {
+                   // Ignore specific elements if needed, e.g., the screenshot button itself if not hidden
+                   return element.classList.contains('fab-screenshot');
+                }
+            }).then(canvas => {
+                if (btn) btn.style.display = 'flex'; // Show button again
+                
+                canvas.toBlob(blob => {
+                    currentBlob = blob;
+                    const url = URL.createObjectURL(blob);
+                    const img = document.getElementById('screenshotImg');
+                    img.src = url;
+                    
+                    const modal = document.getElementById('screenshotModal');
+                    modal.classList.add('active');
+                }, 'image/png');
+            }).catch(err => {
+                console.error('Screenshot failed:', err);
+                if (btn) btn.style.display = 'flex';
+                showToast('截图失败');
+            });
+        }
+
+        function closeScreenshot() {
+            document.getElementById('screenshotModal').classList.remove('active');
+            currentBlob = null;
+        }
+
+        function saveScreenshot() {
+            if (!currentBlob) return;
+            
+            try {
+                const url = URL.createObjectURL(currentBlob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'stock_screenshot_' + new Date().getTime() + '.png';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('已保存到相册');
+                }, 100);
+            } catch (e) {
+                console.error('Save failed:', e);
+                showToast('保存失败，请长按图片保存');
+            }
+        }
+
+        async function shareScreenshot() {
+            if (!currentBlob) return;
+            
+            try {
+                // Check if running in a context that supports file sharing
+                if (navigator.share) {
+                    const file = new File([currentBlob], "stock_screenshot.png", { type: "image/png" });
+                    const shareData = {
+                        files: [file],
+                        title: 'StockPro 截图',
+                        text: '查看我的股票分析'
+                    };
+                    
+                    // Note: navigator.canShare might not be available in all browsers that support navigator.share
+                    // On some mobile browsers, checking canShare for files might return false even if share works for text/url
+                    // So we try to share anyway if it fails the check or if check is not available, 
+                    // but we will wrap it in a try-catch block.
+                    
+                    try {
+                        if (navigator.canShare && !navigator.canShare(shareData)) {
+                             console.warn('navigator.canShare returned false for files');
+                             // Fallback: try sharing without files if possible, or just proceed to catch block
+                        }
+                        await navigator.share(shareData);
+                    } catch (shareError) {
+                         console.error('Share data failed', shareError);
+                         // If file sharing fails, try sharing just text/url or fallback to save prompt
+                         showToast('分享失败，请长按图片保存');
+                    }
+                } else {
+                    showToast('请长按图片保存后分享');
+                }
+            } catch (err) {
+                console.error('Share failed:', err);
+                showToast('分享出错，请尝试长按保存');
+            }
+        }
+
     </script>
+    <!-- Screenshot FAB -->
+    <div class="fab-screenshot" onclick="takeScreenshot()">
+        <i data-lucide="camera" size="24"></i>
+    </div>
+
+    <!-- Screenshot Modal -->
+    <div class="screenshot-modal" id="screenshotModal">
+        <div class="screenshot-tip">长按下方图片保存或分享给好友</div>
+        <img id="screenshotImg" class="screenshot-preview" />
+        <div class="screenshot-actions">
+            <button class="screenshot-btn secondary" onclick="closeScreenshot()">关闭</button>
+            <button class="screenshot-btn" onclick="saveScreenshot()">
+                <i data-lucide="download" size="16"></i> 保存
+            </button>
+            <button class="screenshot-btn" onclick="shareScreenshot()">
+                <i data-lucide="share-2" size="16"></i> 分享
+            </button>
+        </div>
+    </div>
 </body>
 
 </html>
