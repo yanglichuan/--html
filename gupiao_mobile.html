@@ -23,7 +23,8 @@
             --down-color: #10b981;
             --glass-border: rgba(255, 255, 255, 0.08);
             --nav-height: 60px;
-            --safe-area-bottom: env(safe-area-inset-bottom);
+            --safe-area-top: env(safe-area-inset-top, 0px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         [data-theme="light"] {
@@ -125,7 +126,7 @@
 
         /* Components */
         .mobile-header {
-            padding: 12px 16px;
+            padding: calc(var(--safe-area-top) + 10px) 16px 12px;
             background: var(--card-bg);
             border-bottom: 1px solid var(--glass-border);
             display: flex;
@@ -198,23 +199,39 @@
             margin-left: 4px;
         }
 
-        .mkt-sh { background: #ef4444; color: #fff; }
-        .mkt-sz { background: #3b82f6; color: #fff; }
-        .mkt-kcb { 
-            background: #a855f7; 
-            color: #fff; 
+        .mkt-sh {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .mkt-sz {
+            background: #3b82f6;
+            color: #fff;
+        }
+
+        .mkt-kcb {
+            background: #a855f7;
+            color: #fff;
             box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .mkt-cyb { 
-            background: #f97316; 
-            color: #fff; 
+        .mkt-cyb {
+            background: #f97316;
+            color: #fff;
             box-shadow: 0 0 6px rgba(249, 115, 22, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        .mkt-us { background: #94a3b8; color: #fff; }
-        .mkt-bj { background: #06b6d4; color: #fff; }
+
+        .mkt-us {
+            background: #94a3b8;
+            color: #fff;
+        }
+
+        .mkt-bj {
+            background: #06b6d4;
+            color: #fff;
+        }
 
         .stock-item {
             padding: 12px 16px;
@@ -229,7 +246,8 @@
         .stock-index {
             font-size: 0.85rem;
             font-weight: 900;
-            color: #FFD700; /* 金色：极高对比度 */
+            color: #FFD700;
+            /* 金色：极高对比度 */
             min-width: 28px;
             opacity: 1;
             text-shadow: 0 0 4px rgba(255, 215, 0, 0.3);
@@ -239,11 +257,13 @@
         }
 
         .stock-item.bg-main {
-            background: rgba(59, 130, 246, 0.03); /* 沪深：极淡蓝色背景 */
+            background: rgba(59, 130, 246, 0.03);
+            /* 沪深：极淡蓝色背景 */
         }
 
         .stock-item.bg-special {
-            background: rgba(168, 85, 247, 0.05); /* 创科：极淡紫色背景 */
+            background: rgba(168, 85, 247, 0.05);
+            /* 创科：极淡紫色背景 */
         }
 
         .stock-item:active {
@@ -302,9 +322,20 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
-        .stock-pct.up { background: rgba(244, 63, 94, 0.25); color: var(--up-color); }
-        .stock-pct.down { background: rgba(16, 185, 129, 0.25); color: var(--down-color); }
-        .stock-pct.neutral { background: rgba(148, 163, 184, 0.1); color: var(--text-secondary); }
+        .stock-pct.up {
+            background: rgba(244, 63, 94, 0.25);
+            color: var(--up-color);
+        }
+
+        .stock-pct.down {
+            background: rgba(16, 185, 129, 0.25);
+            color: var(--down-color);
+        }
+
+        .stock-pct.neutral {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+        }
 
         .up {
             color: var(--up-color);
@@ -320,7 +351,7 @@
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 16px;
+            padding: calc(var(--safe-area-top) + 10px) 16px 12px;
             background: linear-gradient(to bottom, var(--card-bg), var(--bg-color));
             border-bottom: 1px solid var(--glass-border);
         }
@@ -552,7 +583,7 @@
 
         <!-- View 1: Market (List) -->
         <div id="view-market" class="view active">
-            <div class="mobile-header" style="display: block; padding-top: 8px;">
+            <div class="mobile-header" style="display: block;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="header-btn" onclick="handleUserClick()">
@@ -600,7 +631,7 @@
 
         <!-- View 2: Chart -->
         <div id="view-chart" class="view">
-            <div class="chart-header-info" style="flex-shrink: 0; padding-top: 8px;">
+            <div class="chart-header-info" style="flex-shrink: 0;">
                 <div class="header-left-group">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div class="header-btn" onclick="switchTab('view-market')"
@@ -667,7 +698,7 @@
 
         <!-- View 3: Favorites -->
         <div id="view-fav" class="view">
-            <div class="mobile-header" style="padding-top: 8px;">
+            <div class="mobile-header">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="header-btn" onclick="handleUserClick()">
@@ -1674,13 +1705,7 @@
             lucide.createIcons();
         });
 
-        // Try auto fullscreen on first interaction
-        document.addEventListener('click', function initFS() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => { });
-            }
-            document.removeEventListener('click', initFS);
-        }, { once: true });
+
 
     </script>
 </body>
