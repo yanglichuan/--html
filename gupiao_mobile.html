@@ -810,6 +810,82 @@
             gap: 10px;
         }
 
+        /* Company Profile Styles */
+        .company-profile-section {
+            margin-top: 16px;
+            padding: 0 16px 20px;
+        }
+
+        .profile-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .profile-header {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .profile-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .profile-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .profile-value {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .profile-desc {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .profile-desc .profile-value {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-desc.expanded .profile-value {
+            -webkit-line-clamp: unset;
+        }
+
+        .expand-btn {
+            font-size: 11px;
+            color: var(--accent-color);
+            margin-top: 4px;
+            text-align: right;
+            cursor: pointer;
+        }
+
         /* Virtual Scroll Spacer */
         .virtual-spacer {
             width: 100%;
@@ -1165,6 +1241,23 @@
                     <span id="min-chart-info" style="font-weight: normal; opacity: 0.7;">--</span>
                 </div>
                 <div id="min-chart" style="width: 100%; height: 200px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--glass-border); overflow: hidden;"></div>
+            </div>
+
+            <!-- Company Profile Section -->
+            <div id="company-profile-container" class="company-profile-section" style="display: none;">
+                <div class="view-header-title" style="padding: 0 0 12px; font-size: 16px;">
+                    <i data-lucide="building-2" size="18" color="var(--accent-color)"></i>
+                    <span>公司概况</span>
+                </div>
+                <div class="profile-card">
+                    <div id="profile-content">
+                        <!-- Content will be injected via JS -->
+                        <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+                            <i data-lucide="loader-2" class="spin" size="24" style="margin-bottom: 8px;"></i>
+                            <div style="font-size: 12px;">加载中...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2733,6 +2826,113 @@
                 });
 
                 minChart.resize();
+
+                // --- Start Company Profile Integration ---
+                const profileContainer = document.getElementById('company-profile-container');
+                const profileContent = document.getElementById('profile-content');
+                
+                // Only show for A-shares (market 0 or 1)
+                const isAShare = currentStock.id.startsWith('0.') || currentStock.id.startsWith('1.');
+                
+                if (isAShare) {
+                    profileContainer.style.display = 'block';
+                    
+                    // Format code for API (e.g., 1.600519 -> SH600519, 0.000001 -> SZ000001)
+                    let marketPrefix = '';
+                    let stockCode = '';
+                    
+                    if (currentStock.id.includes('.')) {
+                        const parts = currentStock.id.split('.');
+                        stockCode = parts[1];
+                        // 0 is SZ, 1 is SH usually in Eastmoney secid
+                        marketPrefix = parts[0] === '1' ? 'SH' : 'SZ';
+                    } else {
+                        // Fallback if no dot
+                        stockCode = currentStock.id;
+                        marketPrefix = 'SZ'; // Default assumption, might be wrong
+                    }
+                    
+                    const fullCode = marketPrefix + stockCode;
+                    // Use Datacenter API for Financial Data (CORS friendly)
+                    // RPT_LICO_FN_CPD = Financial Performance (Revenue, Profit, EPS, etc.)
+                    // Filter needs SECUCODE="600519.SH" format
+                    const secuCode = `${stockCode}.${marketPrefix}`;
+                    const profileUrl = `https://datacenter.eastmoney.com/securities/api/data/get?type=RPT_LICO_FN_CPD&sty=ALL&filter=(SECUCODE="${secuCode}")&client=source&p=1&ps=1`;
+                    
+                    SmartFetch.get(profileUrl, currentStock.name, '财务概况', currentRegion)
+                        .then(res => {
+                            if (res && res.result && res.result.data && res.result.data.length > 0) {
+                                const info = res.result.data[0];
+                                
+                                // Format Helper
+                                const formatNum = (num) => {
+                                    if (!num) return '--';
+                                    const val = parseFloat(num);
+                                    if (val > 100000000) return (val / 100000000).toFixed(2) + '亿';
+                                    if (val > 10000) return (val / 10000).toFixed(2) + '万';
+                                    return val.toFixed(2);
+                                };
+
+                                const html = `
+                                    <div class="profile-header">
+                                        <span>${info.SECURITY_NAME_ABBR || currentStock.name}</span>
+                                        <span style="font-size: 12px; color: var(--text-secondary); margin-left: 10px;">${info.DATATYPE || '--'}</span>
+                                    </div>
+                                    <div class="profile-grid">
+                                        <div class="profile-item">
+                                            <span class="profile-label">营业收入</span>
+                                            <span class="profile-value">${formatNum(info.TOTAL_OPERATE_INCOME)}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">归母净利润</span>
+                                            <span class="profile-value" style="color: ${info.PARENT_NETPROFIT > 0 ? 'var(--up-color)' : 'var(--down-color)'}">${formatNum(info.PARENT_NETPROFIT)}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">每股收益</span>
+                                            <span class="profile-value">${info.BASIC_EPS ? info.BASIC_EPS.toFixed(3) : '--'}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">加权ROE</span>
+                                            <span class="profile-value">${info.WEIGHTAVG_ROE ? info.WEIGHTAVG_ROE.toFixed(2) + '%' : '--'}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">每股净资产</span>
+                                            <span class="profile-value">${info.BPS ? info.BPS.toFixed(2) : '--'}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">毛利率</span>
+                                            <span class="profile-value">${info.XSMLL ? info.XSMLL.toFixed(2) + '%' : '--'}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">所属行业</span>
+                                            <span class="profile-value">${info.PUBLISHNAME || '--'}</span>
+                                        </div>
+                                        <div class="profile-item">
+                                            <span class="profile-label">最新公告</span>
+                                            <span class="profile-value" style="font-size:10px;">${info.NOTICE_DATE ? info.NOTICE_DATE.split(' ')[0] : '--'}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div style="margin-top: 15px; text-align: center;">
+                                        <a href="https://f10.eastmoney.com/f10_v2/CompanySurvey.aspx?code=${fullCode}" target="_blank" style="color: var(--accent-color); text-decoration: none; font-size: 12px; display: inline-flex; align-items: center;">
+                                            查看完整公司概况 <i data-lucide="external-link" size="12" style="margin-left: 4px;"></i>
+                                        </a>
+                                    </div>
+                                `;
+                                profileContent.innerHTML = html;
+                                if (window.lucide) lucide.createIcons();
+                            } else {
+                                profileContent.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;">暂无财务数据</div>`;
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Profile fetch error', err);
+                            profileContent.innerHTML = `<div style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 12px;">加载失败</div>`;
+                        });
+                } else {
+                    profileContainer.style.display = 'none';
+                }
+                // --- End Company Profile Integration ---
 
             } catch (e) {
                 console.error('Min chart error:', e);
