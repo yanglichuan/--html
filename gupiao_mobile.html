@@ -226,6 +226,28 @@
             box-sizing: border-box;
         }
 
+        .stock-index {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            min-width: 24px;
+            opacity: 0.6;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+
+        .stock-item.bg-main {
+            background: rgba(59, 130, 246, 0.03); /* 沪深：极淡蓝色背景 */
+        }
+
+        .stock-item.bg-special {
+            background: rgba(168, 85, 247, 0.05); /* 创科：极淡紫色背景 */
+        }
+
+        .stock-item:active {
+            background: rgba(255, 255, 255, 0.1) !important;
+        }
+
         .stock-info {
             display: flex;
             flex-direction: column;
@@ -871,20 +893,32 @@
                 const isFav = USER_STATE.favorites.some(f => f.stockId === fullId);
                 const color = s.f3 > 0 ? 'up' : s.f3 < 0 ? 'down' : 'neutral';
 
-                // Determine Badge
+                // Determine Badge and BG Class
                 let badge = '';
+                let bgClass = '';
                 if (s.f13 == 1) {
-                    if (s.f12.startsWith('68')) badge = '<span class="mkt-badge mkt-kcb">科</span>';
-                    else badge = '<span class="mkt-badge mkt-sh">沪</span>';
+                    if (s.f12.startsWith('68')) {
+                        badge = '<span class="mkt-badge mkt-kcb">科</span>';
+                        bgClass = 'bg-special';
+                    } else {
+                        badge = '<span class="mkt-badge mkt-sh">沪</span>';
+                        bgClass = 'bg-main';
+                    }
                 } else if (s.f13 == 0) {
-                    if (s.f12.startsWith('30')) badge = '<span class="mkt-badge mkt-cyb">创</span>';
-                    else badge = '<span class="mkt-badge mkt-sz">深</span>';
+                    if (s.f12.startsWith('30')) {
+                        badge = '<span class="mkt-badge mkt-cyb">创</span>';
+                        bgClass = 'bg-special';
+                    } else {
+                        badge = '<span class="mkt-badge mkt-sz">深</span>';
+                        bgClass = 'bg-main';
+                    }
                 } else if (s.f13 >= 100) {
                     badge = '<span class="mkt-badge mkt-us">美</span>';
                 }
 
                 return `
-                    <div class="stock-item" onclick="selectStock('${fullId}', '${s.f14}')">
+                    <div class="stock-item ${bgClass}" onclick="selectStock('${fullId}', '${s.f14}')">
+                        <div class="stock-index">${(globalIndex + 1).toString().padStart(2, '0')}</div>
                         <div class="stock-info">
                             <div class="stock-name-row">
                                 <span class="stock-name">${s.f14}</span>
