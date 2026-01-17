@@ -1143,6 +1143,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Intraday Chart Section -->
+            <div style="margin-top: 16px; padding: 0 16px;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                    <span>今日分时</span>
+                    <span id="min-chart-info" style="font-weight: normal; opacity: 0.7;">--</span>
+                </div>
+                <div id="min-chart" style="width: 100%; height: 200px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--glass-border); overflow: hidden;"></div>
+            </div>
         </div>
 
         <!-- View 3: Favorites -->
@@ -2454,6 +2463,177 @@
             }
         }
 
+        let minChart = null;
+
+        async function updateMinChart() {
+            const chartDom = document.getElementById('min-chart');
+            if (!chartDom) return;
+            if (!minChart) minChart = echarts.init(chartDom);
+
+            // Colors
+            const style = getComputedStyle(document.documentElement);
+            const colors = {
+                up: style.getPropertyValue('--up-color').trim() || '#f43f5e',
+                down: style.getPropertyValue('--down-color').trim() || '#10b981',
+                accent: style.getPropertyValue('--accent-color').trim() || '#3b82f6',
+                grid: 'rgba(128,128,128,0.1)',
+                text: style.getPropertyValue('--text-secondary').trim() || '#94a3b8',
+                bg: style.getPropertyValue('--card-bg').trim() || '#1e293b'
+            };
+
+            minChart.showLoading({ color: colors.accent, maskColor: 'transparent', zlevel: 100 });
+
+            // API: Trends2
+            const url = `https://push2.eastmoney.com/api/qt/stock/trends2/get?secid=${currentStock.id}&fields1=f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13&fields2=f51,f53,f56,f58&iscr=0&iscca=0&ndays=1`;
+            
+            try {
+                const res = await SmartFetch.get(url, currentStock.name, '分时图', currentRegion);
+                minChart.hideLoading();
+
+                if (!res || !res.data || !res.data.trends) {
+                    minChart.setOption({
+                        title: { text: '暂无分时数据', left: 'center', top: 'center', textStyle: { color: colors.text, fontSize: 12 } }
+                    });
+                    return;
+                }
+
+                const data = res.data;
+                const preClose = data.preClose;
+                const trends = data.trends.map(item => {
+                    const p = item.split(',');
+                    return {
+                        time: p[0].substring(11, 16), // "YYYY-MM-DD HH:mm" -> "HH:mm"
+                        price: parseFloat(p[1]),
+                        avg: parseFloat(p[2]),
+                        vol: parseInt(p[3])
+                    };
+                });
+
+                // Update info text
+                const last = trends[trends.length - 1];
+                if (last) {
+                    const p = last.price;
+                    const pct = ((p - preClose) / preClose * 100).toFixed(2);
+                    const color = p > preClose ? colors.up : (p < preClose ? colors.down : colors.text);
+                    document.getElementById('min-chart-info').innerHTML = `<span style="color:${color}">${p.toFixed(2)} (${pct}%)</span>`;
+                }
+
+                // Calculate symmetric Y-axis range based on preClose
+                const prices = trends.map(t => t.price);
+                const maxPrice = Math.max(...prices);
+                const minPrice = Math.min(...prices);
+                const maxDiff = Math.max(Math.abs(maxPrice - preClose), Math.abs(preClose - minPrice));
+                // Add a small buffer (e.g. 2% more than max diff) to avoid touching edges
+                const range = maxDiff === 0 ? preClose * 0.01 : maxDiff * 1.05;
+                const yMax = preClose + range;
+                const yMin = preClose - range;
+                const maxPct = (range / preClose * 100).toFixed(2);
+
+                minChart.setOption({
+                    animation: false,
+                    grid: { top: 10, left: 40, right: 40, bottom: 20 },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: { type: 'cross', lineStyle: { color: colors.text, type: 'dashed' }, label: { show: false } },
+                        backgroundColor: colors.bg,
+                        borderColor: colors.grid,
+                        textStyle: { color: colors.text, fontSize: 10 },
+                        padding: 8,
+                        formatter: params => {
+                            if (!params[0]) return '';
+                            const idx = params[0].dataIndex;
+                            const item = trends[idx];
+                            if(!item) return '';
+                            const p = item.price;
+                            const pc = ((p - preClose) / preClose * 100).toFixed(2);
+                            const pColor = p > preClose ? colors.up : (p < preClose ? colors.down : colors.text);
+                            return `${item.time}<br/>Price: <span style="color:${pColor}">${p.toFixed(2)}</span> (${pc}%)`;
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: trends.map(t => t.time),
+                        axisLine: { show: false },
+                        axisTick: { show: false },
+                        axisLabel: { 
+                            color: colors.text, 
+                            fontSize: 10, 
+                            interval: 'auto', 
+                            showMinLabel: true, 
+                            showMaxLabel: true,
+                            formatter: (val, idx) => {
+                                // Simplified logic to show start/mid/end times roughly
+                                const len = trends.length;
+                                if (idx === 0) return val;
+                                if (idx === len - 1) return val;
+                                if (idx === Math.floor(len / 2)) return val;
+                                return '';
+                            }
+                        },
+                        boundaryGap: false
+                    },
+                    yAxis: [
+                        {
+                            type: 'value',
+                            scale: true,
+                            splitLine: { show: false },
+                            axisLabel: { 
+                                show: true, 
+                                color: (val) => val > preClose ? colors.up : (val < preClose ? colors.down : colors.text),
+                                fontSize: 10,
+                                formatter: (val) => val.toFixed(2)
+                            },
+                            min: yMin,
+                            max: yMax,
+                            interval: range  // Force ticks at min, preClose, max
+                        },
+                        {
+                            type: 'value',
+                            scale: true,
+                            splitLine: { show: false },
+                            axisLabel: { 
+                                show: true, 
+                                color: (val) => val > 0 ? colors.up : (val < 0 ? colors.down : colors.text),
+                                fontSize: 10,
+                                formatter: (val) => (val > 0 ? '+' : '') + val.toFixed(2) + '%'
+                            },
+                            min: -maxPct,
+                            max: maxPct,
+                            interval: parseFloat(maxPct)
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Price',
+                            type: 'line',
+                            data: trends.map(t => t.price),
+                            showSymbol: false,
+                            smooth: true,
+                            lineStyle: { width: 1, color: colors.accent }, // Standard blue/theme color for price line
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: colors.accent + '33' }, // Very light fill
+                                    { offset: 1, color: colors.accent + '05' }
+                                ])
+                            },
+                            markLine: {
+                                symbol: 'none',
+                                data: [{ yAxis: preClose, lineStyle: { type: 'dashed', color: colors.text, opacity: 0.8, width: 1 } }],
+                                label: { show: false },
+                                silent: true
+                            }
+                        }
+                    ]
+                });
+
+                minChart.resize();
+
+            } catch (e) {
+                console.error('Min chart error:', e);
+                minChart.hideLoading();
+            }
+        }
+
         async function updateStats() {
             const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`;
             const res = await SmartFetch.get(url, currentStock.name, '行情详情', currentRegion);
@@ -2488,6 +2668,7 @@
             try {
                 updateStats().catch(e => console.error('Stats update failed:', e));
                 updateCandle().catch(e => console.error('Candle update failed:', e));
+                updateMinChart().catch(e => console.error('MinChart update failed:', e));
                 if (window.updateChartFavIcon) updateChartFavIcon();
             } catch (err) {
                 console.error('Update all failed:', err);
@@ -2562,6 +2743,8 @@
                     // but updateCandle() will call echarts.init/setOption with fresh colors/fonts
                     if (typeof updateCandle === 'function') updateCandle();
                 }
+                
+                if (typeof updateMinChart === 'function') updateMinChart();
 
                 // Close modal after selection with small delay for visual feedback
                 setTimeout(() => {
