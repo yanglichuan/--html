@@ -886,8 +886,24 @@
 
         // 监听返回键
         window.addEventListener('popstate', (event) => {
-            const viewId = (event.state && event.state.viewId) ? event.state.viewId : 'view-market';
-            switchTab(viewId, null, true);
+            const isFullScreen = !!document.fullscreenElement;
+            const currentView = document.querySelector('.view.active')?.id;
+            const targetView = (event.state && event.state.viewId) ? event.state.viewId : 'view-market';
+
+            if (isFullScreen) {
+                if (currentView === 'view-market') {
+                    // 如果在行情页且全屏，点击返回则退出全屏
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    // 补偿历史记录，因为我们拦截了返回动作来退出全屏
+                    history.pushState({ viewId: 'view-market' }, "");
+                } else {
+                    // 如果在其他页面且全屏，点击返回先去行情页，保持全屏
+                    switchTab(targetView, null, true);
+                }
+            } else {
+                // 非全屏状态，执行正常的标签切换
+                switchTab(targetView, null, true);
+            }
         });
 
         function handleUserClick() {
