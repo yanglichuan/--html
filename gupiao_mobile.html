@@ -612,7 +612,19 @@
             text-align: center;
         }
 
-        /* Settings View */
+        /* Settings View Specifics */
+        #view-settings {
+            display: block;
+            overflow-y: auto;
+            padding-bottom: calc(var(--nav-height) + var(--safe-area-bottom));
+        }
+
+        #view-settings .mobile-header {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
         .settings-group {
             margin: 0 16px 16px;
             background: var(--card-bg);
@@ -653,54 +665,105 @@
         }
 
         .log-list {
-            padding: 0 16px;
-            overflow-y: auto;
-            flex: 1;
+            padding: 0 16px 16px;
         }
 
         .log-item {
             padding: 12px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 10px;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-size: 12px;
             border: 1px solid var(--glass-border);
+            overflow: hidden;
         }
 
         .log-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             color: var(--text-secondary);
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 8px;
         }
 
         .log-stock {
             font-weight: 700;
             color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .log-id {
+            background: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            margin-right: 6px;
+            color: var(--accent-color);
         }
 
         .log-status {
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
-        .log-status.success { background: rgba(16, 185, 129, 0.1); color: #10b981; }
-        .log-status.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        .log-status.success { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+        .log-status.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 
         .log-time {
             font-family: 'JetBrains Mono', monospace;
             opacity: 0.6;
+            font-size: 11px;
         }
 
-        .log-url {
-            margin-top: 4px;
+        .log-details {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-row {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+        .log-label {
+            min-width: 40px;
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+
+        .log-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .log-params {
+            margin-top: 6px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .log-param-item {
+            display: flex;
+            gap: 8px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
-            color: var(--accent-color);
-            word-break: break-all;
-            opacity: 0.8;
+            line-height: 1.5;
         }
+        
+        .log-param-key { color: var(--accent-color); opacity: 0.8; }
+        .log-param-val { color: var(--text-secondary); }
 
         .view-header-title {
             padding: 16px;
@@ -1138,6 +1201,13 @@
                      </div>
                      <i data-lucide="chevron-right" size="18"></i>
                  </div>
+                 <div class="settings-item" onclick="APILogger.log('测试条目', 'TEST', 'https://api.test.com/v1/data', 'success', '人工测试'); showToast('已发送测试日志');">
+                     <div style="display:flex; align-items:center; gap:12px;">
+                         <i data-lucide="test-tube-2" size="20"></i>
+                         <span>发送测试日志</span>
+                     </div>
+                     <i data-lucide="chevron-right" size="18"></i>
+                 </div>
                  <div class="settings-item" onclick="APILogger.export()">
                      <div style="display:flex; align-items:center; gap:12px;">
                          <i data-lucide="download" size="20"></i>
@@ -1278,7 +1348,7 @@
 
     <script>
         // --- API Logger for Settings Tab ---
-        const APILogger = {
+        window.APILogger = {
             logs: [],
             maxLogs: 50,
             counter: 0,
@@ -1336,24 +1406,54 @@
                     return;
                 }
 
-                container.innerHTML = this.logs.map(log => `
+                container.innerHTML = this.logs.map(log => {
+                    let urlParams = '';
+                    let cleanUrl = log.url;
+                    
+                    try {
+                        if (log.url && log.url.startsWith('http')) {
+                            const urlObj = new URL(log.url);
+                            cleanUrl = urlObj.origin + urlObj.pathname;
+                            const params = [];
+                            urlObj.searchParams.forEach((value, key) => {
+                                params.push(`<div class="log-param-item"><span class="log-param-key">${key}:</span> <span class="log-param-val">${value}</span></div>`);
+                            });
+                            if (params.length > 0) {
+                                urlParams = `<div class="log-params">${params.join('')}</div>`;
+                            }
+                        }
+                    } catch (e) {
+                        // fallback
+                    }
+
+                    return `
                     <div class="log-item">
                         <div class="log-header">
-                            <div>
-                                <span style="opacity:0.5; margin-right:4px;">#${log.id}</span>
-                                <span class="log-stock">${log.stockName} (${log.stockId})</span>
+                            <div style="display:flex; align-items:center;">
+                                <span class="log-id">#${log.id}</span>
+                                <span class="log-stock">${log.stockName} <span style="font-weight:normal; opacity:0.7;">${log.stockId}</span></span>
                             </div>
-                            <span class="log-status ${log.status}">${log.status === 'success' ? '成功' : '失败'}</span>
+                            <span class="log-status ${log.status}">${log.status === 'success' ? 'SUCCESS' : 'ERROR'}</span>
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:10px; opacity:0.6;">${log.type} 调用</span>
-                            <span class="log-time">${log.time}</span>
+                        
+                        <div class="log-details">
+                             <div class="log-row">
+                                <span class="log-label">TYPE</span>
+                                <span class="log-value">${log.type}</span>
+                            </div>
+                            <div class="log-row">
+                                <span class="log-label">TIME</span>
+                                <span class="log-value">${log.time}</span>
+                            </div>
+                             <div class="log-row">
+                                <span class="log-label">URL</span>
+                                <span class="log-value" style="color:var(--accent-color);">${cleanUrl}</span>
+                            </div>
+                            ${urlParams}
                         </div>
-                        <div class="log-url">${log.url.split('?')[0]}...</div>
                     </div>
-                `).join('');
+                `}).join('');
                 
-                // Refresh icons if any (though we didn't use any in the map)
                 if (window.lucide) lucide.createIcons();
             }
         };
@@ -1430,6 +1530,63 @@
         const blob = new Blob([workerScript], { type: 'application/javascript' });
         const worker = new Worker(URL.createObjectURL(blob));
         const workerCallbacks = {};
+        
+        // --- Smart Caching System for Data Flow Transparency ---
+        const SmartFetch = {
+            cache: new Map(),
+            
+            // Helper to determine if market is open (simplified)
+            isTradingTime(region) {
+                const now = new Date();
+                const day = now.getDay(); 
+                const hour = now.getHours();
+                const minute = now.getMinutes();
+                const t = hour * 100 + minute;
+                if (region === 'CN') {
+                    if (day === 0 || day === 6) return false;
+                    return (t >= 915 && t <= 1130) || (t >= 1300 && t <= 1500);
+                }
+                // Default to true for others for simplicity or add more rules
+                return true; 
+            },
+
+            async get(url, stockName, type, region = 'CN') {
+                const isOpen = this.isTradingTime(region);
+                let source = 'NETWORK';
+                let status = 'success';
+                let data = null;
+
+                // 1. Check Cache
+                if (!isOpen && this.cache.has(url)) {
+                    source = 'CACHE';
+                    data = JSON.parse(this.cache.get(url));
+                    
+                    // Log the cache hit
+                    if (window.APILogger) window.APILogger.log(stockName, region, url, 'success', type + ' [CACHE]');
+                    return data;
+                }
+
+                // 2. Network Request
+                try {
+                    const res = await fetch(url);
+                    data = await res.json();
+                    
+                    if (data) {
+                        this.cache.set(url, JSON.stringify(data)); // Update cache
+                    } else {
+                        status = 'error';
+                    }
+                } catch (e) {
+                    status = 'error';
+                    console.error('Fetch failed', e);
+                }
+
+                // Log the network request
+                if (window.APILogger) window.APILogger.log(stockName, region, url, status, type + ' [API]');
+                return data;
+            }
+        };
+
         function runWorkerTask(type, payload) {
             return new Promise((resolve, reject) => {
                 const id = Date.now() + Math.random().toString();
@@ -1444,10 +1601,12 @@
                 const duration = Date.now() - startTime;
                 
                 if (type === 'FETCH_LIST' || type === 'SEARCH') {
-                    APILogger.log(type === 'SEARCH' ? `搜索: ${payload?.query || ''}` : '列表更新', 
+                    if (window.APILogger) {
+                        window.APILogger.log(type === 'SEARCH' ? `搜索: ${payload?.query || ''}` : '列表更新', 
                                  currentRegion, `Worker: ${type}`, 
                                  error ? 'error' : 'success', 
                                  `后台任务 (${duration}ms)`);
+                    }
                 }
 
                 error ? workerCallbacks[id].reject(error) : workerCallbacks[id].resolve(data);
@@ -1519,7 +1678,7 @@
             }
 
             if (viewId === 'view-settings') {
-                if (window.APILogger) APILogger.render();
+                if (window.APILogger) window.APILogger.render();
             }
 
             if (viewId === 'view-chart' && candleChart) {
@@ -1679,14 +1838,14 @@
             try {
                 const url = `(WebWorker Tasks)`;
                 allStocks = await runWorkerTask('FETCH_LIST', { currentRegion });
-                APILogger.log('沪深/美股全列表', currentRegion, url, allStocks ? 'success' : 'error', '全列表请求');
+                if (window.APILogger) window.APILogger.log('沪深/美股全列表', currentRegion, url, allStocks ? 'success' : 'error', '全列表请求');
                 
                 if (isReversed) allStocks.reverse();
                 renderStockList(allStocks);
                 if (window.FavoritesManager) FavoritesManager.refreshAllPrices();
             } catch (e) { 
                 console.error(e);
-                APILogger.log('列表请求', currentRegion, 'N/A', 'error', '异常');
+                if (window.APILogger) window.APILogger.log('列表请求', currentRegion, 'N/A', 'error', '异常');
             }
         }
 
@@ -1770,14 +1929,8 @@
 
             try {
                 const [curRes, zsRes] = await Promise.all([
-                    fetch(curUrl).then(r => r.json()).then(res => {
-                        APILogger.log(currentStock.name, currentStock.id, curUrl, res?.data ? 'success' : 'error', 'K线数据');
-                        return res;
-                    }),
-                    fetch(zsUrl).then(r => r.json()).then(res => {
-                        APILogger.log(currentRegion === 'CN' ? '上证指数' : '纳斯达克', ZS_ID, zsUrl, res?.data ? 'success' : 'error', '指数K线');
-                        return res;
-                    })
+                    SmartFetch.get(curUrl, currentStock.name, 'K线数据', currentRegion),
+                    SmartFetch.get(zsUrl, currentRegion === 'CN' ? '上证指数' : '纳斯达克', '指数K线', currentRegion)
                 ]);
 
                 candleChart.hideLoading();
@@ -1984,10 +2137,8 @@
 
         async function updateStats() {
             const url = `https://push2.eastmoney.com/api/qt/stock/get?secid=${currentStock.id}&fields=f43,f170,f47,f127,f60,f44,f45,f46,f9,f20`;
-            const res = await fetch(url).then(r => r.json());
+            const res = await SmartFetch.get(url, currentStock.name, '行情详情', currentRegion);
             
-            APILogger.log(currentStock.name, currentStock.id, url, res?.data ? 'success' : 'error', '行情详情');
-
             if (res?.data) {
                 const d = res.data;
                 const price = (d.f43 / 100).toFixed(2);
