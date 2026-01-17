@@ -1638,7 +1638,6 @@
 
         // Time Range (完全同步桌面端逻辑)
         window.setTimeRange = function (days, btn) {
-            if (typeof AudioFX !== 'undefined') AudioFX.play('click');
             if (!candleChart) return;
 
             const option = candleChart.getOption();
