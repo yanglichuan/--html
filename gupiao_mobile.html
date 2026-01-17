@@ -1051,7 +1051,10 @@
                     <i data-lucide="search" size="14" color="var(--text-secondary)"
                         style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%);"></i>
                     <input type="text" class="search-box" id="stock-search" placeholder="搜索代码/拼音/名称..."
-                        style="padding-left: 35px;">
+                        style="padding-left: 35px; padding-right: 35px;">
+                    <div id="clear-search-btn" style="position: absolute; right: 0; top: 0; height: 100%; width: 35px; display: none; align-items: center; justify-content: center; cursor: pointer;">
+                        <i data-lucide="x" size="14" color="var(--text-secondary)"></i>
+                    </div>
                 </div>
                 <!-- Breadth Bar -->
                 <div style="margin-top:12px; display:flex; flex-direction: column; gap: 4px;">
@@ -2779,8 +2782,18 @@
         }
 
         // 7. Search & User System
-        document.getElementById('stock-search').addEventListener('input', (e) => {
+        const searchInput = document.getElementById('stock-search');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+
+        searchInput.addEventListener('input', (e) => {
             const val = e.target.value.trim().toLowerCase();
+            
+            if (val) {
+                clearSearchBtn.style.display = 'flex';
+            } else {
+                clearSearchBtn.style.display = 'none';
+            }
+
             let results = val ? allStocks.filter(s => s.f12.includes(val) || s.f14.includes(val) || (PinyinMatch && PinyinMatch.match(s.f14, val))) : [...allStocks];
             
             // 搜索时也保持当前的倒序状态
@@ -2791,6 +2804,13 @@
             }
             
             renderStockList(results, !!val);
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            // Trigger input event to update list
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
         });
 
         // 8. User System (Full Implementation)
