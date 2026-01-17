@@ -583,7 +583,7 @@
 
         <!-- View 1: Market (List) -->
         <div id="view-market" class="view active">
-            <div class="mobile-header" style="display: block;">
+            <div class="mobile-header" style="display: block; padding-top: 8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="header-btn" onclick="handleUserClick()">
@@ -631,7 +631,7 @@
 
         <!-- View 2: Chart -->
         <div id="view-chart" class="view">
-            <div class="chart-header-info" style="flex-shrink: 0;">
+            <div class="chart-header-info" style="flex-shrink: 0; padding-top: 8px;">
                 <div class="header-left-group">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <div class="header-btn" onclick="switchTab('view-market')"
@@ -698,7 +698,7 @@
 
         <!-- View 3: Favorites -->
         <div id="view-fav" class="view">
-            <div class="mobile-header">
+            <div class="mobile-header" style="padding-top: 8px;">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div class="header-btn" onclick="handleUserClick()">
@@ -1621,6 +1621,16 @@
 
         // Auth Logic Binding
         document.getElementById('u-submit').onclick = () => StockUserManager.handleSubmit();
+
+        // Keyboard Shortcut: Esc to go back to market from chart
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const chartView = document.getElementById('view-chart');
+                if (chartView && chartView.classList.contains('active')) {
+                    switchTab('view-market');
+                }
+            }
+        });
 
         // Time Range (完全同步桌面端逻辑)
         window.setTimeRange = function (days, btn) {
