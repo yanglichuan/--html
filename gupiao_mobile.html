@@ -1522,7 +1522,20 @@
                     return;
                 }
 
-                const itemsHtml = USER_STATE.favorites.map((f, i) => {
+                // 排序：按照涨跌幅从高到低
+                const sortedFavorites = [...USER_STATE.favorites].map(f => {
+                    const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
+                    let pct = 0;
+                    if (liveData) {
+                        pct = (typeof liveData.f3 === 'number') ? liveData.f3 : 0;
+                    } else {
+                        const curPrice = f.currentPrice || f.addedPrice;
+                        pct = f.addedPrice > 0 ? (curPrice - f.addedPrice) / f.addedPrice * 100 : 0;
+                    }
+                    return { ...f, _tempPct: pct };
+                }).sort((a, b) => b._tempPct - a._tempPct);
+
+                const itemsHtml = sortedFavorites.map((f, i) => {
                     const liveData = (typeof allStocks !== 'undefined') ? allStocks.find(s => `${s.f13}.${s.f12}` === f.stockId) : null;
 
                     let curPrice = f.currentPrice || f.addedPrice;
