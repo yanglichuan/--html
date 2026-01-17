@@ -2608,7 +2608,6 @@
                     return {
                         time: p[0].substring(11, 16), // "YYYY-MM-DD HH:mm" -> "HH:mm"
                         price: parseFloat(p[1]),
-                        avg: parseFloat(p[2]),
                         vol: parseInt(p[3])
                     };
                 });
@@ -2624,10 +2623,8 @@
 
                 // Calculate symmetric Y-axis range based on preClose
                 const prices = trends.map(t => t.price);
-                const avgs = trends.map(t => t.avg);
-                const allValues = [...prices, ...avgs];
-                const maxPrice = Math.max(...allValues);
-                const minPrice = Math.min(...allValues);
+                const maxPrice = Math.max(...prices);
+                const minPrice = Math.min(...prices);
                 const maxDiff = Math.max(Math.abs(maxPrice - preClose), Math.abs(preClose - minPrice));
                 // Add a small buffer (e.g. 2% more than max diff) to avoid touching edges
                 const range = maxDiff === 0 ? preClose * 0.01 : maxDiff * 1.05;
@@ -2651,12 +2648,9 @@
                             const item = trends[idx];
                             if(!item) return '';
                             const p = item.price;
-                            const avg = item.avg;
                             const pc = ((p - preClose) / preClose * 100).toFixed(2);
                             const pColor = p > preClose ? colors.up : (p < preClose ? colors.down : colors.text);
-                            return `${item.time}<br/>
-                                    Price: <span style="color:${pColor}">${p.toFixed(2)}</span> (${pc}%)<br/>
-                                    Avg: <span style="color:#f59e0b">${avg.toFixed(2)}</span>`;
+                            return `${item.time}<br/>Price: <span style="color:${pColor}">${p.toFixed(2)}</span> (${pc}%)`;
                         }
                     },
                     xAxis: {
@@ -2731,14 +2725,6 @@
                                 label: { show: false },
                                 silent: true
                             }
-                        },
-                        {
-                            name: 'Average',
-                            type: 'line',
-                            data: trends.map(t => t.avg),
-                            showSymbol: false,
-                            smooth: 0.1,
-                            lineStyle: { width: 1, color: '#f59e0b' } // Yellow
                         }
                     ]
                 });
