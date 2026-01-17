@@ -202,7 +202,7 @@
             background: var(--bg-color);
             display: flex;
             flex-direction: column;
-            transform: translateX(100%);
+            /* Removed default transform to allow logic-based positioning */
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 10;
         }
@@ -212,11 +212,22 @@
             z-index: 20;
         }
 
-        /* View transitions optimization */
-        .view.active~.view {
-            transform: translateX(100%);
+        .view.prev {
+            transform: translateX(-100%);
+            z-index: 10;
         }
 
+        .view.next {
+            transform: translateX(100%);
+            z-index: 10;
+        }
+
+        .view.no-transition {
+            transition: none !important;
+        }
+
+        /* View transitions optimization - Legacy support removed in favor of JS logic */
+        
         /* Bottom Navigation */
         .bottom-nav {
             position: fixed;
@@ -1977,17 +1988,53 @@
             showToast(isReversed ? '已切换为倒序' : '已恢复正序');
         }
         function switchTab(viewId, btnEl, fromBack = false) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById(viewId).classList.add('active');
-
+            const tabs = ['view-market', 'view-chart', 'view-fav', 'view-settings'];
+            const newIndex = tabs.indexOf(viewId);
+            const oldActive = document.querySelector('.view.active');
+            const oldIndex = oldActive ? tabs.indexOf(oldActive.id) : -1;
+            
+            // Handle Tab Styles
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if (btnEl) btnEl.classList.add('active');
-            else {
+            if (btnEl) {
+                btnEl.classList.add('active');
+            } else {
                 // Auto highlight based on viewId
-                const mapping = { 'view-market': 0, 'view-chart': 1, 'view-fav': 2, 'view-settings': 3 };
-                const idx = mapping[viewId] ?? 0;
-                document.querySelectorAll('.nav-item')[idx].classList.add('active');
+                const idx = newIndex !== -1 ? newIndex : 0;
+                const items = document.querySelectorAll('.nav-item');
+                if (items[idx]) items[idx].classList.add('active');
             }
+
+            // Handle View Transitions
+            tabs.forEach((tabId, index) => {
+                const el = document.getElementById(tabId);
+                if (!el) return;
+
+                // Determine target state
+                let targetClass = '';
+                if (index === newIndex) {
+                    targetClass = 'active';
+                } else if (index < newIndex) {
+                    targetClass = 'prev';
+                } else {
+                    targetClass = 'next';
+                }
+
+                // Check if this view needs to "jump" (was not active and is not becoming active)
+                const isJump = (index !== newIndex && index !== oldIndex);
+                
+                // Apply classes
+                if (isJump) {
+                    el.classList.add('no-transition');
+                    el.classList.remove('active', 'prev', 'next');
+                    el.classList.add(targetClass);
+                    // Force reflow
+                    void el.offsetHeight;
+                    el.classList.remove('no-transition');
+                } else {
+                    el.classList.remove('active', 'prev', 'next');
+                    el.classList.add(targetClass);
+                }
+            });
 
             if (viewId === 'view-fav') {
                 if (window.FavoritesManager) FavoritesManager.renderPanel();
@@ -2001,11 +2048,68 @@
                 setTimeout(() => candleChart.resize(), 100);
             }
 
-            // 处理返回键逻辑：如果不是通过返回键触发的切换，且切换到非行情页，则推送历史记录
             if (!fromBack && viewId !== 'view-market') {
                 history.pushState({ viewId: viewId }, "");
             }
         }
+
+        // Swipe Gestures for Tab Switching
+        (function initSwipeGestures() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+            const minSwipeDistance = 50; // Threshold for a valid swipe
+            const maxVerticalDistance = 30; // Max vertical movement allowed for horizontal swipe
+
+            const tabs = ['view-market', 'view-chart', 'view-fav', 'view-settings'];
+
+            document.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+
+            document.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const touchEndY = e.changedTouches[0].screenY;
+                
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+
+                // Check if interaction was with a chart or its container
+                let target = e.target;
+                let isChartInteraction = false;
+                while (target && target !== document.body) {
+                    if (target.id === 'candle-chart' || target.id === 'min-chart' || (target.classList && target.classList.contains('echarts-for-react'))) {
+                        isChartInteraction = true;
+                        break;
+                    }
+                    target = target.parentElement;
+                }
+                
+                // If interacting with chart, ignore swipe
+                if (isChartInteraction) return;
+
+                // Check for horizontal swipe
+                if (Math.abs(diffX) > minSwipeDistance && Math.abs(diffY) < maxVerticalDistance) {
+                    const currentView = document.querySelector('.view.active')?.id;
+                    if (!currentView) return;
+
+                    const currentIndex = tabs.indexOf(currentView);
+                    if (currentIndex === -1) return;
+
+                    if (diffX > 0) {
+                        // Swipe Right -> Previous Tab (e.g. Chart -> Market)
+                        if (currentIndex > 0) {
+                            switchTab(tabs[currentIndex - 1]);
+                        }
+                    } else {
+                        // Swipe Left -> Next Tab (e.g. Market -> Chart)
+                        if (currentIndex < tabs.length - 1) {
+                            switchTab(tabs[currentIndex + 1]);
+                        }
+                    }
+                }
+            }, { passive: true });
+        })();
 
         // 监听返回键
         window.addEventListener('popstate', (event) => {
@@ -2520,8 +2624,10 @@
 
                 // Calculate symmetric Y-axis range based on preClose
                 const prices = trends.map(t => t.price);
-                const maxPrice = Math.max(...prices);
-                const minPrice = Math.min(...prices);
+                const avgs = trends.map(t => t.avg);
+                const allValues = [...prices, ...avgs];
+                const maxPrice = Math.max(...allValues);
+                const minPrice = Math.min(...allValues);
                 const maxDiff = Math.max(Math.abs(maxPrice - preClose), Math.abs(preClose - minPrice));
                 // Add a small buffer (e.g. 2% more than max diff) to avoid touching edges
                 const range = maxDiff === 0 ? preClose * 0.01 : maxDiff * 1.05;
@@ -2545,9 +2651,12 @@
                             const item = trends[idx];
                             if(!item) return '';
                             const p = item.price;
+                            const avg = item.avg;
                             const pc = ((p - preClose) / preClose * 100).toFixed(2);
                             const pColor = p > preClose ? colors.up : (p < preClose ? colors.down : colors.text);
-                            return `${item.time}<br/>Price: <span style="color:${pColor}">${p.toFixed(2)}</span> (${pc}%)`;
+                            return `${item.time}<br/>
+                                    Price: <span style="color:${pColor}">${p.toFixed(2)}</span> (${pc}%)<br/>
+                                    Avg: <span style="color:#f59e0b">${avg.toFixed(2)}</span>`;
                         }
                     },
                     xAxis: {
@@ -2608,7 +2717,7 @@
                             type: 'line',
                             data: trends.map(t => t.price),
                             showSymbol: false,
-                            smooth: true,
+                            smooth: 0.1,
                             lineStyle: { width: 1, color: colors.accent }, // Standard blue/theme color for price line
                             areaStyle: {
                                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -2622,6 +2731,14 @@
                                 label: { show: false },
                                 silent: true
                             }
+                        },
+                        {
+                            name: 'Average',
+                            type: 'line',
+                            data: trends.map(t => t.avg),
+                            showSymbol: false,
+                            smooth: 0.1,
+                            lineStyle: { width: 1, color: '#f59e0b' } // Yellow
                         }
                     ]
                 });
