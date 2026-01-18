@@ -206,6 +206,7 @@
     <div class="search-wrapper">
         <input type="text" class="search-input" id="search-input" placeholder="输入城市或省份 (如: 成都, 四川)...">
         <button class="search-btn" onclick="performSearch()">定位</button>
+        <button class="search-btn" style="background: #e74c3c; margin-left: 10px;" onclick="clearCache()">♻ 清理重刷</button>
     </div>
 
     <div class="content-area" id="content-area">
@@ -238,6 +239,36 @@
         const API_KEY = '00d7800439d0976895b3ae049f384892';
 
         // 2. Render Structure
+        
+        // --- Custom Grouping Logic: Direct-controlled Municipalities ---
+        const MUNICIPALITIES = ['北京市', '天津市', '上海市', '重庆市'];
+        const municipalityGroup = {
+            province: '直辖市',
+            color_bg: 'rgba(255, 215, 0, 0.2)', // Gold
+            color_accent: '#f1c40f',
+            cities: []
+        };
+        
+        const tempProvinces = [];
+        PROVINCE_DATA.forEach(group => {
+            if (MUNICIPALITIES.includes(group.province)) {
+                // Ensure unique cities (just in case)
+                group.cities.forEach(c => municipalityGroup.cities.push(c));
+            } else {
+                tempProvinces.push(group);
+            }
+        });
+        
+        if (municipalityGroup.cities.length > 0) {
+            // Sort by adcode to keep order: Beijing, Tianjin, Shanghai, Chongqing
+            municipalityGroup.cities.sort((a, b) => Number(a.adcode) - Number(b.adcode));
+            tempProvinces.unshift(municipalityGroup);
+            
+            // Replace global data
+            PROVINCE_DATA.length = 0;
+            PROVINCE_DATA.push(...tempProvinces);
+        }
+        // -----------------------------------------------------------
         function initView() {
             const container = document.getElementById('content-area');
             const fragment = document.createDocumentFragment();
@@ -376,6 +407,14 @@
                 } else if (type === 'RETRY') {
                     priorityQueue.unshift({ adcode: adcode });
                     processNext();
+                } else if (type === 'CLEAR') {
+                    if (db) {
+                        const tx = db.transaction(STORE_NAME, 'readwrite');
+                        tx.objectStore(STORE_NAME).clear();
+                        tx.oncomplete = () => self.postMessage({ type: 'CLEARED' });
+                    } else {
+                         self.postMessage({ type: 'CLEARED' });
+                    }
                 }
             };
 
@@ -470,6 +509,8 @@
                 } else if (msg.type === 'DONE') {
                     console.log('Worker finished all tasks.');
                     document.getElementById('retry-badge').style.display = 'none';
+                } else if (msg.type === 'CLEARED') {
+                    location.reload();
                 }
             };
 
@@ -531,6 +572,12 @@
                 retryInd.innerText = '↺ 点击重试';
                 retryInd.style.cssText = 'font-size:10px; color:#e74c3c; margin-top:5px;';
                 card.querySelector('.city-meta').parentNode.appendChild(retryInd);
+            }
+        }
+        
+        function clearCache() {
+            if(confirm('确定要清理缓存并重新获取所有数据吗？')) {
+                worker.postMessage({ type: 'CLEAR' });
             }
         }
         
