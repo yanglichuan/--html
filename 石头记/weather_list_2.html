@@ -464,11 +464,11 @@
             let queue = [];
             let priorityQueue = [];
             let activeCount = 0;
-            const poolSize = 1; // Strict limit for Free Tier (60/min)
+            const poolSize = 8; // Increased concurrency
             const pendingAdcodes = new Set();
             let cityMap = new Map();
             let lastRequestTime = 0;
-            const MIN_INTERVAL = 1100; // >1 second to be safe
+            const MIN_INTERVAL = 0; // Removed delay
 
             self.onmessage = async function(e) {
                 const { type, cities, key, adcodes, adcode } = e.data;
@@ -558,16 +558,21 @@
 
             async function fetchWithRetry(adcode, cityName, retry = 0) {
                 try {
-                    // Enforce Rate Limit
-                    const now = Date.now();
-                    const timeSinceLast = now - lastRequestTime;
-                    if (timeSinceLast < MIN_INTERVAL) {
-                        await new Promise(r => setTimeout(r, MIN_INTERVAL - timeSinceLast));
+                    // Enforce Rate Limit (Optional now)
+                    if (MIN_INTERVAL > 0) {
+                        const now = Date.now();
+                        const timeSinceLast = now - lastRequestTime;
+                        if (timeSinceLast < MIN_INTERVAL) {
+                            await new Promise(r => setTimeout(r, MIN_INTERVAL - timeSinceLast));
+                        }
+                        lastRequestTime = Date.now();
                     }
-                    lastRequestTime = Date.now();
 
                     incrementQPS();
-                    const url = \`https://api.openweathermap.org/data/2.5/weather?q=\${cityName}&units=metric&lang=zh_cn&appid=\${apiKey}\`;
+                    // Try adding country code for better accuracy
+                    const q = cityName.includes(',') ? cityName : \`\${cityName},CN\`;
+                    const url = \`https://api.openweathermap.org/data/2.5/weather?q=\${q}&units=metric&lang=zh_cn&appid=\${apiKey}\`;
+                    console.log('Fetching:', url);
                     const res = await fetch(url);
                     
                     if (!res.ok) {
@@ -577,8 +582,9 @@
                     }
                     
                     const data = await res.json();
-
-                    if (data.cod === 200) {
+                    
+                    // OpenWeather returns cod as number 200 or string "200" sometimes
+                    if (Number(data.cod) === 200) {
                         const live = {
                             temperature: Math.round(data.main.temp),
                             weather: data.weather[0].description,
@@ -591,15 +597,24 @@
                         saveToCache(adcode, live);
                         self.postMessage({ type: 'UPDATE', adcode, data: live, source: 'network' });
                     } else {
-                        self.postMessage({ type: 'ERROR', adcode, msg: '无数据' });
+                        console.error('API Error:', data);
+                        const errorMsg = data.message || '未知错误';
+                        self.postMessage({ type: 'ERROR', adcode, msg: errorMsg });
                     }
                 } catch (e) {
-                    if (retry < 3 && e.message !== 'NOT_FOUND') { 
+                    console.error('Fetch Error:', e);
+                    if (retry < 3 && e.message !== 'NOT_FOUND' && !e.message.includes('401')) { 
                         const waitTime = 1000 * Math.pow(2, retry);
                         await new Promise(r => setTimeout(r, waitTime));
                         await fetchWithRetry(adcode, cityName, retry + 1);
                     } else {
-                        self.postMessage({ type: 'ERROR', adcode, msg: e.message === 'NOT_FOUND' ? '无效城市' : '失败' });
+                        let finalMsg = '失败';
+                        if (e.message === 'NOT_FOUND') finalMsg = '城市未找到';
+                        else if (e.message.includes('401')) finalMsg = 'Key无效';
+                        else if (e.message.includes('429')) finalMsg = '限流';
+                        else if (e.message.includes('HTTP')) finalMsg = e.message;
+                        
+                        self.postMessage({ type: 'ERROR', adcode, msg: finalMsg });
                     }
                 }
             }
