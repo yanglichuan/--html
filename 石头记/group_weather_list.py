@@ -212,6 +212,52 @@ html_head = """<!DOCTYPE html>
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .grid-item { padding: 15px; background: rgba(255,255,255,0.05); border-radius: 16px; }
 
+        /* Search Bar */
+        .search-wrapper {
+            padding: 10px 20px;
+            background: rgba(15, 32, 39, 0.6);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+            z-index: 9;
+        }
+        .search-input {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: background 0.3s;
+        }
+        .search-input:focus { background: rgba(255,255,255,0.15); border-color: var(--accent-color); }
+        .search-btn {
+            background: var(--accent-color);
+            border: none;
+            border-radius: 20px;
+            padding: 0 20px;
+            color: #0f2027;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        
+        /* Highlight Animation */
+        @keyframes highlight-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.7); border-color: #00d2ff; transform: scale(1.02); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 210, 255, 0); border-color: #00d2ff; transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); transform: scale(1); }
+        }
+        .highlight-target {
+            animation: highlight-pulse 1.5s ease-in-out 3;
+            z-index: 2;
+            position: relative;
+        }
+
     </style>
 </head>
 <body>
@@ -226,6 +272,11 @@ html_head = """<!DOCTYPE html>
         <div class="status-bar">
             <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
         </div>
+    </div>
+    
+    <div class="search-wrapper">
+        <input type="text" class="search-input" id="search-input" placeholder="输入城市或省份 (如: 成都, 四川)...">
+        <button class="search-btn" onclick="performSearch()">定位</button>
     </div>
 
     <div class="content-area" id="content-area">
@@ -294,6 +345,7 @@ js_logic = """
                 
                 const header = document.createElement('div');
                 header.className = 'province-header';
+                header.id = `prov-${group.province}`;
                 header.style.color = group.color_accent;
                 header.innerHTML = `<div class="province-dot" style="background:${group.color_accent}"></div>${group.province} <span style="font-size:12px; opacity:0.5; margin-left:10px; font-weight:400">(${group.cities.length})</span>`;
                 
@@ -304,6 +356,7 @@ js_logic = """
                     const card = document.createElement('div');
                     card.className = 'city-card';
                     card.id = `card-${city.adcode}`;
+                    card.dataset.adcode = city.adcode;
                     // Set custom properties for colors
                     card.style.setProperty('--card-bg', group.color_bg);
                     card.style.setProperty('--province-color', group.color_accent);
@@ -391,43 +444,55 @@ js_logic = """
                 store.put({ adcode: adcode, data: data, timestamp: Date.now() });
             }
 
+            let queue = [];
+            let priorityQueue = [];
+            let activeCount = 0;
+            let successCount = 0;
+            let failCount = 0;
+            const poolSize = 20;
+
             // Worker Logic
             self.onmessage = async function(e) {
-                const { type, cities, key } = e.data;
+                const { type, cities, key, adcodes, adcode } = e.data;
                 if (type === 'start') {
                     apiKey = key;
+                    queue = [...cities];
                     await initDB();
-                    startQueue(cities);
+                    processNext();
+                } else if (type === 'PRIORITIZE') {
+                    const targets = new Set(adcodes);
+                    const moved = [];
+                    let newQueue = [];
+                    for (let c of queue) {
+                        if (targets.has(c.adcode)) moved.push(c);
+                        else newQueue.push(c);
+                    }
+                    queue = newQueue;
+                    priorityQueue.push(...moved);
+                    processNext();
+                } else if (type === 'RETRY') {
+                    priorityQueue.unshift({ adcode: adcode });
+                    processNext();
                 }
             };
 
-            async function startQueue(cities) {
-                const poolSize = 20; // Increased concurrency to 20
-                const queue = [...cities];
-                let activeCount = 0;
-                let successCount = 0;
-                let failCount = 0;
-
-                // Simple loop to keep pool full
-                async function processNext() {
-                    if (queue.length === 0 && activeCount === 0) {
-                        self.postMessage({ type: 'DONE', success: successCount, fail: failCount });
-                        return;
-                    }
-
-                    while (activeCount < poolSize && queue.length > 0) {
-                        const city = queue.shift();
-                        activeCount++;
-                        
-                        // Process city (async but don't await here to allow concurrency)
-                        handleCity(city).then(() => {
-                            activeCount--;
-                            processNext();
-                        });
-                    }
+            async function processNext() {
+                if (queue.length === 0 && priorityQueue.length === 0 && activeCount === 0) {
+                    self.postMessage({ type: 'DONE', success: successCount, fail: failCount });
+                    return;
                 }
 
-                processNext();
+                while (activeCount < poolSize && (priorityQueue.length > 0 || queue.length > 0)) {
+                    let city;
+                    if (priorityQueue.length > 0) city = priorityQueue.shift();
+                    else city = queue.shift();
+                    
+                    activeCount++;
+                    handleCity(city).then(() => {
+                        activeCount--;
+                        processNext();
+                    });
+                }
             }
 
             async function handleCity(city) {
@@ -484,10 +549,11 @@ js_logic = """
         let weatherCache = new Map();
         let completedCount = 0;
         const totalCities = ALL_CITIES.length;
+        let worker;
 
         function startFetching() {
             const blob = new Blob([workerCode], { type: 'application/javascript' });
-            const worker = new Worker(URL.createObjectURL(blob));
+            worker = new Worker(URL.createObjectURL(blob));
             
             worker.onmessage = function(e) {
                 const msg = e.data;
@@ -503,6 +569,21 @@ js_logic = """
                     document.getElementById('retry-badge').style.display = 'none';
                 }
             };
+
+            const observer = new IntersectionObserver((entries) => {
+                 const visibleAdcodes = [];
+                 entries.forEach(entry => {
+                     if (entry.isIntersecting) {
+                         visibleAdcodes.push(entry.target.dataset.adcode);
+                         observer.unobserve(entry.target);
+                     }
+                 });
+                 if (visibleAdcodes.length > 0) {
+                     worker.postMessage({ type: 'PRIORITIZE', adcodes: visibleAdcodes });
+                 }
+            }, { rootMargin: '200px' });
+            
+            document.querySelectorAll('.city-card').forEach(card => observer.observe(card));
             
             worker.postMessage({ type: 'start', cities: ALL_CITIES, key: API_KEY });
         }
@@ -510,6 +591,11 @@ js_logic = """
         function updateCard(adcode, live) {
             const card = document.getElementById(`card-${adcode}`);
             if (!card) return;
+            
+            const temp = parseFloat(live.temperature);
+            if (!isNaN(temp)) card.style.order = -Math.round(temp);
+            else card.style.order = 1000;
+
             const shimmer = card.querySelector('.loading-shimmer');
             if (shimmer) shimmer.remove();
             
@@ -517,13 +603,39 @@ js_logic = """
             document.getElementById(`weather-${adcode}`).innerText = `${getEmoji(live.weather)} ${live.weather}`;
             document.getElementById(`humid-${adcode}`).innerText = `💧${live.humidity}%`;
             document.getElementById(`wind-${adcode}`).innerText = `💨${live.windpower}级`;
+
+            card.onclick = () => showDetail(adcode);
+            card.style.cursor = 'pointer';
+            const retryInd = card.querySelector('.retry-indicator');
+            if(retryInd) retryInd.remove();
         }
         
         function markError(adcode, msg) {
+            const card = document.getElementById(`card-${adcode}`);
             const el = document.getElementById(`weather-${adcode}`);
             if(el) { el.innerText = msg; el.classList.add('error-text'); }
-            const shimmer = document.querySelector(`#card-${adcode} .loading-shimmer`);
+            
+            const shimmer = card.querySelector('.loading-shimmer');
             if (shimmer) shimmer.remove();
+            
+            card.style.order = 9999;
+            card.onclick = (e) => { e.stopPropagation(); retryFetch(adcode); };
+            card.style.cursor = 'pointer';
+            
+            if(!card.querySelector('.retry-indicator')) {
+                const retryInd = document.createElement('div');
+                retryInd.className = 'retry-indicator';
+                retryInd.innerText = '↺ 点击重试';
+                retryInd.style.cssText = 'font-size:10px; color:#e74c3c; margin-top:5px;';
+                card.querySelector('.city-meta').parentNode.appendChild(retryInd);
+            }
+        }
+        
+        function retryFetch(adcode) {
+             const card = document.getElementById(`card-${adcode}`);
+             const el = document.getElementById(`weather-${adcode}`);
+             if(el) { el.innerText = "重试中..."; el.classList.remove('error-text'); }
+             worker.postMessage({ type: 'RETRY', adcode: adcode });
         }
         
         function updateProgress() {
@@ -579,6 +691,49 @@ js_logic = """
         for(let i=0; i<50; i++) particles.push(new Particle());
         function animate() { ctx.clearRect(0,0,canvas.width,canvas.height); particles.forEach(p => {p.update(); p.draw();}); requestAnimationFrame(animate); }
         animate();
+
+        // 7. Search Logic
+        function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            // 1. Search Province
+            const province = PROVINCE_DATA.find(p => p.province.includes(query) || query.includes(p.province));
+            if (province) {
+                const el = document.getElementById(`prov-${province.province}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    triggerHighlight(el);
+                    return;
+                }
+            }
+
+            // 2. Search City
+            const city = ALL_CITIES.find(c => c.中文名.includes(query) || query.includes(c.中文名));
+            if (city) {
+                const el = document.getElementById(`card-${city.adcode}`);
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    triggerHighlight(el);
+                    return;
+                }
+            }
+            
+            alert('未找到相关省份或城市: ' + query);
+        }
+
+        function triggerHighlight(el) {
+            document.querySelectorAll('.highlight-target').forEach(e => e.classList.remove('highlight-target'));
+            void el.offsetWidth; // trigger reflow
+            el.classList.add('highlight-target');
+        }
+        
+        // Enter key to search
+        document.getElementById('search-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
 
         // Start
         initView();
