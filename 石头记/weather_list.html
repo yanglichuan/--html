@@ -199,6 +199,7 @@
             <span class="retry-badge" id="retry-badge">重试中...</span>
         </div>
         <div class="status-bar">
+            <span id="qps-display" style="color: #f1c40f; font-weight: 600;">今日请求: 0</span>
             <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
         </div>
     </div>
@@ -327,9 +328,10 @@
         // Includes IndexedDB logic and Concurrent Fetching (20 threads)
         const workerCode = `
             const DB_NAME = 'WeatherDB';
-            const DB_VERSION = 1;
+            const DB_VERSION = 2;
             const STORE_NAME = 'weather_cache';
-            const CACHE_DURATION = 3600 * 1000; // 1 hour
+            const DAILY_STATS_STORE = 'daily_stats';
+            const CACHE_DURATION = 3 * 3600 * 1000; // 3 hours
 
             let db;
             let apiKey;
@@ -347,6 +349,9 @@
                         const db = e.target.result;
                         if (!db.objectStoreNames.contains(STORE_NAME)) {
                             db.createObjectStore(STORE_NAME, { keyPath: 'adcode' });
+                        }
+                        if (!db.objectStoreNames.contains(DAILY_STATS_STORE)) {
+                            db.createObjectStore(DAILY_STATS_STORE, { keyPath: 'date' });
                         }
                     };
                 });
@@ -378,6 +383,39 @@
                 store.put({ adcode: adcode, data: data, timestamp: Date.now() });
             }
 
+            // QPS Helpers
+            function getTodayDateKey() {
+                const now = new Date();
+                return \`\${now.getFullYear()}-\${now.getMonth() + 1}-\${now.getDate()}\`;
+            }
+
+            function incrementQPS() {
+                if (!db) return;
+                const dateKey = getTodayDateKey();
+                const tx = db.transaction(DAILY_STATS_STORE, 'readwrite');
+                const store = tx.objectStore(DAILY_STATS_STORE);
+                const req = store.get(dateKey);
+
+                req.onsuccess = () => {
+                    const record = req.result || { date: dateKey, count: 0 };
+                    record.count += 1;
+                    store.put(record);
+                    self.postMessage({ type: 'QPS_UPDATE', count: record.count });
+                };
+            }
+            
+            function getTodayQPS() {
+                if (!db) return;
+                const dateKey = getTodayDateKey();
+                const tx = db.transaction(DAILY_STATS_STORE, 'readonly');
+                const store = tx.objectStore(DAILY_STATS_STORE);
+                const req = store.get(dateKey);
+                req.onsuccess = () => {
+                    const count = req.result ? req.result.count : 0;
+                    self.postMessage({ type: 'QPS_UPDATE', count: count });
+                };
+            }
+
             let queue = [];
             let priorityQueue = [];
             let activeCount = 0;
@@ -386,27 +424,31 @@
             const poolSize = 20;
 
             // Worker Logic
+            const pendingAdcodes = new Set();
+
             self.onmessage = async function(e) {
                 const { type, cities, key, adcodes, adcode } = e.data;
                 if (type === 'start') {
                     apiKey = key;
-                    queue = [...cities];
+                    // queue = [...cities]; // Disable full prefetch
                     await initDB();
-                    processNext();
+                    getTodayQPS();
+                    // processNext();
                 } else if (type === 'PRIORITIZE') {
-                    const targets = new Set(adcodes);
-                    const moved = [];
-                    let newQueue = [];
-                    for (let c of queue) {
-                        if (targets.has(c.adcode)) moved.push(c);
-                        else newQueue.push(c);
-                    }
-                    queue = newQueue;
-                    priorityQueue.push(...moved);
+                    // Add new visible cities to priority queue
+                    adcodes.forEach(code => {
+                        if (!pendingAdcodes.has(code)) {
+                            pendingAdcodes.add(code);
+                            priorityQueue.push({ adcode: code });
+                        }
+                    });
                     processNext();
                 } else if (type === 'RETRY') {
-                    priorityQueue.unshift({ adcode: adcode });
-                    processNext();
+                    if (!pendingAdcodes.has(adcode)) {
+                        pendingAdcodes.add(adcode);
+                        priorityQueue.unshift({ adcode: adcode });
+                        processNext();
+                    }
                 } else if (type === 'CLEAR') {
                     if (db) {
                         const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -420,7 +462,7 @@
 
             async function processNext() {
                 if (queue.length === 0 && priorityQueue.length === 0 && activeCount === 0) {
-                    self.postMessage({ type: 'DONE', success: successCount, fail: failCount });
+                    // self.postMessage({ type: 'DONE', success: successCount, fail: failCount });
                     return;
                 }
 
@@ -431,6 +473,7 @@
                     
                     activeCount++;
                     handleCity(city).then(() => {
+                        pendingAdcodes.delete(city.adcode);
                         activeCount--;
                         processNext();
                     });
@@ -457,6 +500,7 @@
             
             async function fetchWithRetry(adcode, retry = 0) {
                 try {
+                    incrementQPS();
                     const res = await fetch(\`https://restapi.amap.com/v3/weather/weatherInfo?key=\${apiKey}&city=\${adcode}&extensions=base&output=JSON\`);
                     if (!res.ok) throw new Error(\`HTTP \${res.status}\`);
                     const data = await res.json();
@@ -503,6 +547,9 @@
                     weatherCache.set(msg.adcode, msg.data);
                     updateCard(msg.adcode, msg.data);
                     updateProgress();
+                } else if (msg.type === 'QPS_UPDATE') {
+                    const qpsEl = document.getElementById('qps-display');
+                    if (qpsEl) qpsEl.innerText = `今日请求: ${msg.count}`;
                 } else if (msg.type === 'ERROR') {
                     markError(msg.adcode, msg.msg);
                     updateProgress();
