@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>高德地图地铁图 API 示例</title>
     <style>
         html, body {
@@ -12,6 +12,9 @@
             height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            background: #f0f0f0; /* 背景色，方便看清边界 */
         }
         
         #mysubway {
@@ -21,74 +24,145 @@
             width: 100%;
             height: 100%;
             z-index: 1;
+            background: #fff;
+            /* 关键：使用 transform-origin: 0 0 配合矩阵计算来实现精确缩放拖动 */
+            transform-origin: 0 0;
+            touch-action: none; /* 禁用浏览器默认手势 */
         }
 
-        .controls-panel {
+        /* 缩放控制按钮 */
+        .zoom-controls {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            bottom: 100px;
+            right: 20px;
             z-index: 999;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            width: 260px;
-            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .panel-title {
-            margin: 0 0 10px 0;
-            font-size: 16px;
-            font-weight: bold;
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border: none;
+            font-size: 20px;
             color: #333;
             display: flex;
             align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .zoom-btn:active {
+            background: #f0f0f0;
+        }
+
+        /* 尝试修复可能被隐藏的图标 */
+        .amap-subway-icon, .subway-transfer {
+            display: block !important;
+            visibility: visible !important;
+        }
+
+        /* 桌面端样式 */
+        .controls-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            width: 260px;
+            backdrop-filter: blur(10px);
+            transition: transform 0.3s ease;
+        }
+
+        .panel-header {
+            display: flex;
             justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #333;
+        }
+
+        .toggle-btn {
+            display: none; /* 桌面端隐藏 */
+            background: none;
+            border: none;
+            font-size: 20px;
+            padding: 5px;
+            color: #666;
+        }
+
+        .panel-content {
+            display: block;
         }
 
         .form-group {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         label {
             display: block;
             font-size: 12px;
             color: #666;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
+            font-weight: 500;
         }
 
-        select, button {
+        select {
             width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid #eee;
+            background: #f8f9fa;
+            border-radius: 8px;
             font-size: 14px;
             outline: none;
-            background: white;
+            appearance: none;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
         }
 
         button {
             background: #2980b9;
             color: white;
             border: none;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 5px;
+            active: scale(0.98);
         }
 
-        button:hover {
-            background: #3498db;
+        button:active {
+            opacity: 0.8;
         }
 
         .status-log {
-            margin-top: 10px;
-            font-size: 12px;
+            margin-top: 15px;
+            font-size: 11px;
             color: #666;
-            max-height: 100px;
+            max-height: 80px;
             overflow-y: auto;
-            background: #f5f5f5;
-            padding: 5px;
-            border-radius: 4px;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #eee;
+            font-family: monospace;
         }
 
         /* 移动端适配 */
@@ -96,9 +170,29 @@
             .controls-panel {
                 top: auto;
                 bottom: 20px;
-                left: 20px;
-                right: 20px;
+                left: 15px;
+                right: 15px;
                 width: auto;
+                padding: 15px;
+            }
+
+            .controls-panel.collapsed {
+                transform: translateY(calc(100% - 50px));
+            }
+
+            .toggle-btn {
+                display: block;
+            }
+
+            .panel-header {
+                margin-bottom: 10px;
+            }
+            
+            /* 增加折叠时的点击区域 */
+            .panel-header::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; right: 0; height: 50px;
             }
         }
     </style>
@@ -107,135 +201,248 @@
 
     <div id="mysubway"></div>
 
-    <div class="controls-panel">
-        <div class="panel-title">
-            地铁图控制台
-            <span style="font-size:10px; font-weight:normal; color:#999">API Demo</span>
+    <div class="controls-panel" id="controlsPanel">
+        <div class="panel-header" onclick="togglePanel()">
+            <div class="panel-title">
+                🚇 地铁图
+                <span style="font-size:12px; font-weight:normal; color:#999; margin-left:5px" id="city-name-display">北京</span>
+            </div>
+            <button class="toggle-btn" id="toggleIcon">⬇️</button>
         </div>
         
-        <div class="form-group">
-            <label>选择城市</label>
-            <select id="city-select" onchange="changeCity()">
-                <option value="1100" selected>北京 (1100)</option>
-                <option value="3100">上海 (3100)</option>
-                <option value="4401">广州 (4401)</option>
-                <option value="4403">深圳 (4403)</option>
-                <option value="3301">杭州 (3301)</option>
-                <option value="3201">南京 (3201)</option>
-                <option value="4201">武汉 (4201)</option>
-                <option value="5101">成都 (5101)</option>
-            </select>
-        </div>
+        <div class="panel-content">
+            <div class="form-group">
+                <label>切换城市</label>
+                <select id="city-select" onchange="changeCity()">
+                    <option value="1100" selected>北京</option>
+                    <option value="3100">上海</option>
+                    <option value="4401">广州</option>
+                    <option value="4403">深圳</option>
+                    <option value="3301">杭州</option>
+                    <option value="3201">南京</option>
+                    <option value="4201">武汉</option>
+                    <option value="5101">成都</option>
+                    <option value="5000">重庆</option>
+                    <option value="1200">天津</option>
+                </select>
+            </div>
 
-        <div class="form-group">
-            <button onclick="zoomIn()">放大 (+)</button>
-            <button onclick="zoomOut()" style="margin-top:5px">缩小 (-)</button>
-        </div>
-
-        <div class="status-log" id="log-box">
-            日志初始化...
+            <div class="status-log" id="log-box">
+                系统就绪...
+            </div>
         </div>
     </div>
 
-    <!-- 
-        引入高德地铁图 API 
-        注意：subway API 与 Maps JS API 是分开的
-    -->
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="handleZoom(1)">+</button>
+        <button class="zoom-btn" onclick="handleZoom(-1)">-</button>
+    </div>
+
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: '92bfe7a97139e681960bc243bcee5183',
+        }
+    </script>
     <script src="https://webapi.amap.com/subway?v=1.0&key=d15687a3a617417d4e5fba4a6927fe49&callback=cbk"></script>
     
     <script>
         let mySubway = null;
         let isReady = false;
+        
+        // 检测是否为移动端
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-        // 日志工具
-        function log(msg) {
-            const box = document.getElementById('log-box');
-            const time = new Date().toLocaleTimeString();
-            box.innerHTML = `<div>[${time}] ${msg}</div>` + box.innerHTML;
+        // --- 手势与变换状态 ---
+        let state = {
+            scale: 1,
+            x: 0,
+            y: 0
+        };
+        let lastTouch = { x: 0, y: 0, d: 0 };
+        let isDragging = false;
+        const el = document.getElementById('mysubway');
+
+        // 更新视图变换
+        function updateTransform() {
+            // 使用 translate3d 开启硬件加速
+            el.style.transform = `translate3d(${state.x}px, ${state.y}px, 0) scale(${state.scale})`;
         }
 
-        // 1. 回调函数：API 加载完成后自动执行
+        // 核心缩放函数：以 (cx, cy) 为中心缩放
+        function zoomTo(newScale, cx, cy) {
+            // 限制缩放范围
+            if (newScale < 0.5) newScale = 0.5;
+            if (newScale > 5) newScale = 5;
+
+            // 计算缩放比例的变化量
+            const s = newScale / state.scale;
+
+            // 核心算法：保持 (cx, cy) 在元素内的相对位置不变
+            // 新坐标 = 中心点 - (中心点 - 旧坐标) * 缩放比例
+            state.x = cx - (cx - state.x) * s;
+            state.y = cy - (cy - state.y) * s;
+            state.scale = newScale;
+
+            updateTransform();
+            log(`缩放: ${state.scale.toFixed(2)}`);
+        }
+
+        // --- 事件监听 ---
+
+        // 1. 触摸开始
+        el.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastTouch.x = e.touches[0].clientX;
+                lastTouch.y = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                // 计算两指距离
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                lastTouch.d = Math.sqrt(dx * dx + dy * dy);
+            }
+            // 阻止默认行为（如滚动、缩放）
+            // 注意：这可能会阻止点击事件（click），但我们需要拖动优先
+            // 如果需要点击站点，可能需要判断移动距离
+            // e.preventDefault(); 
+        }, { passive: false });
+
+        // 2. 触摸移动
+        el.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // 必须阻止默认滚动
+
+            if (e.touches.length === 1 && isDragging) {
+                // 单指拖动
+                const deltaX = e.touches[0].clientX - lastTouch.x;
+                const deltaY = e.touches[0].clientY - lastTouch.y;
+                
+                state.x += deltaX;
+                state.y += deltaY;
+                
+                lastTouch.x = e.touches[0].clientX;
+                lastTouch.y = e.touches[0].clientY;
+                
+                updateTransform();
+
+            } else if (e.touches.length === 2) {
+                // 双指缩放
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const currentD = Math.sqrt(dx * dx + dy * dy);
+
+                if (lastTouch.d > 0) {
+                    const center = {
+                        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                        y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                    };
+                    
+                    const zoomFactor = currentD / lastTouch.d;
+                    const newScale = state.scale * zoomFactor;
+                    
+                    // 使用双指中心进行缩放
+                    zoomTo(newScale, center.x, center.y);
+                }
+                lastTouch.d = currentD;
+            }
+        }, { passive: false });
+
+        // 3. 触摸结束
+        el.addEventListener('touchend', function(e) {
+            isDragging = false;
+            // 如果是双指变单指，重置一下单指起始点，防止跳动
+            if (e.touches.length === 1) {
+                lastTouch.x = e.touches[0].clientX;
+                lastTouch.y = e.touches[0].clientY;
+            }
+        });
+
+        // 按钮缩放处理
+        function handleZoom(direction) {
+            // 以屏幕中心为锚点
+            const cx = window.innerWidth / 2;
+            const cy = window.innerHeight / 2;
+            const newScale = state.scale + direction * 0.5;
+            zoomTo(newScale, cx, cy);
+        }
+
+        // 面板交互
+        function togglePanel() {
+            if (!isMobile) return;
+            const panel = document.getElementById('controlsPanel');
+            const icon = document.getElementById('toggleIcon');
+            panel.classList.toggle('collapsed');
+            icon.innerText = panel.classList.contains('collapsed') ? '⬆️' : '⬇️';
+        }
+
+        // 默认移动端折叠面板
+        if (isMobile) {
+            document.getElementById('controlsPanel').classList.add('collapsed');
+            document.getElementById('toggleIcon').innerText = '⬆️';
+        }
+
+        function log(msg) {
+            const box = document.getElementById('log-box');
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            box.innerHTML = `<div style="margin-bottom:2px"><span style="color:#999">[${time}]</span> ${msg}</div>` + box.innerHTML;
+        }
+
         window.cbk = function() {
-            log("API 加载完成，开始初始化...");
+            log("API Loaded. Init...");
             createSubway('1100');
         };
 
-        // 2. 创建地铁图实例
         function createSubway(adcode) {
-            // 如果容器内已有内容（iframe），最好清空，虽然 subway() 方法可能会替换
-            // 但为了保险，我们可以重置容器
-            // document.getElementById('mysubway').innerHTML = '';
-            
             try {
-                // 初始化配置
+                // 更新UI显示
+                const select = document.getElementById('city-select');
+                const cityName = select.options[select.selectedIndex].text;
+                document.getElementById('city-name-display').innerText = cityName;
+
+                // 关键修正：尝试使用 client: 0 (PC模式) 来获得更好的兼容性，因为旧版移动端模式可能已过时
                 const config = {
-                    adcode: adcode,       // 城市代码
-                    theme: "colorful",    // 主题：colorful, gray, black, white
-                    client: 0,            // 0: PC, 1: Mobile (影响交互体验)
+                    adcode: adcode,
+                    // theme: "colorful", 
+                    client: 0, // 强制使用 PC 模式，通常能更好地支持标准 Touch 事件
                     doubleclick: {
-                        switch: true      // 允许双击缩放
+                        switch: true
                     }
                 };
 
-                // 实例化
-                // 注意：subway() 是全局函数
-                mySubway = subway("mysubway", config);
+                // 重置容器内容以防止多次初始化冲突（可选）
+                // document.getElementById('mysubway').innerHTML = '';
 
-                // 监听加载完成事件
+                mySubway = subway("mysubway", config);
+                
                 mySubway.event.on("subway.complete", function(ev, info) {
                     isReady = true;
-                    log(`地铁图加载完成: ${adcode}`);
-                    
-                    // 示例：获取所有线路列表（如果 API 支持）
-                    // console.log(mySubway.getLineList()); 
+                    log(`加载完成: ${cityName}`);
                 });
 
-                // 监听站点点击事件
                 mySubway.event.on("station.touch", function(ev, info) {
                     const name = info.name;
                     const id = info.id;
-                    log(`点击站点: ${name} (${id})`);
-                    
-                    // 交互：居中显示
+                    log(`点击: ${name}`);
                     mySubway.setCenter(id);
-                    
-                    // 示例：显示信息窗体
                     mySubway.addInfoWindow(id, {});
-                });
-                
-                // 监听线路点击事件
-                mySubway.event.on("line.touch", function(ev, info) {
-                    log(`点击线路: ${info.name}`);
                 });
 
             } catch (e) {
-                log("初始化错误: " + e.message);
+                log("Err: " + e.message);
                 console.error(e);
             }
         }
 
-        // 3. 切换城市
         function changeCity() {
             const adcode = document.getElementById('city-select').value;
-            log(`切换城市至: ${adcode}`);
             isReady = false;
+            // 重置视图
+            state.scale = 1;
+            state.x = 0;
+            state.y = 0;
+            updateTransform();
+            
             createSubway(adcode);
-        }
-
-        // 4. 缩放控制 (API 可能不直接暴露 zoomIn/zoomOut，这里尝试 setZoom)
-        // subway API 文档较少，通常 scale 是通过 setZoom 或 scale 属性控制
-        // 如果没有公开方法，这些按钮可能无效，但值得一试
-        function zoomIn() {
-            if(!isReady || !mySubway) return;
-            // 尝试获取当前缩放
-            // 注意：subway API 并没有标准的 getZoom/setZoom 文档公开
-            // 这里是一个占位，如果 API 不支持，可能需要操作 iframe 内部 transform
-            log("尝试放大 (API限制可能无效)");
-        }
-
-        function zoomOut() {
-            if(!isReady || !mySubway) return;
-            log("尝试缩小 (API限制可能无效)");
         }
 
     </script>
