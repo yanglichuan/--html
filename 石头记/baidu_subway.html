@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>地铁图展示</title>
+    <!-- 引入百度地铁图API，使用您提供的 Key -->
+    <!-- 注意：使用 https 协议，防止在本地以 file:// 打开时加载失败 -->
+    <script type="text/javascript" src="https://api.map.baidu.com/api?type=subway&v=1.0&ak=n5T5t25GEhS768iJIKPuwhCi1EIoFGir"></script>
+    <style type="text/css">
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* 防止出现滚动条 */
+            -webkit-user-select: none; /* 禁止选择文本 */
+            user-select: none;
+            background-color: #f0f0f0;
+        }
+        #wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #fff;
+        }
+        #container {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0; /* 关键：左上角为基准，配合 translate 计算 */
+            touch-action: none; /* 禁止浏览器默认手势 */
+        }
+        /* 缩放控制按钮 */
+        .zoom-controls {
+            position: absolute;
+            bottom: 50px;
+            right: 20px;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .zoom-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            border: none;
+            font-size: 20px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:999;background:rgba(0,0,0,0.7);color:white;padding:20px;border-radius:10px;">
+        正在加载地铁图...<br>
+        <small id="debug-info"></small>
+    </div>
+    
+    <div id="wrapper">
+        <div id="container"></div>
+    </div>
+
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="handleZoom(1)">+</button>
+        <button class="zoom-btn" onclick="handleZoom(-1)">-</button>
+    </div>
+
+    <script type="text/javascript">
+        /** 
+         * 从所有城市列表中获取北京信息 
+         */
+        
+        // 简单的日志输出函数
+        function log(msg) {
+            console.log(msg);
+            var debugEl = document.getElementById('debug-info');
+            if(debugEl) debugEl.innerText = msg;
+        }
+
+        window.onload = function() {
+            if (typeof BMapSub === 'undefined') {
+                log('错误：BMapSub 未定义。可能是 API 脚本加载失败，请检查网络或 AK 是否受限。');
+                return;
+            }
+
+            var subwayCityName = '北京';
+            var list = BMapSub.SubwayCitiesList;
+            var subwaycity = null;
+            
+            // 查找北京的城市信息
+            for (var i = 0; i < list.length; i++) {
+                if (list[i].name === subwayCityName) {
+                    subwaycity = list[i];
+                    break;
+                }
+            }
+            
+            // 获取北京地铁数据-初始化地铁图
+            if (subwaycity) {
+                log('找到城市数据，开始渲染...');
+                var subway = new BMapSub.Subway('container', subwaycity.citycode);
+                
+                // 增加一些常用的交互配置
+                // 注意：为了适配移动端手势，我们禁用 API 自带的缩放和拖拽，完全由外部 CSS Transform 接管
+                // subway.setZoom(0.5); // 初始缩放由 CSS 控制
+                
+                // 禁用 API 自带的滚轮缩放，防止冲突
+                // subway.enableScrollWheelZoom();
+                
+                // 监听加载完成
+                subway.addEventListener('subwayloaded', function() {
+                    log('地图加载完成，初始化手势控制...');
+                    var loading = document.getElementById('loading');
+                    if(loading) loading.style.display = 'none';
+                    
+                    // 地图加载完成后，可能需要微调初始位置
+                    // 这里我们保持默认，让用户自己缩放
+                });
+
+            } else {
+                log('未找到城市：' + subwayCityName);
+                alert('未找到城市：' + subwayCityName);
+            }
+        };
+
+        // --- 移动端手势适配逻辑 ---
+        var state = {
+            scale: 1,
+            x: 0,
+            y: 0
+        };
+        var lastTouch = { x: 0, y: 0, d: 0 };
+        var isDragging = false;
+        var el = document.getElementById('container');
+
+        function updateTransform() {
+            el.style.transform = 'translate3d(' + state.x + 'px, ' + state.y + 'px, 0) scale(' + state.scale + ')';
+        }
+
+        function zoomTo(newScale, cx, cy) {
+            if (newScale < 0.2) newScale = 0.2; // 允许更小的缩放
+            if (newScale > 5) newScale = 5;
+            
+            var s = newScale / state.scale;
+            state.x = cx - (cx - state.x) * s;
+            state.y = cy - (cy - state.y) * s;
+            state.scale = newScale;
+            updateTransform();
+        }
+
+        // 按钮缩放
+        window.handleZoom = function(direction) {
+            var cx = window.innerWidth / 2;
+            var cy = window.innerHeight / 2;
+            var newScale = direction > 0 ? state.scale * 1.5 : state.scale / 1.5;
+            zoomTo(newScale, cx, cy);
+        };
+
+        // Touch Events
+        el.addEventListener('touchstart', function(e) {
+            if (e.touches.length === 1) {
+                isDragging = true;
+                lastTouch.x = e.touches[0].clientX;
+                lastTouch.y = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                isDragging = false;
+                var dx = e.touches[1].clientX - e.touches[0].clientX;
+                var dy = e.touches[1].clientY - e.touches[0].clientY;
+                lastTouch.d = Math.sqrt(dx * dx + dy * dy);
+            }
+        });
+
+        el.addEventListener('touchmove', function(e) {
+            e.preventDefault(); // 阻止默认滚动
+            
+            if (e.touches.length === 1 && isDragging) {
+                var dx = e.touches[0].clientX - lastTouch.x;
+                var dy = e.touches[0].clientY - lastTouch.y;
+                state.x += dx;
+                state.y += dy;
+                lastTouch.x = e.touches[0].clientX;
+                lastTouch.y = e.touches[0].clientY;
+                updateTransform();
+            } else if (e.touches.length === 2) {
+                var dx = e.touches[1].clientX - e.touches[0].clientX;
+                var dy = e.touches[1].clientY - e.touches[0].clientY;
+                var d = Math.sqrt(dx * dx + dy * dy);
+                
+                var cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+                var cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+                
+                // 避免除以0
+                if (lastTouch.d <= 0) {
+                    lastTouch.d = d;
+                    return;
+                }
+
+                var s = d / lastTouch.d;
+                var newScale = state.scale * s;
+                
+                // 限制缩放范围
+                if (newScale < 0.2) newScale = 0.2;
+                if (newScale > 5) newScale = 5;
+                s = newScale / state.scale; // 重新计算实际应用的 s
+
+                state.x = cx - (cx - state.x) * s;
+                state.y = cy - (cy - state.y) * s;
+                state.scale = newScale;
+                
+                lastTouch.d = d;
+                updateTransform();
+            }
+        }, { passive: false });
+
+        el.addEventListener('touchend', function(e) {
+            isDragging = false;
+        });
+        
+        // 简单的鼠标滚轮支持（PC调试用）
+        el.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            var cx = e.clientX;
+            var cy = e.clientY;
+            var newScale = e.deltaY < 0 ? state.scale * 1.1 : state.scale / 1.1;
+            zoomTo(newScale, cx, cy);
+        }, { passive: false });
+
+    </script>
+</body>
+</html>
