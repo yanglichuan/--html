@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>石头记 - 轨迹定位</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow: hidden; /* 防止滚动 */
+        }
+        
+        #container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .info-val {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 2px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-stop {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-badge {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.inactive {
+            background: #9ca3af;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Config Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal {
+            background: white;
+            padding: 24px;
+            border-radius: 16px;
+            width: 85%;
+            max-width: 320px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #444;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+    </style>
+    
+    <!-- Amap Security Config -->
+    <script type="text/javascript">
+        window._AMapSecurityConfig = {
+            securityJsCode: '1e02d4eacd7b0250f6f1a927e7c90bc5',
+        }
+    </script>
+    
+    <!-- Amap JS API -->
+    <script src="https://webapi.amap.com/maps?v=2.0&key=51ffa60d6d65cd3ab22e04c849003adc&plugin=AMap.Geolocation,AMap.MoveAnimation"></script>
+</head>
+<body>
+
+    <div id="container"></div>
+
+    <div class="status-badge">
+        <div id="status-dot" class="status-dot inactive"></div>
+        <span id="status-text">未开始</span>
+    </div>
+
+    <div class="panel">
+        <div class="info-grid">
+            <div class="info-item">
+                <div>经度 (Lng)</div>
+                <div class="info-val" id="val-lng">--</div>
+            </div>
+            <div class="info-item">
+                <div>纬度 (Lat)</div>
+                <div class="info-val" id="val-lat">--</div>
+            </div>
+            <div class="info-item">
+                <div>时间</div>
+                <div class="info-val" id="val-time">--:--:--</div>
+            </div>
+            <div class="info-item">
+                <div>记录点数</div>
+                <div class="info-val" id="val-count">0</div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-start" id="btn-start" onclick="startTracking()">开始采集</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopTracking()" disabled>停止</button>
+        </div>
+    </div>
+
+    <script>
+        let map, geolocation;
+        let timer = null;
+        let path = [];
+        let polyline;
+        let isTracking = false;
+
+        let wakeLock = null; // 屏幕常亮锁
+
+        // Init Map
+        initMap();
+
+        function initMap() {
+            try {
+                map = new AMap.Map('container', {
+                    resizeEnable: true,
+                    zoom: 17, // 放大一点更适合查看实时位置
+                    mapStyle: 'amap://styles/whitesmoke'
+                });
+
+                AMap.plugin('AMap.Geolocation', function() {
+                    geolocation = new AMap.Geolocation({
+                        enableHighAccuracy: true, // 是否使用高精度定位，默认:true
+                        timeout: 20000,           // WebView中定位可能较慢，延长到20秒
+                        buttonPosition: 'RB',     // 定位按钮的停靠位置
+                        buttonOffset: new AMap.Pixel(10, 20), // 定位按钮与设置的停靠位置的偏移量，默认：Pixel(10, 20)
+                        zoomToAccuracy: true,     // 定位成功后是否自动调整地图视野到定位点
+                        showMarker: true,         // 定位成功后在定位到的位置显示点标记，默认：true
+                        showCircle: true,         // 定位成功后用圆圈表示定位精度范围，默认：true
+                        panToLocation: true,      // 定位成功后将定位到的位置作为地图中心点，默认：true
+                        needAddress: true,        // 是否需要将定位结果进行逆地理编码操作
+                        extensions: 'all'
+                    });
+                    map.addControl(geolocation);
+                    
+                    // 初始定位
+                    geolocation.getCurrentPosition(function(status, result) {
+                        if(status=='complete'){
+                            onLocationSuccess(result);
+                        } else {
+                            onError(result);
+                        }
+                    });
+                });
+
+            } catch (e) {
+                console.error('Map init failed', e);
+                alert('地图加载失败，请检查 Key 是否正确');
+            }
+        }
+
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock is active');
+                }
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        }
+
+        function releaseWakeLock() {
+            if (wakeLock !== null) {
+                wakeLock.release()
+                    .then(() => {
+                        wakeLock = null;
+                        console.log('Wake Lock released');
+                    });
+            }
+        }
+
+        function startTracking() {
+            if (!map) return;
+            
+            // 尝试保持屏幕常亮
+            requestWakeLock();
+
+            isTracking = true;
+            document.getElementById('btn-start').disabled = true;
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('status-text').innerText = '正在实时定位...';
+            document.getElementById('status-dot').classList.remove('inactive');
+            
+            // Create track line
+            path = [];
+            if (polyline) map.remove(polyline);
+            polyline = new AMap.Polyline({
+                path: [],
+                isOutline: true,
+                outlineColor: '#ffeeff',
+                borderWeight: 2,
+                strokeColor: "#3366FF", 
+                strokeOpacity: 1,
+                strokeWeight: 6,
+                strokeStyle: "solid",
+                strokeDasharray: [10, 5],
+                lineJoin: 'round',
+                lineCap: 'round',
+                zIndex: 50,
+            });
+            polyline.setMap(map);
+
+            // 使用 watchPosition 进行连续定位
+            timer = geolocation.watchPosition();
+            
+            // 绑定事件监听
+            AMap.event.addListener(geolocation, 'complete', onTrackingUpdate);
+            AMap.event.addListener(geolocation, 'error', onError);
+        }
+
+        function stopTracking() {
+            isTracking = false;
+            
+            // 释放屏幕常亮
+            releaseWakeLock();
+
+            if (timer) {
+                geolocation.clearWatch(timer);
+                timer = null;
+            }
+            // 移除事件监听
+            AMap.event.removeListener(geolocation, 'complete', onTrackingUpdate);
+            AMap.event.removeListener(geolocation, 'error', onError);
+
+            document.getElementById('btn-start').disabled = false;
+            document.getElementById('btn-stop').disabled = true;
+            document.getElementById('status-text').innerText = '已停止';
+            document.getElementById('status-dot').classList.add('inactive');
+        }
+
+        // 初始定位回调
+        function onLocationSuccess(data) {
+            // 只需要更新一下UI显示，地图中心会自动移动（因为配置了 panToLocation: true）
+            updateInfoPanel(data);
+        }
+
+        // 连续定位回调
+        function onTrackingUpdate(data) {
+            updateInfoPanel(data);
+            
+            const lng = data.position.lng;
+            const lat = data.position.lat;
+            
+            // 记录轨迹
+            path.push([lng, lat]);
+            polyline.setPath(path);
+            document.getElementById('val-count').innerText = path.length;
+            
+            // 地图跟随（可选，如果 panToLocation 设为 true，插件会自动跟随，但有时候手动设置更稳）
+            // map.setCenter([lng, lat]); 
+        }
+
+        function updateInfoPanel(data) {
+            const lng = data.position.lng;
+            const lat = data.position.lat;
+            const time = new Date().toLocaleTimeString();
+            
+            document.getElementById('val-lng').innerText = lng.toFixed(6);
+            document.getElementById('val-lat').innerText = lat.toFixed(6);
+            document.getElementById('val-time').innerText = time;
+        }
+
+        function onError(data) {
+            console.error('定位失败', data);
+            let msg = '定位失败';
+            if (data.info === 'PERMISSION_DENIED') {
+                msg = '权限被拒绝，请检查App定位权限';
+            } else if (data.info === 'TIME_OUT') {
+                msg = '定位超时，请移动到开阔地带';
+            } else if (data.message) {
+                msg = data.message;
+            }
+            document.getElementById('status-text').innerText = msg;
+        }
+
+
+    </script>
+</body>
+</html>
