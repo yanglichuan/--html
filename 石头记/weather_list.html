@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>全国天气监控 - 分省版</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/tiny-pinyin@1.3.2/dist/tiny-pinyin.js"></script>
     <style>
         :root {
             --primary-bg: #0f2027;
@@ -576,8 +577,30 @@
                  document.getElementById('detail-temp').innerText = "--";
             }
             document.getElementById('detail-modal').classList.add('active');
+            // Add history state for Back button support
+            history.pushState({ modal: true }, null, '');
         }
-        function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); }
+        
+        function closeDetail() { 
+            if (history.state && history.state.modal) {
+                history.back();
+            } else {
+                document.getElementById('detail-modal').classList.remove('active');
+            }
+        }
+
+        // Handle Back Button & ESC
+        window.addEventListener('popstate', function(event) {
+            document.getElementById('detail-modal').classList.remove('active');
+        });
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                if (document.getElementById('detail-modal').classList.contains('active')) {
+                    closeDetail();
+                }
+            }
+        });
 
         // 6. BG Animation
         const canvas = document.getElementById('bg-canvas');
@@ -596,11 +619,31 @@
 
         // 7. Search Logic
         function performSearch() {
-            const query = document.getElementById('search-input').value.trim();
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
             if (!query) return;
 
+            // Helper for pinyin match
+            const isMatch = (name) => {
+                if (name.includes(query)) return true;
+                if (typeof Pinyin !== 'undefined') {
+                    try {
+                        // Match full pinyin (no separator)
+                        const py = Pinyin.convertToPinyin(name, '', true).toLowerCase();
+                        if (py.includes(query)) return true;
+                        
+                        // Match first letters (Acronym)
+                        const pyParts = Pinyin.convertToPinyin(name, '-', true).toLowerCase().split('-');
+                        const acronym = pyParts.map(p => p[0]).join('');
+                        if (acronym.includes(query)) return true;
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+                return false;
+            };
+
             // 1. Search Province
-            const province = PROVINCE_DATA.find(p => p.province.includes(query) || query.includes(p.province));
+            const province = PROVINCE_DATA.find(p => isMatch(p.province));
             if (province) {
                 const el = document.getElementById(`prov-${province.province}`);
                 if (el) {
@@ -611,7 +654,7 @@
             }
 
             // 2. Search City
-            const city = ALL_CITIES.find(c => c.中文名.includes(query) || query.includes(c.中文名));
+            const city = ALL_CITIES.find(c => isMatch(c.中文名));
             if (city) {
                 const el = document.getElementById(`card-${city.adcode}`);
                 if (el) {
