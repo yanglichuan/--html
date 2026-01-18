@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>全国天气监控 - 分省版</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/tiny-pinyin@1.3.2/dist/tiny-pinyin.js"></script>
+    <script src="https://unpkg.com/pinyin-pro@3.18.2/dist/index.js"></script>
     <style>
         :root {
             --primary-bg: #0f2027;
@@ -625,16 +625,16 @@
             // Helper for pinyin match
             const isMatch = (name) => {
                 if (name.includes(query)) return true;
-                if (typeof Pinyin !== 'undefined') {
+                if (typeof pinyinPro !== 'undefined') {
                     try {
-                        // Match full pinyin (no separator)
-                        const py = Pinyin.convertToPinyin(name, '', true).toLowerCase();
-                        if (py.includes(query)) return true;
+                        const { pinyin } = pinyinPro;
+                        // Match full pinyin (no separator) e.g. "handan"
+                        const pyFull = pinyin(name, { toneType: 'none', separator: '', v: true }).toLowerCase();
+                        if (pyFull.includes(query)) return true;
                         
-                        // Match first letters (Acronym)
-                        const pyParts = Pinyin.convertToPinyin(name, '-', true).toLowerCase().split('-');
-                        const acronym = pyParts.map(p => p[0]).join('');
-                        if (acronym.includes(query)) return true;
+                        // Match first letters (Acronym) e.g. "hd"
+                        const pyFirst = pinyin(name, { pattern: 'first', toneType: 'none', separator: '' }).toLowerCase();
+                        if (pyFirst.includes(query)) return true;
                     } catch(e) {
                         console.error(e);
                     }

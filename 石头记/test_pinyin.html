@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://unpkg.com/tiny-pinyin@1.3.2/dist/tiny-pinyin.js"></script>
+</head>
+<body>
+    <script>
+        window.onload = function() {
+            console.log('Loaded');
+            if (typeof Pinyin !== 'undefined') {
+                console.log('Pinyin defined');
+                try {
+                    console.log('邯郸 default:', Pinyin.convertToPinyin('邯郸'));
+                    console.log('邯郸 separator empty:', Pinyin.convertToPinyin('邯郸', ''));
+                    console.log('邯郸 lower:', Pinyin.convertToPinyin('邯郸', '', true)); // This might be interpreting 3rd arg differently?
+                } catch(e) {
+                    console.error(e);
+                }
+            } else {
+                console.log('Pinyin undefined');
+            }
+        };
+    </script>
+</body>
+</html>
