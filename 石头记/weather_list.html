@@ -85,15 +85,16 @@
             gap: 12px;
         }
 
-        /* City Card */
+        /* City Card - UPDATED for better visibility */
         .city-card {
             background: var(--card-bg, rgba(255,255,255,0.05));
             border: 1px solid rgba(255,255,255,0.1);
             border-left: 3px solid var(--province-color, #fff);
             border-radius: 12px;
-            padding: 12px;
+            padding: 14px; /* Increased padding */
             display: flex; flex-direction: column; justify-content: space-between;
-            height: 100px;
+            min-height: 120px; /* Increased min-height */
+            height: auto; /* Allow growth */
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative; overflow: hidden;
@@ -101,10 +102,10 @@
         
         .city-card:active { transform: scale(0.96); }
 
-        .city-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .city-temp { font-size: 28px; font-weight: 300; }
-        .city-weather { font-size: 12px; opacity: 0.8; display: flex; align-items: center; gap: 5px; }
-        .city-meta { font-size: 10px; opacity: 0.5; margin-top: auto; display: flex; justify-content: space-between; }
+        .city-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .city-temp { font-size: 32px; font-weight: 300; margin: 5px 0; }
+        .city-weather { font-size: 13px; opacity: 0.9; display: flex; align-items: center; gap: 5px; }
+        .city-meta { font-size: 11px; opacity: 0.6; margin-top: 8px; display: flex; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px; }
         
         .loading-shimmer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -236,65 +237,176 @@
             container.appendChild(fragment);
             startFetching();
         }
-
-        // 3. Concurrency & Fetch Logic (Reused & Optimized)
-        let completedCount = 0;
-        let successCount = 0;
-        let failCount = 0;
-        const totalCities = ALL_CITIES.length;
-        const weatherCache = new Map();
-        const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-        async function startFetching() {
-            const poolSize = 6; 
-            const queue = [...ALL_CITIES];
-            const workers = [];
-            
-            for (let i = 0; i < poolSize; i++) {
-                workers.push(delay(i * 200).then(() => worker(queue)));
-            }
-            await Promise.all(workers);
-            console.log(`Finished. Success: ${successCount}, Fail: ${failCount}`);
-        }
         
-        async function worker(queue) {
-            while (queue.length > 0) {
-                const city = queue.shift();
-                await fetchCityWeatherWithRetry(city.adcode);
-                await delay(200); 
+        // 3. Web Worker Code (Blob)
+        // Includes IndexedDB logic and Concurrent Fetching (20 threads)
+        const workerCode = `
+            const DB_NAME = 'WeatherDB';
+            const DB_VERSION = 1;
+            const STORE_NAME = 'weather_cache';
+            const CACHE_DURATION = 3600 * 1000; // 1 hour
+
+            let db;
+            let apiKey;
+
+            // Initialize IndexedDB
+            function initDB() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB_NAME, DB_VERSION);
+                    request.onerror = (e) => reject(e);
+                    request.onsuccess = (e) => {
+                        db = e.target.result;
+                        resolve(db);
+                    };
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(STORE_NAME)) {
+                            db.createObjectStore(STORE_NAME, { keyPath: 'adcode' });
+                        }
+                    };
+                });
             }
-        }
-        
-        async function fetchCityWeatherWithRetry(adcode, retry = 0) {
-            try {
-                const res = await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${API_KEY}&city=${adcode}&extensions=base&output=JSON`);
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
+
+            // DB Helpers
+            function getFromCache(adcode) {
+                return new Promise((resolve) => {
+                    if (!db) return resolve(null);
+                    const tx = db.transaction(STORE_NAME, 'readonly');
+                    const store = tx.objectStore(STORE_NAME);
+                    const req = store.get(adcode);
+                    req.onsuccess = () => {
+                        const record = req.result;
+                        if (record && (Date.now() - record.timestamp < CACHE_DURATION)) {
+                            resolve(record.data);
+                        } else {
+                            resolve(null);
+                        }
+                    };
+                    req.onerror = () => resolve(null);
+                });
+            }
+
+            function saveToCache(adcode, data) {
+                if (!db) return;
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put({ adcode: adcode, data: data, timestamp: Date.now() });
+            }
+
+            // Worker Logic
+            self.onmessage = async function(e) {
+                const { type, cities, key } = e.data;
+                if (type === 'start') {
+                    apiKey = key;
+                    await initDB();
+                    startQueue(cities);
+                }
+            };
+
+            async function startQueue(cities) {
+                const poolSize = 20; // Increased concurrency to 20
+                const queue = [...cities];
+                let activeCount = 0;
+                let successCount = 0;
+                let failCount = 0;
+
+                // Simple loop to keep pool full
+                async function processNext() {
+                    if (queue.length === 0 && activeCount === 0) {
+                        self.postMessage({ type: 'DONE', success: successCount, fail: failCount });
+                        return;
+                    }
+
+                    while (activeCount < poolSize && queue.length > 0) {
+                        const city = queue.shift();
+                        activeCount++;
+                        
+                        // Process city (async but don't await here to allow concurrency)
+                        handleCity(city).then(() => {
+                            activeCount--;
+                            processNext();
+                        });
+                    }
+                }
+
+                processNext();
+            }
+
+            async function handleCity(city) {
+                const adcode = city.adcode;
                 
-                if (data.status === '1' && data.lives && data.lives.length > 0) {
-                    const live = data.lives[0];
-                    weatherCache.set(adcode, live);
-                    updateCard(adcode, live);
-                    successCount++;
-                } else {
-                    if (data.info && (data.info.includes('LIMIT') || data.info.includes('QPS'))) throw new Error('LIMIT_EXCEEDED');
-                    markError(adcode, '无数据');
-                    failCount++;
+                // 1. Check Cache
+                try {
+                    const cached = await getFromCache(adcode);
+                    if (cached) {
+                        self.postMessage({ type: 'UPDATE', adcode, data: cached, source: 'cache' });
+                        return;
+                    }
+                } catch (e) {
+                    console.warn('Cache check failed', e);
                 }
-            } catch (e) {
-                if (retry < 3) {
-                    const waitTime = 1000 * Math.pow(2, retry);
-                    document.getElementById('retry-badge').style.display = 'inline-block';
-                    await delay(waitTime);
-                    await fetchCityWeatherWithRetry(adcode, retry + 1);
-                    setTimeout(() => document.getElementById('retry-badge').style.display = 'none', 1000);
-                } else {
-                    markError(adcode, '失败');
-                    failCount++;
-                }
-            } finally {
-                if (retry === 0) updateProgress();
+
+                // 2. Fetch Network
+                await fetchWithRetry(adcode);
             }
+            
+            async function fetchWithRetry(adcode, retry = 0) {
+                try {
+                    const res = await fetch(\`https://restapi.amap.com/v3/weather/weatherInfo?key=\${apiKey}&city=\${adcode}&extensions=base&output=JSON\`);
+                    if (!res.ok) throw new Error(\`HTTP \${res.status}\`);
+                    const data = await res.json();
+
+                    if (data.status === '1' && data.lives && data.lives.length > 0) {
+                        const live = data.lives[0];
+                        // Save to Cache
+                        saveToCache(adcode, live);
+                        // Notify Main Thread
+                        self.postMessage({ type: 'UPDATE', adcode, data: live, source: 'network' });
+                    } else {
+                        if (data.info && (data.info.includes('LIMIT') || data.info.includes('QPS'))) {
+                            throw new Error('LIMIT_EXCEEDED');
+                        }
+                        self.postMessage({ type: 'ERROR', adcode, msg: '无数据' });
+                    }
+                } catch (e) {
+                    if (retry < 3) { // 3 Retries
+                        const waitTime = 1000 * Math.pow(2, retry);
+                        // Notify retry status (optional, maybe too noisy for 20 threads)
+                        // self.postMessage({ type: 'RETRYING', adcode }); 
+                        await new Promise(r => setTimeout(r, waitTime));
+                        await fetchWithRetry(adcode, retry + 1);
+                    } else {
+                        self.postMessage({ type: 'ERROR', adcode, msg: '失败' });
+                    }
+                }
+            }
+        `;
+
+        // 4. Main Thread Logic
+        let weatherCache = new Map();
+        let completedCount = 0;
+        const totalCities = ALL_CITIES.length;
+
+        function startFetching() {
+            const blob = new Blob([workerCode], { type: 'application/javascript' });
+            const worker = new Worker(URL.createObjectURL(blob));
+            
+            worker.onmessage = function(e) {
+                const msg = e.data;
+                if (msg.type === 'UPDATE') {
+                    weatherCache.set(msg.adcode, msg.data);
+                    updateCard(msg.adcode, msg.data);
+                    updateProgress();
+                } else if (msg.type === 'ERROR') {
+                    markError(msg.adcode, msg.msg);
+                    updateProgress();
+                } else if (msg.type === 'DONE') {
+                    console.log('Worker finished all tasks.');
+                    document.getElementById('retry-badge').style.display = 'none';
+                }
+            };
+            
+            worker.postMessage({ type: 'start', cities: ALL_CITIES, key: API_KEY });
         }
         
         function updateCard(adcode, live) {
@@ -334,7 +446,7 @@
             return '🌤';
         }
 
-        // 4. Detail View Logic
+        // 5. Detail View Logic
         function showDetail(adcode) {
             const data = weatherCache.get(adcode);
             const city = ALL_CITIES.find(c => c.adcode === adcode);
@@ -355,7 +467,7 @@
         }
         function closeDetail() { document.getElementById('detail-modal').classList.remove('active'); }
 
-        // 5. BG Animation
+        // 6. BG Animation
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
