@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>高德地图地铁图 API 示例</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        #mysubway {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .controls-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            width: 260px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form-group {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            background: white;
+        }
+
+        button {
+            background: #2980b9;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 5px;
+        }
+
+        button:hover {
+            background: #3498db;
+        }
+
+        .status-log {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #666;
+            max-height: 100px;
+            overflow-y: auto;
+            background: #f5f5f5;
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 480px) {
+            .controls-panel {
+                top: auto;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="mysubway"></div>
+
+    <div class="controls-panel">
+        <div class="panel-title">
+            地铁图控制台
+            <span style="font-size:10px; font-weight:normal; color:#999">API Demo</span>
+        </div>
+        
+        <div class="form-group">
+            <label>选择城市</label>
+            <select id="city-select" onchange="changeCity()">
+                <option value="1100" selected>北京 (1100)</option>
+                <option value="3100">上海 (3100)</option>
+                <option value="4401">广州 (4401)</option>
+                <option value="4403">深圳 (4403)</option>
+                <option value="3301">杭州 (3301)</option>
+                <option value="3201">南京 (3201)</option>
+                <option value="4201">武汉 (4201)</option>
+                <option value="5101">成都 (5101)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <button onclick="zoomIn()">放大 (+)</button>
+            <button onclick="zoomOut()" style="margin-top:5px">缩小 (-)</button>
+        </div>
+
+        <div class="status-log" id="log-box">
+            日志初始化...
+        </div>
+    </div>
+
+    <!-- 
+        引入高德地铁图 API 
+        注意：subway API 与 Maps JS API 是分开的
+    -->
+    <script src="https://webapi.amap.com/subway?v=1.0&key=d15687a3a617417d4e5fba4a6927fe49&callback=cbk"></script>
+    
+    <script>
+        let mySubway = null;
+        let isReady = false;
+
+        // 日志工具
+        function log(msg) {
+            const box = document.getElementById('log-box');
+            const time = new Date().toLocaleTimeString();
+            box.innerHTML = `<div>[${time}] ${msg}</div>` + box.innerHTML;
+        }
+
+        // 1. 回调函数：API 加载完成后自动执行
+        window.cbk = function() {
+            log("API 加载完成，开始初始化...");
+            createSubway('1100');
+        };
+
+        // 2. 创建地铁图实例
+        function createSubway(adcode) {
+            // 如果容器内已有内容（iframe），最好清空，虽然 subway() 方法可能会替换
+            // 但为了保险，我们可以重置容器
+            // document.getElementById('mysubway').innerHTML = '';
+            
+            try {
+                // 初始化配置
+                const config = {
+                    adcode: adcode,       // 城市代码
+                    theme: "colorful",    // 主题：colorful, gray, black, white
+                    client: 0,            // 0: PC, 1: Mobile (影响交互体验)
+                    doubleclick: {
+                        switch: true      // 允许双击缩放
+                    }
+                };
+
+                // 实例化
+                // 注意：subway() 是全局函数
+                mySubway = subway("mysubway", config);
+
+                // 监听加载完成事件
+                mySubway.event.on("subway.complete", function(ev, info) {
+                    isReady = true;
+                    log(`地铁图加载完成: ${adcode}`);
+                    
+                    // 示例：获取所有线路列表（如果 API 支持）
+                    // console.log(mySubway.getLineList()); 
+                });
+
+                // 监听站点点击事件
+                mySubway.event.on("station.touch", function(ev, info) {
+                    const name = info.name;
+                    const id = info.id;
+                    log(`点击站点: ${name} (${id})`);
+                    
+                    // 交互：居中显示
+                    mySubway.setCenter(id);
+                    
+                    // 示例：显示信息窗体
+                    mySubway.addInfoWindow(id, {});
+                });
+                
+                // 监听线路点击事件
+                mySubway.event.on("line.touch", function(ev, info) {
+                    log(`点击线路: ${info.name}`);
+                });
+
+            } catch (e) {
+                log("初始化错误: " + e.message);
+                console.error(e);
+            }
+        }
+
+        // 3. 切换城市
+        function changeCity() {
+            const adcode = document.getElementById('city-select').value;
+            log(`切换城市至: ${adcode}`);
+            isReady = false;
+            createSubway(adcode);
+        }
+
+        // 4. 缩放控制 (API 可能不直接暴露 zoomIn/zoomOut，这里尝试 setZoom)
+        // subway API 文档较少，通常 scale 是通过 setZoom 或 scale 属性控制
+        // 如果没有公开方法，这些按钮可能无效，但值得一试
+        function zoomIn() {
+            if(!isReady || !mySubway) return;
+            // 尝试获取当前缩放
+            // 注意：subway API 并没有标准的 getZoom/setZoom 文档公开
+            // 这里是一个占位，如果 API 不支持，可能需要操作 iframe 内部 transform
+            log("尝试放大 (API限制可能无效)");
+        }
+
+        function zoomOut() {
+            if(!isReady || !mySubway) return;
+            log("尝试缩小 (API限制可能无效)");
+        }
+
+    </script>
+</body>
+</html>
