@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>天气查询演示</title>
+    <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css"/>
+    <style>
+        body, html {
+            height: 100%;
+            width: 100%;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            border-left: 4px solid #42b983;
+            padding-left: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 12px;
+            background: #42b983;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #3aa876;
+        }
+
+        .btn-primary:active {
+            background: #2c8c5e;
+        }
+
+        .result-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 12px;
+            color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .weather-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .weather-main {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .weather-temp {
+            font-size: 48px;
+            font-weight: bold;
+        }
+
+        .weather-desc {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .weather-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .detail-value {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .forecast-list {
+            margin-top: 15px;
+        }
+
+        .forecast-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .forecast-item:last-child {
+            border-bottom: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            display: none;
+        }
+        
+        .helper-text {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="card-title">API 配置</div>
+        <div class="form-group">
+            <label>API Key (Web服务)</label>
+            <input type="text" id="api-key" class="form-control" value="00d7800439d0976895b3ae049f384892">
+        </div>
+        <div class="form-group">
+            <label>城市编码 (Adcode)</label>
+            <input type="text" id="city-code" class="form-control" value="110101" placeholder="例如: 110101 (东城区)">
+            <div class="helper-text">常见编码: 北京 110000, 上海 310000, 广州 440100</div>
+        </div>
+        <div class="form-group">
+            <label>气象类型 (Extensions)</label>
+            <select id="weather-type" class="form-control">
+                <option value="base">实况天气 (base)</option>
+                <option value="all">预报天气 (all)</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="queryWeather()">查询天气</button>
+    </div>
+
+    <div class="loading" id="loading">查询中...</div>
+
+    <!-- 实况天气展示 -->
+    <div id="live-card" class="weather-card">
+        <div class="weather-main">
+            <div>
+                <div class="weather-desc" id="live-weather">--</div>
+                <div id="live-city">--</div>
+            </div>
+            <div class="weather-temp"><span id="live-temp">--</span>°</div>
+        </div>
+        <div class="weather-detail">
+            <div class="detail-item">
+                <span class="detail-label">风向</span>
+                <span class="detail-value" id="live-wind-dir">--</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">风力</span>
+                <span class="detail-value" id="live-wind-power">--级</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">湿度</span>
+                <span class="detail-value" id="live-humidity">--%</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">更新时间</span>
+                <span class="detail-value" id="live-time" style="font-size: 12px">--</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预报天气展示 -->
+    <div id="forecast-card" class="weather-card" style="background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);">
+        <div class="weather-main">
+            <div>
+                <div class="weather-desc">天气预报</div>
+                <div id="forecast-city">--</div>
+            </div>
+        </div>
+        <div class="forecast-list" id="forecast-list">
+            <!-- 动态生成 -->
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 15px;">
+        <div class="card-title">原始响应数据</div>
+        <div class="result-box" id="raw-result">等待查询...</div>
+    </div>
+</div>
+
+<script>
+    async function queryWeather() {
+        const key = document.getElementById('api-key').value;
+        const city = document.getElementById('city-code').value;
+        const type = document.getElementById('weather-type').value;
+        const loading = document.getElementById('loading');
+        const rawResult = document.getElementById('raw-result');
+        const liveCard = document.getElementById('live-card');
+        const forecastCard = document.getElementById('forecast-card');
+
+        if (!key || !city) {
+            alert('请输入Key和城市编码');
+            return;
+        }
+
+        // Reset UI
+        loading.style.display = 'block';
+        rawResult.innerText = '请求中...';
+        liveCard.style.display = 'none';
+        forecastCard.style.display = 'none';
+
+        const url = `https://restapi.amap.com/v3/weather/weatherInfo?key=${key}&city=${city}&extensions=${type}&output=JSON`;
+
+        try {
+            const response = await fetch(url);
+            
+            // Check if CORS failed (opaque response) or network error
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            loading.style.display = 'none';
+            rawResult.innerText = JSON.stringify(data, null, 2);
+
+            if (data.status === '1') {
+                if (type === 'base' && data.lives && data.lives.length > 0) {
+                    renderLiveWeather(data.lives[0]);
+                } else if (type === 'all' && data.forecasts && data.forecasts.length > 0) {
+                    renderForecast(data.forecasts[0]);
+                } else {
+                    rawResult.innerText += '\n\n无相关数据';
+                }
+            } else {
+                rawResult.innerText += `\n\n查询失败: ${data.info}`;
+            }
+
+        } catch (e) {
+            loading.style.display = 'none';
+            rawResult.innerText = `请求失败: ${e.message}\n\n注意：高德 Web 服务 API 可能不支持浏览器直接跨域调用 (CORS)。\n建议在服务端调用，或使用支持跨域的插件/代理。\n\n请求URL: ${url}`;
+            console.error('Fetch error:', e);
+            
+            // Fallback for demo if fetch fails due to CORS
+            // We can't easily mock this without real data, but we can alert the user.
+            alert('请求可能被浏览器跨域策略拦截，请查看下方原始响应区域的说明。');
+        }
+    }
+
+    function renderLiveWeather(data) {
+        document.getElementById('live-city').innerText = `${data.province} ${data.city}`;
+        document.getElementById('live-weather').innerText = data.weather;
+        document.getElementById('live-temp').innerText = data.temperature;
+        document.getElementById('live-wind-dir').innerText = data.winddirection;
+        document.getElementById('live-wind-power').innerText = data.windpower;
+        document.getElementById('live-humidity').innerText = data.humidity;
+        document.getElementById('live-time').innerText = data.reporttime.split(' ')[1]; // Only show time
+        
+        document.getElementById('live-card').style.display = 'block';
+    }
+
+    function renderForecast(data) {
+        document.getElementById('forecast-city').innerText = `${data.province} ${data.city}`;
+        
+        const listContainer = document.getElementById('forecast-list');
+        listContainer.innerHTML = '';
+
+        data.casts.forEach(day => {
+            const item = document.createElement('div');
+            item.className = 'forecast-item';
+            item.innerHTML = `
+                <div>
+                    <div style="font-weight:bold">${day.date}</div>
+                    <div style="font-size:12px;opacity:0.8">周${day.week}</div>
+                </div>
+                <div style="text-align:center">
+                    <div>${day.dayweather}</div>
+                    <div style="font-size:12px;opacity:0.8">${day.nightweather}</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-weight:bold">${day.daytemp}° / ${day.nighttemp}°</div>
+                    <div style="font-size:12px;opacity:0.8">${day.daywind}风</div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+
+        document.getElementById('forecast-card').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>未来天气 - Immersive Weather</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #0f2027;
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+            --accent-color: #00d2ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', -apple-system, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-color);
+            overflow-x: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 1s ease;
+        }
+
+        /* 动态背景层 */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: linear-gradient(to bottom, #203a43, #2c5364);
+            transition: opacity 1s;
+        }
+
+        .container {
+            padding: 20px;
+            padding-top: env(safe-area-inset-top, 20px);
+            padding-bottom: 100px;
+            flex: 1;
+            overflow-y: auto;
+            perspective: 1000px; /* 3D透视 */
+            scroll-behavior: smooth;
+        }
+
+        /* 顶部导航 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeInDown 0.8s forwards 0.2s;
+        }
+
+        .location-badge {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .settings-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+
+        /* 3D 卡片通用样式 */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out, box-shadow 0.3s ease;
+        }
+
+        /* 主天气卡片 */
+        .main-card {
+            min-height: 350px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInUp 0.8s forwards 0.4s;
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+            transform: translateZ(-1px);
+            pointer-events: none;
+        }
+
+        .weather-icon-lg {
+            width: 120px;
+            height: 120px;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.3));
+            animation: float 6s ease-in-out infinite;
+            align-self: flex-end;
+            margin-top: -20px;
+        }
+
+        .temp-display {
+            font-size: 86px;
+            font-weight: 200;
+            line-height: 1;
+            margin: 10px 0;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            position: relative;
+            display: inline-block;
+        }
+
+        .temp-display::after {
+            content: '°';
+            position: absolute;
+            top: 0;
+            right: -30px;
+            font-size: 48px;
+        }
+
+        .weather-status {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .update-time {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* 详情网格 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .grid-item {
+            opacity: 0;
+            animation: fadeInUp 0.6s forwards;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .grid-item:nth-child(1) { animation-delay: 0.6s; }
+        .grid-item:nth-child(2) { animation-delay: 0.7s; }
+        .grid-item:nth-child(3) { animation-delay: 0.8s; }
+        .grid-item:nth-child(4) { animation-delay: 0.9s; }
+
+        .grid-label {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .grid-value {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .grid-icon {
+            position: absolute;
+            right: 15px;
+            bottom: 15px;
+            font-size: 24px;
+            opacity: 0.2;
+        }
+
+        /* 预报列表 */
+        .forecast-container {
+            opacity: 0;
+            animation: fadeInUp 0.8s forwards 1s;
+        }
+
+        .forecast-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            font-weight: 600;
+            padding-left: 10px;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .forecast-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .forecast-item:last-child {
+            border-bottom: none;
+        }
+
+        .forecast-day {
+            width: 50px;
+            font-weight: 600;
+        }
+
+        .forecast-icon {
+            width: 30px;
+            text-align: center;
+        }
+
+        .forecast-temp {
+            display: flex;
+            gap: 10px;
+            width: 80px;
+            justify-content: flex-end;
+        }
+
+        .temp-high { font-weight: 600; }
+        .temp-low { opacity: 0.6; }
+
+        /* 输入模态框 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            width: 80%;
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px;
+            background: #333;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+            outline: none;
+        }
+
+        .btn-action {
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+        }
+
+        /* 动画定义 */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Loading */
+        .loader {
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Sound Control */
+        .sound-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.3s;
+        }
+        
+        .sound-toggle.active {
+            background: var(--accent-color);
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- 背景画布 -->
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- 加载中 -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="container">
+        <div class="header">
+            <div class="location-badge" id="location-display">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span id="current-city-name">选择城市</span>
+            </div>
+            <button class="settings-btn" onclick="openModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </button>
+        </div>
+
+        <!-- 主天气卡片 (支持3D Tilt) -->
+        <div class="glass-card main-card" id="tilt-card">
+            <div>
+                <div class="weather-status" id="main-weather">--</div>
+                <div class="update-time" id="main-time">更新于 --:--</div>
+            </div>
+            
+            <!-- 动态SVG图标 -->
+            <svg class="weather-icon-lg" viewBox="0 0 100 100" id="main-icon">
+                <circle cx="50" cy="50" r="30" fill="orange" />
+            </svg>
+
+            <div>
+                <div class="temp-display" id="main-temp">--</div>
+                <div style="font-size: 16px; opacity: 0.8">
+                    体感 <span id="main-feels-like">--</span>°
+                </div>
+            </div>
+        </div>
+
+        <!-- 详情网格 -->
+        <div class="grid-container">
+            <div class="glass-card grid-item">
+                <div class="grid-label">湿度</div>
+                <div class="grid-value"><span id="val-humidity">--</span>%</div>
+                <div class="grid-icon">💧</div>
+            </div>
+            <div class="glass-card grid-item">
+                <div class="grid-label">风速</div>
+                <div class="grid-value"><span id="val-wind">--</span> <small>级</small></div>
+                <div class="grid-icon">🌪</div>
+            </div>
+            <div class="glass-card grid-item">
+                <div class="grid-label">风向</div>
+                <div class="grid-value" id="val-wind-dir">--</div>
+                <div class="grid-icon">🧭</div>
+            </div>
+            <div class="glass-card grid-item">
+                <div class="grid-label">空气质量</div>
+                <div class="grid-value">良</div>
+                <div class="grid-icon">🍃</div>
+            </div>
+        </div>
+
+        <!-- 预报列表 -->
+        <div class="glass-card forecast-container">
+            <div class="forecast-title">未来预报</div>
+            <div id="forecast-list">
+                <!-- 动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 声音开关 -->
+    <div class="sound-toggle" id="sound-btn" onclick="toggleSound()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+    </div>
+
+    <!-- 城市选择弹窗 -->
+    <div class="modal" id="city-modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0">切换城市</h3>
+            <input type="text" class="input-field" id="city-input" placeholder="输入城市编码 (如: 110101)" value="110101">
+            <button class="btn-action" onclick="confirmCity()">开始探索</button>
+            <div style="margin-top:15px; font-size:12px; opacity:0.6">提示: 请输入高德城市Adcode</div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const API_KEY = '00d7800439d0976895b3ae049f384892';
+        let currentAdcode = '110101';
+        let soundEnabled = false;
+        let audioContext = null;
+
+        // 3D Tilt 效果逻辑
+        const card = document.getElementById('tilt-card');
+        const container = document.querySelector('.container');
+
+        // 简单的粒子背景逻辑
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor(type) {
+                this.reset(type);
+            }
+            reset(type) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedY = Math.random() * 1 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.1;
+                this.type = type; // 'rain', 'snow', 'cloud'
+            }
+            update() {
+                this.y += this.speedY;
+                this.x += this.speedX;
+                if (this.y > canvas.height) this.y = -10;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles(count, type) {
+            particles = [];
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle(type));
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            animationId = requestAnimationFrame(animateParticles);
+        }
+
+        // 初始化背景动画 (默认星空/微粒)
+        initParticles(50, 'default');
+        animateParticles();
+
+        // 3D Tilt Event
+        container.addEventListener('mousemove', (e) => {
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+            card.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            card.style.transform = `rotateY(0deg) rotateX(0deg)`;
+        });
+        
+        // 移动端陀螺仪支持 (需要HTTPS且用户授权，此处简化处理，仅做Fallback)
+        // ...
+
+        // 交互逻辑
+        function openModal() {
+            document.getElementById('city-modal').classList.add('active');
+        }
+
+        function confirmCity() {
+            const code = document.getElementById('city-input').value;
+            if (code) {
+                currentAdcode = code;
+                fetchWeather();
+                document.getElementById('city-modal').classList.remove('active');
+                playSound('click');
+            }
+        }
+
+        async function fetchWeather() {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+
+            try {
+                // 1. 获取实况
+                const liveRes = await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${API_KEY}&city=${currentAdcode}&extensions=base&output=JSON`);
+                const liveData = await liveRes.json();
+
+                // 2. 获取预报
+                const forecastRes = await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?key=${API_KEY}&city=${currentAdcode}&extensions=all&output=JSON`);
+                const forecastData = await forecastRes.json();
+
+                if (liveData.status === '1' && liveData.lives.length > 0) {
+                    updateUI(liveData.lives[0], forecastData.forecasts[0]);
+                } else {
+                    alert('获取天气失败: ' + liveData.info);
+                }
+
+            } catch (error) {
+                console.error(error);
+                alert('网络请求错误，请检查跨域或网络');
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function updateUI(live, forecast) {
+            // 更新文本
+            document.getElementById('current-city-name').innerText = live.city;
+            document.getElementById('main-weather').innerText = live.weather;
+            document.getElementById('main-temp').innerText = live.temperature;
+            document.getElementById('main-feels-like').innerText = live.temperature; // API无体感，暂用实况
+            document.getElementById('main-time').innerText = '更新于 ' + live.reporttime.split(' ')[1];
+            
+            document.getElementById('val-humidity').innerText = live.humidity;
+            document.getElementById('val-wind').innerText = live.windpower;
+            document.getElementById('val-wind-dir').innerText = live.winddirection;
+
+            // 更新背景和主题
+            updateTheme(live.weather);
+
+            // 更新预报
+            if (forecast && forecast.casts) {
+                const list = document.getElementById('forecast-list');
+                list.innerHTML = '';
+                forecast.casts.forEach((day, index) => {
+                    if (index === 0) return; // 跳过今天
+                    const item = document.createElement('div');
+                    item.className = 'forecast-item';
+                    item.innerHTML = `
+                        <div class="forecast-day">周${day.week}</div>
+                        <div class="forecast-icon">${getWeatherEmoji(day.dayweather)}</div>
+                        <div class="forecast-temp">
+                            <span class="temp-high">${day.daytemp}°</span>
+                            <span class="temp-low">${day.nighttemp}°</span>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            }
+        }
+
+        function updateTheme(weather) {
+            const bg = document.getElementById('bg-canvas');
+            const icon = document.getElementById('main-icon');
+            
+            // 简单映射逻辑
+            if (weather.includes('晴')) {
+                bg.style.background = 'linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff)';
+                initParticles(20, 'cloud'); // 少许云
+                updateIcon('sunny');
+            } else if (weather.includes('雨')) {
+                bg.style.background = 'linear-gradient(to bottom, #203a43, #2c5364)';
+                initParticles(100, 'rain');
+                updateIcon('rainy');
+            } else if (weather.includes('阴') || weather.includes('云')) {
+                bg.style.background = 'linear-gradient(to bottom, #757f9a, #d7dde8)';
+                initParticles(40, 'cloud');
+                updateIcon('cloudy');
+            } else {
+                // 默认夜间或深色
+                bg.style.background = 'linear-gradient(to bottom, #0f2027, #203a43, #2c5364)';
+                initParticles(50, 'star');
+                updateIcon('default');
+            }
+        }
+
+        function updateIcon(type) {
+            const icon = document.getElementById('main-icon');
+            // 这里可以替换为具体的 SVG Path，为了简化代码，仅用颜色和简单形状示意
+            // 实际项目中应引入 Lottie 或 复杂 SVG
+            if (type === 'sunny') {
+                icon.innerHTML = '<circle cx="50" cy="50" r="25" fill="#FDB813" /><g stroke="white" stroke-width="2"><line x1="50" y1="10" x2="50" y2="20"/><line x1="50" y1="80" x2="50" y2="90"/><line x1="10" y1="50" x2="20" y2="50"/><line x1="80" y1="50" x2="90" y2="50"/></g>';
+            } else if (type === 'rainy') {
+                icon.innerHTML = '<path d="M30,50 Q50,30 70,50 Q70,70 30,70 Q10,70 30,50" fill="#aaa" /><line x1="40" y1="70" x2="35" y2="90" stroke="#00d2ff" stroke-width="3" /><line x1="55" y1="70" x2="50" y2="90" stroke="#00d2ff" stroke-width="3" />';
+            } else {
+                icon.innerHTML = '<path d="M30,50 Q50,30 70,50 Q70,70 30,70 Q10,70 30,50" fill="white" opacity="0.8"/>';
+            }
+        }
+
+        function getWeatherEmoji(weather) {
+            if (weather.includes('晴')) return '☀️';
+            if (weather.includes('雨')) return '🌧';
+            if (weather.includes('云') || weather.includes('阴')) return '☁️';
+            if (weather.includes('雪')) return '❄️';
+            return '🌤';
+        }
+
+        // 声音模块 (模拟)
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-btn');
+            if (soundEnabled) {
+                btn.classList.add('active');
+                btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+                initAudio();
+                playSound('ambient');
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>';
+                stopSound();
+            }
+        }
+
+        // 简单的 Web Audio API 合成音效
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioContext) return;
+            
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, audioContext.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioContext.currentTime + 0.1);
+            } else if (type === 'ambient') {
+                // 模拟持续的风声噪音 (简化版)
+                // 实际上应该加载 audio buffer，这里为了单文件不依赖外部资源
+            }
+        }
+
+        function stopSound() {
+            if (audioContext) {
+                audioContext.suspend();
+            }
+        }
+
+        // 初始化
+        // fetchWeather(); // 自动加载
+        openModal(); // 先让用户确认或输入
+    </script>
+</body>
+</html>

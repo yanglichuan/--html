@@ -1,0 +1,4166 @@
+[
+  {
+    "中文名": "北京市",
+    "adcode": "110000",
+    "citycode": "010",
+    "level": "province"
+  },
+  {
+    "中文名": "天津市",
+    "adcode": "120000",
+    "citycode": "022",
+    "level": "province"
+  },
+  {
+    "中文名": "石家庄市",
+    "adcode": "130100",
+    "citycode": "0311",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "辛集市",
+    "adcode": "130181",
+    "citycode": "0311",
+    "level": "county"
+  },
+  {
+    "中文名": "晋州市",
+    "adcode": "130183",
+    "citycode": "0311",
+    "level": "county"
+  },
+  {
+    "中文名": "新乐市",
+    "adcode": "130184",
+    "citycode": "0311",
+    "level": "county"
+  },
+  {
+    "中文名": "唐山市",
+    "adcode": "130200",
+    "citycode": "0315",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "遵化市",
+    "adcode": "130281",
+    "citycode": "0315",
+    "level": "county"
+  },
+  {
+    "中文名": "迁安市",
+    "adcode": "130283",
+    "citycode": "0315",
+    "level": "county"
+  },
+  {
+    "中文名": "滦州市",
+    "adcode": "130284",
+    "citycode": "0315",
+    "level": "county"
+  },
+  {
+    "中文名": "秦皇岛市",
+    "adcode": "130300",
+    "citycode": "0335",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "邯郸市",
+    "adcode": "130400",
+    "citycode": "0310",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "武安市",
+    "adcode": "130481",
+    "citycode": "0310",
+    "level": "county"
+  },
+  {
+    "中文名": "邢台市",
+    "adcode": "130500",
+    "citycode": "0319",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "南宫市",
+    "adcode": "130581",
+    "citycode": "0319",
+    "level": "county"
+  },
+  {
+    "中文名": "沙河市",
+    "adcode": "130582",
+    "citycode": "0319",
+    "level": "county"
+  },
+  {
+    "中文名": "保定市",
+    "adcode": "130600",
+    "citycode": "0312",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "涿州市",
+    "adcode": "130681",
+    "citycode": "0312",
+    "level": "county"
+  },
+  {
+    "中文名": "定州市",
+    "adcode": "130682",
+    "citycode": "0312",
+    "level": "county"
+  },
+  {
+    "中文名": "安国市",
+    "adcode": "130683",
+    "citycode": "0312",
+    "level": "county"
+  },
+  {
+    "中文名": "高碑店市",
+    "adcode": "130684",
+    "citycode": "0312",
+    "level": "county"
+  },
+  {
+    "中文名": "张家口市",
+    "adcode": "130700",
+    "citycode": "0313",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "承德市",
+    "adcode": "130800",
+    "citycode": "0314",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "平泉市",
+    "adcode": "130881",
+    "citycode": "0314",
+    "level": "county"
+  },
+  {
+    "中文名": "沧州市",
+    "adcode": "130900",
+    "citycode": "0317",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "泊头市",
+    "adcode": "130981",
+    "citycode": "0317",
+    "level": "county"
+  },
+  {
+    "中文名": "任丘市",
+    "adcode": "130982",
+    "citycode": "0317",
+    "level": "county"
+  },
+  {
+    "中文名": "黄骅市",
+    "adcode": "130983",
+    "citycode": "0317",
+    "level": "county"
+  },
+  {
+    "中文名": "河间市",
+    "adcode": "130984",
+    "citycode": "0317",
+    "level": "county"
+  },
+  {
+    "中文名": "廊坊市",
+    "adcode": "131000",
+    "citycode": "0316",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "霸州市",
+    "adcode": "131081",
+    "citycode": "0316",
+    "level": "county"
+  },
+  {
+    "中文名": "三河市",
+    "adcode": "131082",
+    "citycode": "0316",
+    "level": "county"
+  },
+  {
+    "中文名": "衡水市",
+    "adcode": "131100",
+    "citycode": "0318",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "深州市",
+    "adcode": "131182",
+    "citycode": "0318",
+    "level": "county"
+  },
+  {
+    "中文名": "太原市",
+    "adcode": "140100",
+    "citycode": "0351",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "古交市",
+    "adcode": "140181",
+    "citycode": "0351",
+    "level": "county"
+  },
+  {
+    "中文名": "大同市",
+    "adcode": "140200",
+    "citycode": "0352",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "阳泉市",
+    "adcode": "140300",
+    "citycode": "0353",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "长治市",
+    "adcode": "140400",
+    "citycode": "0355",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "晋城市",
+    "adcode": "140500",
+    "citycode": "0356",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "高平市",
+    "adcode": "140581",
+    "citycode": "0356",
+    "level": "county"
+  },
+  {
+    "中文名": "朔州市",
+    "adcode": "140600",
+    "citycode": "0349",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "怀仁市",
+    "adcode": "140681",
+    "citycode": "0349",
+    "level": "county"
+  },
+  {
+    "中文名": "晋中市",
+    "adcode": "140700",
+    "citycode": "0354",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "介休市",
+    "adcode": "140781",
+    "citycode": "0354",
+    "level": "county"
+  },
+  {
+    "中文名": "运城市",
+    "adcode": "140800",
+    "citycode": "0359",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "永济市",
+    "adcode": "140881",
+    "citycode": "0359",
+    "level": "county"
+  },
+  {
+    "中文名": "河津市",
+    "adcode": "140882",
+    "citycode": "0359",
+    "level": "county"
+  },
+  {
+    "中文名": "忻州市",
+    "adcode": "140900",
+    "citycode": "0350",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "原平市",
+    "adcode": "140981",
+    "citycode": "0350",
+    "level": "county"
+  },
+  {
+    "中文名": "临汾市",
+    "adcode": "141000",
+    "citycode": "0357",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "侯马市",
+    "adcode": "141081",
+    "citycode": "0357",
+    "level": "county"
+  },
+  {
+    "中文名": "霍州市",
+    "adcode": "141082",
+    "citycode": "0357",
+    "level": "county"
+  },
+  {
+    "中文名": "吕梁市",
+    "adcode": "141100",
+    "citycode": "0358",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "孝义市",
+    "adcode": "141181",
+    "citycode": "0358",
+    "level": "county"
+  },
+  {
+    "中文名": "汾阳市",
+    "adcode": "141182",
+    "citycode": "0358",
+    "level": "county"
+  },
+  {
+    "中文名": "呼和浩特市",
+    "adcode": "150100",
+    "citycode": "0471",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "包头市",
+    "adcode": "150200",
+    "citycode": "0472",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乌海市",
+    "adcode": "150300",
+    "citycode": "0473",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "赤峰市",
+    "adcode": "150400",
+    "citycode": "0476",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "通辽市",
+    "adcode": "150500",
+    "citycode": "0475",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "霍林郭勒市",
+    "adcode": "150581",
+    "citycode": "0475",
+    "level": "county"
+  },
+  {
+    "中文名": "鄂尔多斯市",
+    "adcode": "150600",
+    "citycode": "0477",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "呼伦贝尔市",
+    "adcode": "150700",
+    "citycode": "0470",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "满洲里市",
+    "adcode": "150781",
+    "citycode": "0470",
+    "level": "county"
+  },
+  {
+    "中文名": "牙克石市",
+    "adcode": "150782",
+    "citycode": "0470",
+    "level": "county"
+  },
+  {
+    "中文名": "扎兰屯市",
+    "adcode": "150783",
+    "citycode": "0470",
+    "level": "county"
+  },
+  {
+    "中文名": "额尔古纳市",
+    "adcode": "150784",
+    "citycode": "0470",
+    "level": "county"
+  },
+  {
+    "中文名": "根河市",
+    "adcode": "150785",
+    "citycode": "0470",
+    "level": "county"
+  },
+  {
+    "中文名": "巴彦淖尔市",
+    "adcode": "150800",
+    "citycode": "0478",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乌兰察布市",
+    "adcode": "150900",
+    "citycode": "0474",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "丰镇市",
+    "adcode": "150981",
+    "citycode": "0474",
+    "level": "county"
+  },
+  {
+    "中文名": "乌兰浩特市",
+    "adcode": "152201",
+    "citycode": "0482",
+    "level": "county"
+  },
+  {
+    "中文名": "阿尔山市",
+    "adcode": "152202",
+    "citycode": "0482",
+    "level": "county"
+  },
+  {
+    "中文名": "二连浩特市",
+    "adcode": "152501",
+    "citycode": "0479",
+    "level": "county"
+  },
+  {
+    "中文名": "锡林浩特市",
+    "adcode": "152502",
+    "citycode": "0479",
+    "level": "county"
+  },
+  {
+    "中文名": "沈阳市",
+    "adcode": "210100",
+    "citycode": "024",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "新民市",
+    "adcode": "210181",
+    "citycode": "024",
+    "level": "county"
+  },
+  {
+    "中文名": "大连市",
+    "adcode": "210200",
+    "citycode": "0411",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "瓦房店市",
+    "adcode": "210281",
+    "citycode": "0411",
+    "level": "county"
+  },
+  {
+    "中文名": "庄河市",
+    "adcode": "210283",
+    "citycode": "0411",
+    "level": "county"
+  },
+  {
+    "中文名": "鞍山市",
+    "adcode": "210300",
+    "citycode": "0412",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "海城市",
+    "adcode": "210381",
+    "citycode": "0412",
+    "level": "county"
+  },
+  {
+    "中文名": "抚顺市",
+    "adcode": "210400",
+    "citycode": "0413",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "本溪市",
+    "adcode": "210500",
+    "citycode": "0414",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "丹东市",
+    "adcode": "210600",
+    "citycode": "0415",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "东港市",
+    "adcode": "210681",
+    "citycode": "0415",
+    "level": "county"
+  },
+  {
+    "中文名": "凤城市",
+    "adcode": "210682",
+    "citycode": "0415",
+    "level": "county"
+  },
+  {
+    "中文名": "锦州市",
+    "adcode": "210700",
+    "citycode": "0416",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "凌海市",
+    "adcode": "210781",
+    "citycode": "0416",
+    "level": "county"
+  },
+  {
+    "中文名": "北镇市",
+    "adcode": "210782",
+    "citycode": "0416",
+    "level": "county"
+  },
+  {
+    "中文名": "营口市",
+    "adcode": "210800",
+    "citycode": "0417",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "盖州市",
+    "adcode": "210881",
+    "citycode": "0417",
+    "level": "county"
+  },
+  {
+    "中文名": "大石桥市",
+    "adcode": "210882",
+    "citycode": "0417",
+    "level": "county"
+  },
+  {
+    "中文名": "阜新市",
+    "adcode": "210900",
+    "citycode": "0418",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "辽阳市",
+    "adcode": "211000",
+    "citycode": "0419",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "灯塔市",
+    "adcode": "211081",
+    "citycode": "0419",
+    "level": "county"
+  },
+  {
+    "中文名": "盘锦市",
+    "adcode": "211100",
+    "citycode": "0427",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "铁岭市",
+    "adcode": "211200",
+    "citycode": "0410",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "调兵山市",
+    "adcode": "211281",
+    "citycode": "0410",
+    "level": "county"
+  },
+  {
+    "中文名": "开原市",
+    "adcode": "211282",
+    "citycode": "0410",
+    "level": "county"
+  },
+  {
+    "中文名": "朝阳市",
+    "adcode": "211300",
+    "citycode": "0421",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "北票市",
+    "adcode": "211381",
+    "citycode": "0421",
+    "level": "county"
+  },
+  {
+    "中文名": "凌源市",
+    "adcode": "211382",
+    "citycode": "0421",
+    "level": "county"
+  },
+  {
+    "中文名": "葫芦岛市",
+    "adcode": "211400",
+    "citycode": "0429",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兴城市",
+    "adcode": "211481",
+    "citycode": "0429",
+    "level": "county"
+  },
+  {
+    "中文名": "长春市",
+    "adcode": "220100",
+    "citycode": "0431",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "榆树市",
+    "adcode": "220182",
+    "citycode": "0431",
+    "level": "county"
+  },
+  {
+    "中文名": "德惠市",
+    "adcode": "220183",
+    "citycode": "0431",
+    "level": "county"
+  },
+  {
+    "中文名": "公主岭市",
+    "adcode": "220184",
+    "citycode": "0431",
+    "level": "county"
+  },
+  {
+    "中文名": "吉林市",
+    "adcode": "220200",
+    "citycode": "0432",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "蛟河市",
+    "adcode": "220281",
+    "citycode": "0432",
+    "level": "county"
+  },
+  {
+    "中文名": "桦甸市",
+    "adcode": "220282",
+    "citycode": "0432",
+    "level": "county"
+  },
+  {
+    "中文名": "舒兰市",
+    "adcode": "220283",
+    "citycode": "0432",
+    "level": "county"
+  },
+  {
+    "中文名": "磐石市",
+    "adcode": "220284",
+    "citycode": "0432",
+    "level": "county"
+  },
+  {
+    "中文名": "四平市",
+    "adcode": "220300",
+    "citycode": "0434",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "双辽市",
+    "adcode": "220382",
+    "citycode": "0434",
+    "level": "county"
+  },
+  {
+    "中文名": "辽源市",
+    "adcode": "220400",
+    "citycode": "0437",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "通化市",
+    "adcode": "220500",
+    "citycode": "0435",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "梅河口市",
+    "adcode": "220581",
+    "citycode": "0435",
+    "level": "county"
+  },
+  {
+    "中文名": "集安市",
+    "adcode": "220582",
+    "citycode": "0435",
+    "level": "county"
+  },
+  {
+    "中文名": "白山市",
+    "adcode": "220600",
+    "citycode": "0439",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "临江市",
+    "adcode": "220681",
+    "citycode": "0439",
+    "level": "county"
+  },
+  {
+    "中文名": "松原市",
+    "adcode": "220700",
+    "citycode": "0438",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "扶余市",
+    "adcode": "220781",
+    "citycode": "0438",
+    "level": "county"
+  },
+  {
+    "中文名": "白城市",
+    "adcode": "220800",
+    "citycode": "0436",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "洮南市",
+    "adcode": "220881",
+    "citycode": "0436",
+    "level": "county"
+  },
+  {
+    "中文名": "大安市",
+    "adcode": "220882",
+    "citycode": "0436",
+    "level": "county"
+  },
+  {
+    "中文名": "延吉市",
+    "adcode": "222401",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "图们市",
+    "adcode": "222402",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "敦化市",
+    "adcode": "222403",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "珲春市",
+    "adcode": "222404",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "龙井市",
+    "adcode": "222405",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "和龙市",
+    "adcode": "222406",
+    "citycode": "1433",
+    "level": "county"
+  },
+  {
+    "中文名": "哈尔滨市",
+    "adcode": "230100",
+    "citycode": "0451",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "尚志市",
+    "adcode": "230183",
+    "citycode": "0451",
+    "level": "county"
+  },
+  {
+    "中文名": "五常市",
+    "adcode": "230184",
+    "citycode": "0451",
+    "level": "county"
+  },
+  {
+    "中文名": "齐齐哈尔市",
+    "adcode": "230200",
+    "citycode": "0452",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "讷河市",
+    "adcode": "230281",
+    "citycode": "0452",
+    "level": "county"
+  },
+  {
+    "中文名": "鸡西市",
+    "adcode": "230300",
+    "citycode": "0467",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "虎林市",
+    "adcode": "230381",
+    "citycode": "0467",
+    "level": "county"
+  },
+  {
+    "中文名": "密山市",
+    "adcode": "230382",
+    "citycode": "0467",
+    "level": "county"
+  },
+  {
+    "中文名": "鹤岗市",
+    "adcode": "230400",
+    "citycode": "0468",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "双鸭山市",
+    "adcode": "230500",
+    "citycode": "0469",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "大庆市",
+    "adcode": "230600",
+    "citycode": "0459",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "伊春市",
+    "adcode": "230700",
+    "citycode": "0458",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "铁力市",
+    "adcode": "230781",
+    "citycode": "0458",
+    "level": "county"
+  },
+  {
+    "中文名": "佳木斯市",
+    "adcode": "230800",
+    "citycode": "0454",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "同江市",
+    "adcode": "230881",
+    "citycode": "0454",
+    "level": "county"
+  },
+  {
+    "中文名": "富锦市",
+    "adcode": "230882",
+    "citycode": "0454",
+    "level": "county"
+  },
+  {
+    "中文名": "抚远市",
+    "adcode": "230883",
+    "citycode": "0454",
+    "level": "county"
+  },
+  {
+    "中文名": "七台河市",
+    "adcode": "230900",
+    "citycode": "0464",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "牡丹江市",
+    "adcode": "231000",
+    "citycode": "0453",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "绥芬河市",
+    "adcode": "231081",
+    "citycode": "0453",
+    "level": "county"
+  },
+  {
+    "中文名": "海林市",
+    "adcode": "231083",
+    "citycode": "0453",
+    "level": "county"
+  },
+  {
+    "中文名": "宁安市",
+    "adcode": "231084",
+    "citycode": "0453",
+    "level": "county"
+  },
+  {
+    "中文名": "穆棱市",
+    "adcode": "231085",
+    "citycode": "0453",
+    "level": "county"
+  },
+  {
+    "中文名": "东宁市",
+    "adcode": "231086",
+    "citycode": "0453",
+    "level": "county"
+  },
+  {
+    "中文名": "黑河市",
+    "adcode": "231100",
+    "citycode": "0456",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "北安市",
+    "adcode": "231181",
+    "citycode": "0456",
+    "level": "county"
+  },
+  {
+    "中文名": "五大连池市",
+    "adcode": "231182",
+    "citycode": "0456",
+    "level": "county"
+  },
+  {
+    "中文名": "嫩江市",
+    "adcode": "231183",
+    "citycode": "0456",
+    "level": "county"
+  },
+  {
+    "中文名": "绥化市",
+    "adcode": "231200",
+    "citycode": "0455",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "安达市",
+    "adcode": "231281",
+    "citycode": "0455",
+    "level": "county"
+  },
+  {
+    "中文名": "肇东市",
+    "adcode": "231282",
+    "citycode": "0455",
+    "level": "county"
+  },
+  {
+    "中文名": "海伦市",
+    "adcode": "231283",
+    "citycode": "0455",
+    "level": "county"
+  },
+  {
+    "中文名": "漠河市",
+    "adcode": "232701",
+    "citycode": "0457",
+    "level": "county"
+  },
+  {
+    "中文名": "上海市",
+    "adcode": "310000",
+    "citycode": "021",
+    "level": "province"
+  },
+  {
+    "中文名": "南京市",
+    "adcode": "320100",
+    "citycode": "025",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "无锡市",
+    "adcode": "320200",
+    "citycode": "0510",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "江阴市",
+    "adcode": "320281",
+    "citycode": "0510",
+    "level": "county"
+  },
+  {
+    "中文名": "宜兴市",
+    "adcode": "320282",
+    "citycode": "0510",
+    "level": "county"
+  },
+  {
+    "中文名": "徐州市",
+    "adcode": "320300",
+    "citycode": "0516",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "新沂市",
+    "adcode": "320381",
+    "citycode": "0516",
+    "level": "county"
+  },
+  {
+    "中文名": "邳州市",
+    "adcode": "320382",
+    "citycode": "0516",
+    "level": "county"
+  },
+  {
+    "中文名": "常州市",
+    "adcode": "320400",
+    "citycode": "0519",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "溧阳市",
+    "adcode": "320481",
+    "citycode": "0519",
+    "level": "county"
+  },
+  {
+    "中文名": "苏州市",
+    "adcode": "320500",
+    "citycode": "0512",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "常熟市",
+    "adcode": "320581",
+    "citycode": "0512",
+    "level": "county"
+  },
+  {
+    "中文名": "张家港市",
+    "adcode": "320582",
+    "citycode": "0512",
+    "level": "county"
+  },
+  {
+    "中文名": "昆山市",
+    "adcode": "320583",
+    "citycode": "0512",
+    "level": "county"
+  },
+  {
+    "中文名": "太仓市",
+    "adcode": "320585",
+    "citycode": "0512",
+    "level": "county"
+  },
+  {
+    "中文名": "南通市",
+    "adcode": "320600",
+    "citycode": "0513",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "启东市",
+    "adcode": "320681",
+    "citycode": "0513",
+    "level": "county"
+  },
+  {
+    "中文名": "如皋市",
+    "adcode": "320682",
+    "citycode": "0513",
+    "level": "county"
+  },
+  {
+    "中文名": "海安市",
+    "adcode": "320685",
+    "citycode": "0513",
+    "level": "county"
+  },
+  {
+    "中文名": "连云港市",
+    "adcode": "320700",
+    "citycode": "0518",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "淮安市",
+    "adcode": "320800",
+    "citycode": "0517",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "盐城市",
+    "adcode": "320900",
+    "citycode": "0515",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "东台市",
+    "adcode": "320981",
+    "citycode": "0515",
+    "level": "county"
+  },
+  {
+    "中文名": "扬州市",
+    "adcode": "321000",
+    "citycode": "0514",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "仪征市",
+    "adcode": "321081",
+    "citycode": "0514",
+    "level": "county"
+  },
+  {
+    "中文名": "高邮市",
+    "adcode": "321084",
+    "citycode": "0514",
+    "level": "county"
+  },
+  {
+    "中文名": "镇江市",
+    "adcode": "321100",
+    "citycode": "0511",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "丹阳市",
+    "adcode": "321181",
+    "citycode": "0511",
+    "level": "county"
+  },
+  {
+    "中文名": "扬中市",
+    "adcode": "321182",
+    "citycode": "0511",
+    "level": "county"
+  },
+  {
+    "中文名": "句容市",
+    "adcode": "321183",
+    "citycode": "0511",
+    "level": "county"
+  },
+  {
+    "中文名": "泰州市",
+    "adcode": "321200",
+    "citycode": "0523",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兴化市",
+    "adcode": "321281",
+    "citycode": "0523",
+    "level": "county"
+  },
+  {
+    "中文名": "靖江市",
+    "adcode": "321282",
+    "citycode": "0523",
+    "level": "county"
+  },
+  {
+    "中文名": "泰兴市",
+    "adcode": "321283",
+    "citycode": "0523",
+    "level": "county"
+  },
+  {
+    "中文名": "宿迁市",
+    "adcode": "321300",
+    "citycode": "0527",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "杭州市",
+    "adcode": "330100",
+    "citycode": "0571",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "建德市",
+    "adcode": "330182",
+    "citycode": "0571",
+    "level": "county"
+  },
+  {
+    "中文名": "宁波市",
+    "adcode": "330200",
+    "citycode": "0574",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "余姚市",
+    "adcode": "330281",
+    "citycode": "0574",
+    "level": "county"
+  },
+  {
+    "中文名": "慈溪市",
+    "adcode": "330282",
+    "citycode": "0574",
+    "level": "county"
+  },
+  {
+    "中文名": "温州市",
+    "adcode": "330300",
+    "citycode": "0577",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "瑞安市",
+    "adcode": "330381",
+    "citycode": "0577",
+    "level": "county"
+  },
+  {
+    "中文名": "乐清市",
+    "adcode": "330382",
+    "citycode": "0577",
+    "level": "county"
+  },
+  {
+    "中文名": "龙港市",
+    "adcode": "330383",
+    "citycode": "0577",
+    "level": "county"
+  },
+  {
+    "中文名": "嘉兴市",
+    "adcode": "330400",
+    "citycode": "0573",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "海宁市",
+    "adcode": "330481",
+    "citycode": "0573",
+    "level": "county"
+  },
+  {
+    "中文名": "平湖市",
+    "adcode": "330482",
+    "citycode": "0573",
+    "level": "county"
+  },
+  {
+    "中文名": "桐乡市",
+    "adcode": "330483",
+    "citycode": "0573",
+    "level": "county"
+  },
+  {
+    "中文名": "湖州市",
+    "adcode": "330500",
+    "citycode": "0572",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "绍兴市",
+    "adcode": "330600",
+    "citycode": "0575",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "诸暨市",
+    "adcode": "330681",
+    "citycode": "0575",
+    "level": "county"
+  },
+  {
+    "中文名": "嵊州市",
+    "adcode": "330683",
+    "citycode": "0575",
+    "level": "county"
+  },
+  {
+    "中文名": "金华市",
+    "adcode": "330700",
+    "citycode": "0579",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兰溪市",
+    "adcode": "330781",
+    "citycode": "0579",
+    "level": "county"
+  },
+  {
+    "中文名": "义乌市",
+    "adcode": "330782",
+    "citycode": "0579",
+    "level": "county"
+  },
+  {
+    "中文名": "东阳市",
+    "adcode": "330783",
+    "citycode": "0579",
+    "level": "county"
+  },
+  {
+    "中文名": "永康市",
+    "adcode": "330784",
+    "citycode": "0579",
+    "level": "county"
+  },
+  {
+    "中文名": "衢州市",
+    "adcode": "330800",
+    "citycode": "0570",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "江山市",
+    "adcode": "330881",
+    "citycode": "0570",
+    "level": "county"
+  },
+  {
+    "中文名": "舟山市",
+    "adcode": "330900",
+    "citycode": "0580",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "台州市",
+    "adcode": "331000",
+    "citycode": "0576",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "温岭市",
+    "adcode": "331081",
+    "citycode": "0576",
+    "level": "county"
+  },
+  {
+    "中文名": "临海市",
+    "adcode": "331082",
+    "citycode": "0576",
+    "level": "county"
+  },
+  {
+    "中文名": "玉环市",
+    "adcode": "331083",
+    "citycode": "0576",
+    "level": "county"
+  },
+  {
+    "中文名": "丽水市",
+    "adcode": "331100",
+    "citycode": "0578",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "龙泉市",
+    "adcode": "331181",
+    "citycode": "0578",
+    "level": "county"
+  },
+  {
+    "中文名": "合肥市",
+    "adcode": "340100",
+    "citycode": "0551",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "巢湖市",
+    "adcode": "340181",
+    "citycode": "0551",
+    "level": "county"
+  },
+  {
+    "中文名": "芜湖市",
+    "adcode": "340200",
+    "citycode": "0553",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "无为市",
+    "adcode": "340281",
+    "citycode": "0553",
+    "level": "county"
+  },
+  {
+    "中文名": "蚌埠市",
+    "adcode": "340300",
+    "citycode": "0552",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "淮南市",
+    "adcode": "340400",
+    "citycode": "0554",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "马鞍山市",
+    "adcode": "340500",
+    "citycode": "0555",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "淮北市",
+    "adcode": "340600",
+    "citycode": "0561",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "铜陵市",
+    "adcode": "340700",
+    "citycode": "0562",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "安庆市",
+    "adcode": "340800",
+    "citycode": "0556",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "桐城市",
+    "adcode": "340881",
+    "citycode": "0556",
+    "level": "county"
+  },
+  {
+    "中文名": "潜山市",
+    "adcode": "340882",
+    "citycode": "0556",
+    "level": "county"
+  },
+  {
+    "中文名": "黄山市",
+    "adcode": "341000",
+    "citycode": "0559",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "滁州市",
+    "adcode": "341100",
+    "citycode": "0550",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "天长市",
+    "adcode": "341181",
+    "citycode": "0550",
+    "level": "county"
+  },
+  {
+    "中文名": "明光市",
+    "adcode": "341182",
+    "citycode": "0550",
+    "level": "county"
+  },
+  {
+    "中文名": "阜阳市",
+    "adcode": "341200",
+    "citycode": "1558",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "界首市",
+    "adcode": "341282",
+    "citycode": "1558",
+    "level": "county"
+  },
+  {
+    "中文名": "宿州市",
+    "adcode": "341300",
+    "citycode": "0557",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "六安市",
+    "adcode": "341500",
+    "citycode": "0564",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "亳州市",
+    "adcode": "341600",
+    "citycode": "0558",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "池州市",
+    "adcode": "341700",
+    "citycode": "0566",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宣城市",
+    "adcode": "341800",
+    "citycode": "0563",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宁国市",
+    "adcode": "341881",
+    "citycode": "0563",
+    "level": "county"
+  },
+  {
+    "中文名": "广德市",
+    "adcode": "341882",
+    "citycode": "0563",
+    "level": "county"
+  },
+  {
+    "中文名": "福州市",
+    "adcode": "350100",
+    "citycode": "0591",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "福清市",
+    "adcode": "350181",
+    "citycode": "0591",
+    "level": "county"
+  },
+  {
+    "中文名": "厦门市",
+    "adcode": "350200",
+    "citycode": "0592",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "莆田市",
+    "adcode": "350300",
+    "citycode": "0594",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "三明市",
+    "adcode": "350400",
+    "citycode": "0598",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "永安市",
+    "adcode": "350481",
+    "citycode": "0598",
+    "level": "county"
+  },
+  {
+    "中文名": "泉州市",
+    "adcode": "350500",
+    "citycode": "0595",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "石狮市",
+    "adcode": "350581",
+    "citycode": "0595",
+    "level": "county"
+  },
+  {
+    "中文名": "晋江市",
+    "adcode": "350582",
+    "citycode": "0595",
+    "level": "county"
+  },
+  {
+    "中文名": "南安市",
+    "adcode": "350583",
+    "citycode": "0595",
+    "level": "county"
+  },
+  {
+    "中文名": "漳州市",
+    "adcode": "350600",
+    "citycode": "0596",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "南平市",
+    "adcode": "350700",
+    "citycode": "0599",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "邵武市",
+    "adcode": "350781",
+    "citycode": "0599",
+    "level": "county"
+  },
+  {
+    "中文名": "武夷山市",
+    "adcode": "350782",
+    "citycode": "0599",
+    "level": "county"
+  },
+  {
+    "中文名": "建瓯市",
+    "adcode": "350783",
+    "citycode": "0599",
+    "level": "county"
+  },
+  {
+    "中文名": "龙岩市",
+    "adcode": "350800",
+    "citycode": "0597",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "漳平市",
+    "adcode": "350881",
+    "citycode": "0597",
+    "level": "county"
+  },
+  {
+    "中文名": "宁德市",
+    "adcode": "350900",
+    "citycode": "0593",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "福安市",
+    "adcode": "350981",
+    "citycode": "0593",
+    "level": "county"
+  },
+  {
+    "中文名": "福鼎市",
+    "adcode": "350982",
+    "citycode": "0593",
+    "level": "county"
+  },
+  {
+    "中文名": "南昌市",
+    "adcode": "360100",
+    "citycode": "0791",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "景德镇市",
+    "adcode": "360200",
+    "citycode": "0798",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乐平市",
+    "adcode": "360281",
+    "citycode": "0798",
+    "level": "county"
+  },
+  {
+    "中文名": "萍乡市",
+    "adcode": "360300",
+    "citycode": "0799",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "九江市",
+    "adcode": "360400",
+    "citycode": "0792",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "瑞昌市",
+    "adcode": "360481",
+    "citycode": "0792",
+    "level": "county"
+  },
+  {
+    "中文名": "共青城市",
+    "adcode": "360482",
+    "citycode": "0792",
+    "level": "county"
+  },
+  {
+    "中文名": "庐山市",
+    "adcode": "360483",
+    "citycode": "0792",
+    "level": "county"
+  },
+  {
+    "中文名": "新余市",
+    "adcode": "360500",
+    "citycode": "0790",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "鹰潭市",
+    "adcode": "360600",
+    "citycode": "0701",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "贵溪市",
+    "adcode": "360681",
+    "citycode": "0701",
+    "level": "county"
+  },
+  {
+    "中文名": "赣州市",
+    "adcode": "360700",
+    "citycode": "0797",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "瑞金市",
+    "adcode": "360781",
+    "citycode": "0797",
+    "level": "county"
+  },
+  {
+    "中文名": "龙南市",
+    "adcode": "360783",
+    "citycode": "0797",
+    "level": "county"
+  },
+  {
+    "中文名": "吉安市",
+    "adcode": "360800",
+    "citycode": "0796",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "井冈山市",
+    "adcode": "360881",
+    "citycode": "0796",
+    "level": "county"
+  },
+  {
+    "中文名": "宜春市",
+    "adcode": "360900",
+    "citycode": "0795",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "丰城市",
+    "adcode": "360981",
+    "citycode": "0795",
+    "level": "county"
+  },
+  {
+    "中文名": "樟树市",
+    "adcode": "360982",
+    "citycode": "0795",
+    "level": "county"
+  },
+  {
+    "中文名": "高安市",
+    "adcode": "360983",
+    "citycode": "0795",
+    "level": "county"
+  },
+  {
+    "中文名": "抚州市",
+    "adcode": "361000",
+    "citycode": "0794",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "上饶市",
+    "adcode": "361100",
+    "citycode": "0793",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "德兴市",
+    "adcode": "361181",
+    "citycode": "0793",
+    "level": "county"
+  },
+  {
+    "中文名": "济南市",
+    "adcode": "370100",
+    "citycode": "0531",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "青岛市",
+    "adcode": "370200",
+    "citycode": "0532",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "胶州市",
+    "adcode": "370281",
+    "citycode": "0532",
+    "level": "county"
+  },
+  {
+    "中文名": "平度市",
+    "adcode": "370283",
+    "citycode": "0532",
+    "level": "county"
+  },
+  {
+    "中文名": "莱西市",
+    "adcode": "370285",
+    "citycode": "0532",
+    "level": "county"
+  },
+  {
+    "中文名": "淄博市",
+    "adcode": "370300",
+    "citycode": "0533",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "枣庄市",
+    "adcode": "370400",
+    "citycode": "0632",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "滕州市",
+    "adcode": "370481",
+    "citycode": "0632",
+    "level": "county"
+  },
+  {
+    "中文名": "东营市",
+    "adcode": "370500",
+    "citycode": "0546",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "烟台市",
+    "adcode": "370600",
+    "citycode": "0535",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "龙口市",
+    "adcode": "370681",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "莱阳市",
+    "adcode": "370682",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "莱州市",
+    "adcode": "370683",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "招远市",
+    "adcode": "370685",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "栖霞市",
+    "adcode": "370686",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "海阳市",
+    "adcode": "370687",
+    "citycode": "0535",
+    "level": "county"
+  },
+  {
+    "中文名": "潍坊市",
+    "adcode": "370700",
+    "citycode": "0536",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "青州市",
+    "adcode": "370781",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "诸城市",
+    "adcode": "370782",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "寿光市",
+    "adcode": "370783",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "安丘市",
+    "adcode": "370784",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "高密市",
+    "adcode": "370785",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "昌邑市",
+    "adcode": "370786",
+    "citycode": "0536",
+    "level": "county"
+  },
+  {
+    "中文名": "济宁市",
+    "adcode": "370800",
+    "citycode": "0537",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "曲阜市",
+    "adcode": "370881",
+    "citycode": "0537",
+    "level": "county"
+  },
+  {
+    "中文名": "邹城市",
+    "adcode": "370883",
+    "citycode": "0537",
+    "level": "county"
+  },
+  {
+    "中文名": "泰安市",
+    "adcode": "370900",
+    "citycode": "0538",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "新泰市",
+    "adcode": "370982",
+    "citycode": "0538",
+    "level": "county"
+  },
+  {
+    "中文名": "肥城市",
+    "adcode": "370983",
+    "citycode": "0538",
+    "level": "county"
+  },
+  {
+    "中文名": "威海市",
+    "adcode": "371000",
+    "citycode": "0631",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "荣成市",
+    "adcode": "371082",
+    "citycode": "0631",
+    "level": "county"
+  },
+  {
+    "中文名": "乳山市",
+    "adcode": "371083",
+    "citycode": "0631",
+    "level": "county"
+  },
+  {
+    "中文名": "日照市",
+    "adcode": "371100",
+    "citycode": "0633",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "临沂市",
+    "adcode": "371300",
+    "citycode": "0539",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "德州市",
+    "adcode": "371400",
+    "citycode": "0534",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乐陵市",
+    "adcode": "371481",
+    "citycode": "0534",
+    "level": "county"
+  },
+  {
+    "中文名": "禹城市",
+    "adcode": "371482",
+    "citycode": "0534",
+    "level": "county"
+  },
+  {
+    "中文名": "聊城市",
+    "adcode": "371500",
+    "citycode": "0635",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "临清市",
+    "adcode": "371581",
+    "citycode": "0635",
+    "level": "county"
+  },
+  {
+    "中文名": "滨州市",
+    "adcode": "371600",
+    "citycode": "0543",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "邹平市",
+    "adcode": "371681",
+    "citycode": "0543",
+    "level": "county"
+  },
+  {
+    "中文名": "菏泽市",
+    "adcode": "371700",
+    "citycode": "0530",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "郑州市",
+    "adcode": "410100",
+    "citycode": "0371",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "巩义市",
+    "adcode": "410181",
+    "citycode": "0371",
+    "level": "county"
+  },
+  {
+    "中文名": "荥阳市",
+    "adcode": "410182",
+    "citycode": "0371",
+    "level": "county"
+  },
+  {
+    "中文名": "新密市",
+    "adcode": "410183",
+    "citycode": "0371",
+    "level": "county"
+  },
+  {
+    "中文名": "新郑市",
+    "adcode": "410184",
+    "citycode": "0371",
+    "level": "county"
+  },
+  {
+    "中文名": "登封市",
+    "adcode": "410185",
+    "citycode": "0371",
+    "level": "county"
+  },
+  {
+    "中文名": "开封市",
+    "adcode": "410200",
+    "citycode": "0378",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "洛阳市",
+    "adcode": "410300",
+    "citycode": "0379",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "平顶山市",
+    "adcode": "410400",
+    "citycode": "0375",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "舞钢市",
+    "adcode": "410481",
+    "citycode": "0375",
+    "level": "county"
+  },
+  {
+    "中文名": "汝州市",
+    "adcode": "410482",
+    "citycode": "0375",
+    "level": "county"
+  },
+  {
+    "中文名": "安阳市",
+    "adcode": "410500",
+    "citycode": "0372",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "林州市",
+    "adcode": "410581",
+    "citycode": "0372",
+    "level": "county"
+  },
+  {
+    "中文名": "鹤壁市",
+    "adcode": "410600",
+    "citycode": "0392",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "新乡市",
+    "adcode": "410700",
+    "citycode": "0373",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "卫辉市",
+    "adcode": "410781",
+    "citycode": "0373",
+    "level": "county"
+  },
+  {
+    "中文名": "辉县市",
+    "adcode": "410782",
+    "citycode": "0373",
+    "level": "county"
+  },
+  {
+    "中文名": "长垣市",
+    "adcode": "410783",
+    "citycode": "0373",
+    "level": "county"
+  },
+  {
+    "中文名": "焦作市",
+    "adcode": "410800",
+    "citycode": "0391",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "沁阳市",
+    "adcode": "410882",
+    "citycode": "0391",
+    "level": "county"
+  },
+  {
+    "中文名": "孟州市",
+    "adcode": "410883",
+    "citycode": "0391",
+    "level": "county"
+  },
+  {
+    "中文名": "濮阳市",
+    "adcode": "410900",
+    "citycode": "0393",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "许昌市",
+    "adcode": "411000",
+    "citycode": "0374",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "禹州市",
+    "adcode": "411081",
+    "citycode": "0374",
+    "level": "county"
+  },
+  {
+    "中文名": "长葛市",
+    "adcode": "411082",
+    "citycode": "0374",
+    "level": "county"
+  },
+  {
+    "中文名": "漯河市",
+    "adcode": "411100",
+    "citycode": "0395",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "三门峡市",
+    "adcode": "411200",
+    "citycode": "0398",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "义马市",
+    "adcode": "411281",
+    "citycode": "0398",
+    "level": "county"
+  },
+  {
+    "中文名": "灵宝市",
+    "adcode": "411282",
+    "citycode": "0398",
+    "level": "county"
+  },
+  {
+    "中文名": "南阳市",
+    "adcode": "411300",
+    "citycode": "0377",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "邓州市",
+    "adcode": "411381",
+    "citycode": "0377",
+    "level": "county"
+  },
+  {
+    "中文名": "商丘市",
+    "adcode": "411400",
+    "citycode": "0370",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "永城市",
+    "adcode": "411481",
+    "citycode": "0370",
+    "level": "county"
+  },
+  {
+    "中文名": "信阳市",
+    "adcode": "411500",
+    "citycode": "0376",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "周口市",
+    "adcode": "411600",
+    "citycode": "0394",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "项城市",
+    "adcode": "411681",
+    "citycode": "0394",
+    "level": "county"
+  },
+  {
+    "中文名": "驻马店市",
+    "adcode": "411700",
+    "citycode": "0396",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "济源市",
+    "adcode": "419001",
+    "citycode": "1391",
+    "level": "county"
+  },
+  {
+    "中文名": "武汉市",
+    "adcode": "420100",
+    "citycode": "027",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "黄石市",
+    "adcode": "420200",
+    "citycode": "0714",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "大冶市",
+    "adcode": "420281",
+    "citycode": "0714",
+    "level": "county"
+  },
+  {
+    "中文名": "十堰市",
+    "adcode": "420300",
+    "citycode": "0719",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "丹江口市",
+    "adcode": "420381",
+    "citycode": "0719",
+    "level": "county"
+  },
+  {
+    "中文名": "宜昌市",
+    "adcode": "420500",
+    "citycode": "0717",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宜都市",
+    "adcode": "420581",
+    "citycode": "0717",
+    "level": "county"
+  },
+  {
+    "中文名": "当阳市",
+    "adcode": "420582",
+    "citycode": "0717",
+    "level": "county"
+  },
+  {
+    "中文名": "枝江市",
+    "adcode": "420583",
+    "citycode": "0717",
+    "level": "county"
+  },
+  {
+    "中文名": "襄阳市",
+    "adcode": "420600",
+    "citycode": "0710",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "老河口市",
+    "adcode": "420682",
+    "citycode": "0710",
+    "level": "county"
+  },
+  {
+    "中文名": "枣阳市",
+    "adcode": "420683",
+    "citycode": "0710",
+    "level": "county"
+  },
+  {
+    "中文名": "宜城市",
+    "adcode": "420684",
+    "citycode": "0710",
+    "level": "county"
+  },
+  {
+    "中文名": "鄂州市",
+    "adcode": "420700",
+    "citycode": "0711",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "荆门市",
+    "adcode": "420800",
+    "citycode": "0724",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "钟祥市",
+    "adcode": "420881",
+    "citycode": "0724",
+    "level": "county"
+  },
+  {
+    "中文名": "京山市",
+    "adcode": "420882",
+    "citycode": "0724",
+    "level": "county"
+  },
+  {
+    "中文名": "孝感市",
+    "adcode": "420900",
+    "citycode": "0712",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "应城市",
+    "adcode": "420981",
+    "citycode": "0712",
+    "level": "county"
+  },
+  {
+    "中文名": "安陆市",
+    "adcode": "420982",
+    "citycode": "0712",
+    "level": "county"
+  },
+  {
+    "中文名": "汉川市",
+    "adcode": "420984",
+    "citycode": "0712",
+    "level": "county"
+  },
+  {
+    "中文名": "荆州市",
+    "adcode": "421000",
+    "citycode": "0716",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "石首市",
+    "adcode": "421081",
+    "citycode": "0716",
+    "level": "county"
+  },
+  {
+    "中文名": "洪湖市",
+    "adcode": "421083",
+    "citycode": "0716",
+    "level": "county"
+  },
+  {
+    "中文名": "松滋市",
+    "adcode": "421087",
+    "citycode": "0716",
+    "level": "county"
+  },
+  {
+    "中文名": "监利市",
+    "adcode": "421088",
+    "citycode": "0716",
+    "level": "county"
+  },
+  {
+    "中文名": "黄冈市",
+    "adcode": "421100",
+    "citycode": "0713",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "麻城市",
+    "adcode": "421181",
+    "citycode": "0713",
+    "level": "county"
+  },
+  {
+    "中文名": "武穴市",
+    "adcode": "421182",
+    "citycode": "0713",
+    "level": "county"
+  },
+  {
+    "中文名": "咸宁市",
+    "adcode": "421200",
+    "citycode": "0715",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "赤壁市",
+    "adcode": "421281",
+    "citycode": "0715",
+    "level": "county"
+  },
+  {
+    "中文名": "随州市",
+    "adcode": "421300",
+    "citycode": "0722",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "广水市",
+    "adcode": "421381",
+    "citycode": "0722",
+    "level": "county"
+  },
+  {
+    "中文名": "恩施市",
+    "adcode": "422801",
+    "citycode": "0718",
+    "level": "county"
+  },
+  {
+    "中文名": "利川市",
+    "adcode": "422802",
+    "citycode": "0718",
+    "level": "county"
+  },
+  {
+    "中文名": "仙桃市",
+    "adcode": "429004",
+    "citycode": "0728",
+    "level": "county"
+  },
+  {
+    "中文名": "潜江市",
+    "adcode": "429005",
+    "citycode": "2728",
+    "level": "county"
+  },
+  {
+    "中文名": "天门市",
+    "adcode": "429006",
+    "citycode": "1728",
+    "level": "county"
+  },
+  {
+    "中文名": "长沙市",
+    "adcode": "430100",
+    "citycode": "0731",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "浏阳市",
+    "adcode": "430181",
+    "citycode": "0731",
+    "level": "county"
+  },
+  {
+    "中文名": "宁乡市",
+    "adcode": "430182",
+    "citycode": "0731",
+    "level": "county"
+  },
+  {
+    "中文名": "株洲市",
+    "adcode": "430200",
+    "citycode": "0733",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "醴陵市",
+    "adcode": "430281",
+    "citycode": "0733",
+    "level": "county"
+  },
+  {
+    "中文名": "湘潭市",
+    "adcode": "430300",
+    "citycode": "0732",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "湘乡市",
+    "adcode": "430381",
+    "citycode": "0732",
+    "level": "county"
+  },
+  {
+    "中文名": "韶山市",
+    "adcode": "430382",
+    "citycode": "0732",
+    "level": "county"
+  },
+  {
+    "中文名": "衡阳市",
+    "adcode": "430400",
+    "citycode": "0734",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "耒阳市",
+    "adcode": "430481",
+    "citycode": "0734",
+    "level": "county"
+  },
+  {
+    "中文名": "常宁市",
+    "adcode": "430482",
+    "citycode": "0734",
+    "level": "county"
+  },
+  {
+    "中文名": "邵阳市",
+    "adcode": "430500",
+    "citycode": "0739",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "武冈市",
+    "adcode": "430581",
+    "citycode": "0739",
+    "level": "county"
+  },
+  {
+    "中文名": "邵东市",
+    "adcode": "430582",
+    "citycode": "0739",
+    "level": "county"
+  },
+  {
+    "中文名": "岳阳市",
+    "adcode": "430600",
+    "citycode": "0730",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "汨罗市",
+    "adcode": "430681",
+    "citycode": "0730",
+    "level": "county"
+  },
+  {
+    "中文名": "临湘市",
+    "adcode": "430682",
+    "citycode": "0730",
+    "level": "county"
+  },
+  {
+    "中文名": "常德市",
+    "adcode": "430700",
+    "citycode": "0736",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "津市市",
+    "adcode": "430781",
+    "citycode": "0736",
+    "level": "county"
+  },
+  {
+    "中文名": "张家界市",
+    "adcode": "430800",
+    "citycode": "0744",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "益阳市",
+    "adcode": "430900",
+    "citycode": "0737",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "沅江市",
+    "adcode": "430981",
+    "citycode": "0737",
+    "level": "county"
+  },
+  {
+    "中文名": "郴州市",
+    "adcode": "431000",
+    "citycode": "0735",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "资兴市",
+    "adcode": "431081",
+    "citycode": "0735",
+    "level": "county"
+  },
+  {
+    "中文名": "永州市",
+    "adcode": "431100",
+    "citycode": "0746",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "祁阳市",
+    "adcode": "431181",
+    "citycode": "0746",
+    "level": "county"
+  },
+  {
+    "中文名": "怀化市",
+    "adcode": "431200",
+    "citycode": "0745",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "洪江市",
+    "adcode": "431281",
+    "citycode": "0745",
+    "level": "county"
+  },
+  {
+    "中文名": "娄底市",
+    "adcode": "431300",
+    "citycode": "0738",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "冷水江市",
+    "adcode": "431381",
+    "citycode": "0738",
+    "level": "county"
+  },
+  {
+    "中文名": "涟源市",
+    "adcode": "431382",
+    "citycode": "0738",
+    "level": "county"
+  },
+  {
+    "中文名": "吉首市",
+    "adcode": "433101",
+    "citycode": "0743",
+    "level": "county"
+  },
+  {
+    "中文名": "广州市",
+    "adcode": "440100",
+    "citycode": "020",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "韶关市",
+    "adcode": "440200",
+    "citycode": "0751",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乐昌市",
+    "adcode": "440281",
+    "citycode": "0751",
+    "level": "county"
+  },
+  {
+    "中文名": "南雄市",
+    "adcode": "440282",
+    "citycode": "0751",
+    "level": "county"
+  },
+  {
+    "中文名": "深圳市",
+    "adcode": "440300",
+    "citycode": "0755",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "珠海市",
+    "adcode": "440400",
+    "citycode": "0756",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "汕头市",
+    "adcode": "440500",
+    "citycode": "0754",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "佛山市",
+    "adcode": "440600",
+    "citycode": "0757",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "江门市",
+    "adcode": "440700",
+    "citycode": "0750",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "台山市",
+    "adcode": "440781",
+    "citycode": "0750",
+    "level": "county"
+  },
+  {
+    "中文名": "开平市",
+    "adcode": "440783",
+    "citycode": "0750",
+    "level": "county"
+  },
+  {
+    "中文名": "鹤山市",
+    "adcode": "440784",
+    "citycode": "0750",
+    "level": "county"
+  },
+  {
+    "中文名": "恩平市",
+    "adcode": "440785",
+    "citycode": "0750",
+    "level": "county"
+  },
+  {
+    "中文名": "湛江市",
+    "adcode": "440800",
+    "citycode": "0759",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "廉江市",
+    "adcode": "440881",
+    "citycode": "0759",
+    "level": "county"
+  },
+  {
+    "中文名": "雷州市",
+    "adcode": "440882",
+    "citycode": "0759",
+    "level": "county"
+  },
+  {
+    "中文名": "吴川市",
+    "adcode": "440883",
+    "citycode": "0759",
+    "level": "county"
+  },
+  {
+    "中文名": "茂名市",
+    "adcode": "440900",
+    "citycode": "0668",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "高州市",
+    "adcode": "440981",
+    "citycode": "0668",
+    "level": "county"
+  },
+  {
+    "中文名": "化州市",
+    "adcode": "440982",
+    "citycode": "0668",
+    "level": "county"
+  },
+  {
+    "中文名": "信宜市",
+    "adcode": "440983",
+    "citycode": "0668",
+    "level": "county"
+  },
+  {
+    "中文名": "肇庆市",
+    "adcode": "441200",
+    "citycode": "0758",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "四会市",
+    "adcode": "441284",
+    "citycode": "0758",
+    "level": "county"
+  },
+  {
+    "中文名": "惠州市",
+    "adcode": "441300",
+    "citycode": "0752",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "梅州市",
+    "adcode": "441400",
+    "citycode": "0753",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兴宁市",
+    "adcode": "441481",
+    "citycode": "0753",
+    "level": "county"
+  },
+  {
+    "中文名": "汕尾市",
+    "adcode": "441500",
+    "citycode": "0660",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "陆丰市",
+    "adcode": "441581",
+    "citycode": "0660",
+    "level": "county"
+  },
+  {
+    "中文名": "河源市",
+    "adcode": "441600",
+    "citycode": "0762",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "阳江市",
+    "adcode": "441700",
+    "citycode": "0662",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "阳春市",
+    "adcode": "441781",
+    "citycode": "0662",
+    "level": "county"
+  },
+  {
+    "中文名": "清远市",
+    "adcode": "441800",
+    "citycode": "0763",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "英德市",
+    "adcode": "441881",
+    "citycode": "0763",
+    "level": "county"
+  },
+  {
+    "中文名": "连州市",
+    "adcode": "441882",
+    "citycode": "0763",
+    "level": "county"
+  },
+  {
+    "中文名": "东莞市",
+    "adcode": "441900",
+    "citycode": "0769",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "中山市",
+    "adcode": "442000",
+    "citycode": "0760",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "潮州市",
+    "adcode": "445100",
+    "citycode": "0768",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "揭阳市",
+    "adcode": "445200",
+    "citycode": "0663",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "普宁市",
+    "adcode": "445281",
+    "citycode": "0663",
+    "level": "county"
+  },
+  {
+    "中文名": "云浮市",
+    "adcode": "445300",
+    "citycode": "0766",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "罗定市",
+    "adcode": "445381",
+    "citycode": "0766",
+    "level": "county"
+  },
+  {
+    "中文名": "南宁市",
+    "adcode": "450100",
+    "citycode": "0771",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "横州市",
+    "adcode": "450181",
+    "citycode": "0771",
+    "level": "county"
+  },
+  {
+    "中文名": "柳州市",
+    "adcode": "450200",
+    "citycode": "0772",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "桂林市",
+    "adcode": "450300",
+    "citycode": "0773",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "荔浦市",
+    "adcode": "450381",
+    "citycode": "0773",
+    "level": "county"
+  },
+  {
+    "中文名": "梧州市",
+    "adcode": "450400",
+    "citycode": "0774",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "岑溪市",
+    "adcode": "450481",
+    "citycode": "0774",
+    "level": "county"
+  },
+  {
+    "中文名": "北海市",
+    "adcode": "450500",
+    "citycode": "0779",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "防城港市",
+    "adcode": "450600",
+    "citycode": "0770",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "东兴市",
+    "adcode": "450681",
+    "citycode": "0770",
+    "level": "county"
+  },
+  {
+    "中文名": "钦州市",
+    "adcode": "450700",
+    "citycode": "0777",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "贵港市",
+    "adcode": "450800",
+    "citycode": "1755",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "桂平市",
+    "adcode": "450881",
+    "citycode": "1755",
+    "level": "county"
+  },
+  {
+    "中文名": "玉林市",
+    "adcode": "450900",
+    "citycode": "0775",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "北流市",
+    "adcode": "450981",
+    "citycode": "0775",
+    "level": "county"
+  },
+  {
+    "中文名": "百色市",
+    "adcode": "451000",
+    "citycode": "0776",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "靖西市",
+    "adcode": "451081",
+    "citycode": "0776",
+    "level": "county"
+  },
+  {
+    "中文名": "平果市",
+    "adcode": "451082",
+    "citycode": "0776",
+    "level": "county"
+  },
+  {
+    "中文名": "贺州市",
+    "adcode": "451100",
+    "citycode": "1774",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "河池市",
+    "adcode": "451200",
+    "citycode": "0778",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "来宾市",
+    "adcode": "451300",
+    "citycode": "1772",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "合山市",
+    "adcode": "451381",
+    "citycode": "1772",
+    "level": "county"
+  },
+  {
+    "中文名": "崇左市",
+    "adcode": "451400",
+    "citycode": "1771",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "凭祥市",
+    "adcode": "451481",
+    "citycode": "1771",
+    "level": "county"
+  },
+  {
+    "中文名": "海口市",
+    "adcode": "460100",
+    "citycode": "0898",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "三亚市",
+    "adcode": "460200",
+    "citycode": "0899",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "三沙市",
+    "adcode": "460300",
+    "citycode": "2898",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "儋州市",
+    "adcode": "460400",
+    "citycode": "0805",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "五指山市",
+    "adcode": "469001",
+    "citycode": "1897",
+    "level": "county"
+  },
+  {
+    "中文名": "琼海市",
+    "adcode": "469002",
+    "citycode": "1894",
+    "level": "county"
+  },
+  {
+    "中文名": "文昌市",
+    "adcode": "469005",
+    "citycode": "1893",
+    "level": "county"
+  },
+  {
+    "中文名": "万宁市",
+    "adcode": "469006",
+    "citycode": "1898",
+    "level": "county"
+  },
+  {
+    "中文名": "东方市",
+    "adcode": "469007",
+    "citycode": "0807",
+    "level": "county"
+  },
+  {
+    "中文名": "重庆市",
+    "adcode": "500000",
+    "citycode": "023",
+    "level": "province"
+  },
+  {
+    "中文名": "成都市",
+    "adcode": "510100",
+    "citycode": "028",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "都江堰市",
+    "adcode": "510181",
+    "citycode": "028",
+    "level": "county"
+  },
+  {
+    "中文名": "彭州市",
+    "adcode": "510182",
+    "citycode": "028",
+    "level": "county"
+  },
+  {
+    "中文名": "邛崃市",
+    "adcode": "510183",
+    "citycode": "028",
+    "level": "county"
+  },
+  {
+    "中文名": "崇州市",
+    "adcode": "510184",
+    "citycode": "028",
+    "level": "county"
+  },
+  {
+    "中文名": "简阳市",
+    "adcode": "510185",
+    "citycode": "028",
+    "level": "county"
+  },
+  {
+    "中文名": "自贡市",
+    "adcode": "510300",
+    "citycode": "0813",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "攀枝花市",
+    "adcode": "510400",
+    "citycode": "0812",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "泸州市",
+    "adcode": "510500",
+    "citycode": "0830",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "德阳市",
+    "adcode": "510600",
+    "citycode": "0838",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "广汉市",
+    "adcode": "510681",
+    "citycode": "0838",
+    "level": "county"
+  },
+  {
+    "中文名": "什邡市",
+    "adcode": "510682",
+    "citycode": "0838",
+    "level": "county"
+  },
+  {
+    "中文名": "绵竹市",
+    "adcode": "510683",
+    "citycode": "0838",
+    "level": "county"
+  },
+  {
+    "中文名": "绵阳市",
+    "adcode": "510700",
+    "citycode": "0816",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "江油市",
+    "adcode": "510781",
+    "citycode": "0816",
+    "level": "county"
+  },
+  {
+    "中文名": "广元市",
+    "adcode": "510800",
+    "citycode": "0839",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "遂宁市",
+    "adcode": "510900",
+    "citycode": "0825",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "射洪市",
+    "adcode": "510981",
+    "citycode": "0825",
+    "level": "county"
+  },
+  {
+    "中文名": "内江市",
+    "adcode": "511000",
+    "citycode": "1832",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "隆昌市",
+    "adcode": "511083",
+    "citycode": "1832",
+    "level": "county"
+  },
+  {
+    "中文名": "乐山市",
+    "adcode": "511100",
+    "citycode": "0833",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "峨眉山市",
+    "adcode": "511181",
+    "citycode": "0833",
+    "level": "county"
+  },
+  {
+    "中文名": "南充市",
+    "adcode": "511300",
+    "citycode": "0817",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "阆中市",
+    "adcode": "511381",
+    "citycode": "0817",
+    "level": "county"
+  },
+  {
+    "中文名": "眉山市",
+    "adcode": "511400",
+    "citycode": "1833",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宜宾市",
+    "adcode": "511500",
+    "citycode": "0831",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "广安市",
+    "adcode": "511600",
+    "citycode": "0826",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "华蓥市",
+    "adcode": "511681",
+    "citycode": "0826",
+    "level": "county"
+  },
+  {
+    "中文名": "达州市",
+    "adcode": "511700",
+    "citycode": "0818",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "万源市",
+    "adcode": "511781",
+    "citycode": "0818",
+    "level": "county"
+  },
+  {
+    "中文名": "雅安市",
+    "adcode": "511800",
+    "citycode": "0835",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "巴中市",
+    "adcode": "511900",
+    "citycode": "0827",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "资阳市",
+    "adcode": "512000",
+    "citycode": "0832",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "马尔康市",
+    "adcode": "513201",
+    "citycode": "0837",
+    "level": "county"
+  },
+  {
+    "中文名": "康定市",
+    "adcode": "513301",
+    "citycode": "0836",
+    "level": "county"
+  },
+  {
+    "中文名": "西昌市",
+    "adcode": "513401",
+    "citycode": "0834",
+    "level": "county"
+  },
+  {
+    "中文名": "会理市",
+    "adcode": "513402",
+    "citycode": "0834",
+    "level": "county"
+  },
+  {
+    "中文名": "贵阳市",
+    "adcode": "520100",
+    "citycode": "0851",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "清镇市",
+    "adcode": "520181",
+    "citycode": "0851",
+    "level": "county"
+  },
+  {
+    "中文名": "六盘水市",
+    "adcode": "520200",
+    "citycode": "0858",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "盘州市",
+    "adcode": "520281",
+    "citycode": "0858",
+    "level": "county"
+  },
+  {
+    "中文名": "遵义市",
+    "adcode": "520300",
+    "citycode": "0852",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "赤水市",
+    "adcode": "520381",
+    "citycode": "0852",
+    "level": "county"
+  },
+  {
+    "中文名": "仁怀市",
+    "adcode": "520382",
+    "citycode": "0852",
+    "level": "county"
+  },
+  {
+    "中文名": "安顺市",
+    "adcode": "520400",
+    "citycode": "0853",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "毕节市",
+    "adcode": "520500",
+    "citycode": "0857",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "黔西市",
+    "adcode": "520581",
+    "citycode": "0857",
+    "level": "county"
+  },
+  {
+    "中文名": "铜仁市",
+    "adcode": "520600",
+    "citycode": "0856",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兴义市",
+    "adcode": "522301",
+    "citycode": "0859",
+    "level": "county"
+  },
+  {
+    "中文名": "兴仁市",
+    "adcode": "522302",
+    "citycode": "0859",
+    "level": "county"
+  },
+  {
+    "中文名": "凯里市",
+    "adcode": "522601",
+    "citycode": "0855",
+    "level": "county"
+  },
+  {
+    "中文名": "都匀市",
+    "adcode": "522701",
+    "citycode": "0854",
+    "level": "county"
+  },
+  {
+    "中文名": "福泉市",
+    "adcode": "522702",
+    "citycode": "0854",
+    "level": "county"
+  },
+  {
+    "中文名": "昆明市",
+    "adcode": "530100",
+    "citycode": "0871",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "安宁市",
+    "adcode": "530181",
+    "citycode": "0871",
+    "level": "county"
+  },
+  {
+    "中文名": "曲靖市",
+    "adcode": "530300",
+    "citycode": "0874",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宣威市",
+    "adcode": "530381",
+    "citycode": "0874",
+    "level": "county"
+  },
+  {
+    "中文名": "玉溪市",
+    "adcode": "530400",
+    "citycode": "0877",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "澄江市",
+    "adcode": "530481",
+    "citycode": "0877",
+    "level": "county"
+  },
+  {
+    "中文名": "保山市",
+    "adcode": "530500",
+    "citycode": "0875",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "腾冲市",
+    "adcode": "530581",
+    "citycode": "0875",
+    "level": "county"
+  },
+  {
+    "中文名": "昭通市",
+    "adcode": "530600",
+    "citycode": "0870",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "水富市",
+    "adcode": "530681",
+    "citycode": "0870",
+    "level": "county"
+  },
+  {
+    "中文名": "丽江市",
+    "adcode": "530700",
+    "citycode": "0888",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "普洱市",
+    "adcode": "530800",
+    "citycode": "0879",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "临沧市",
+    "adcode": "530900",
+    "citycode": "0883",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "楚雄市",
+    "adcode": "532301",
+    "citycode": "0878",
+    "level": "county"
+  },
+  {
+    "中文名": "禄丰市",
+    "adcode": "532302",
+    "citycode": "0878",
+    "level": "county"
+  },
+  {
+    "中文名": "个旧市",
+    "adcode": "532501",
+    "citycode": "0873",
+    "level": "county"
+  },
+  {
+    "中文名": "开远市",
+    "adcode": "532502",
+    "citycode": "0873",
+    "level": "county"
+  },
+  {
+    "中文名": "蒙自市",
+    "adcode": "532503",
+    "citycode": "0873",
+    "level": "county"
+  },
+  {
+    "中文名": "弥勒市",
+    "adcode": "532504",
+    "citycode": "0873",
+    "level": "county"
+  },
+  {
+    "中文名": "文山市",
+    "adcode": "532601",
+    "citycode": "0876",
+    "level": "county"
+  },
+  {
+    "中文名": "景洪市",
+    "adcode": "532801",
+    "citycode": "0691",
+    "level": "county"
+  },
+  {
+    "中文名": "大理市",
+    "adcode": "532901",
+    "citycode": "0872",
+    "level": "county"
+  },
+  {
+    "中文名": "瑞丽市",
+    "adcode": "533102",
+    "citycode": "0692",
+    "level": "county"
+  },
+  {
+    "中文名": "芒市",
+    "adcode": "533103",
+    "citycode": "0692",
+    "level": "county"
+  },
+  {
+    "中文名": "泸水市",
+    "adcode": "533301",
+    "citycode": "0886",
+    "level": "county"
+  },
+  {
+    "中文名": "香格里拉市",
+    "adcode": "533401",
+    "citycode": "0887",
+    "level": "county"
+  },
+  {
+    "中文名": "拉萨市",
+    "adcode": "540100",
+    "citycode": "0891",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "日喀则市",
+    "adcode": "540200",
+    "citycode": "0892",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "昌都市",
+    "adcode": "540300",
+    "citycode": "0895",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "林芝市",
+    "adcode": "540400",
+    "citycode": "0894",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "米林市",
+    "adcode": "540481",
+    "citycode": "0894",
+    "level": "county"
+  },
+  {
+    "中文名": "山南市",
+    "adcode": "540500",
+    "citycode": "0893",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "错那市",
+    "adcode": "540581",
+    "citycode": "0893",
+    "level": "county"
+  },
+  {
+    "中文名": "那曲市",
+    "adcode": "540600",
+    "citycode": "0896",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "西安市",
+    "adcode": "610100",
+    "citycode": "029",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "铜川市",
+    "adcode": "610200",
+    "citycode": "0919",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "宝鸡市",
+    "adcode": "610300",
+    "citycode": "0917",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "咸阳市",
+    "adcode": "610400",
+    "citycode": "0910",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兴平市",
+    "adcode": "610481",
+    "citycode": "0910",
+    "level": "county"
+  },
+  {
+    "中文名": "彬州市",
+    "adcode": "610482",
+    "citycode": "0910",
+    "level": "county"
+  },
+  {
+    "中文名": "渭南市",
+    "adcode": "610500",
+    "citycode": "0913",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "韩城市",
+    "adcode": "610581",
+    "citycode": "0913",
+    "level": "county"
+  },
+  {
+    "中文名": "华阴市",
+    "adcode": "610582",
+    "citycode": "0913",
+    "level": "county"
+  },
+  {
+    "中文名": "延安市",
+    "adcode": "610600",
+    "citycode": "0911",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "子长市",
+    "adcode": "610681",
+    "citycode": "0911",
+    "level": "county"
+  },
+  {
+    "中文名": "汉中市",
+    "adcode": "610700",
+    "citycode": "0916",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "榆林市",
+    "adcode": "610800",
+    "citycode": "0912",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "神木市",
+    "adcode": "610881",
+    "citycode": "0912",
+    "level": "county"
+  },
+  {
+    "中文名": "安康市",
+    "adcode": "610900",
+    "citycode": "0915",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "旬阳市",
+    "adcode": "610981",
+    "citycode": "0915",
+    "level": "county"
+  },
+  {
+    "中文名": "商洛市",
+    "adcode": "611000",
+    "citycode": "0914",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "兰州市",
+    "adcode": "620100",
+    "citycode": "0931",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "嘉峪关市",
+    "adcode": "620200",
+    "citycode": "1937",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "金昌市",
+    "adcode": "620300",
+    "citycode": "0935",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "白银市",
+    "adcode": "620400",
+    "citycode": "0943",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "天水市",
+    "adcode": "620500",
+    "citycode": "0938",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "武威市",
+    "adcode": "620600",
+    "citycode": "1935",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "张掖市",
+    "adcode": "620700",
+    "citycode": "0936",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "平凉市",
+    "adcode": "620800",
+    "citycode": "0933",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "华亭市",
+    "adcode": "620881",
+    "citycode": "0933",
+    "level": "county"
+  },
+  {
+    "中文名": "酒泉市",
+    "adcode": "620900",
+    "citycode": "0937",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "玉门市",
+    "adcode": "620981",
+    "citycode": "0937",
+    "level": "county"
+  },
+  {
+    "中文名": "敦煌市",
+    "adcode": "620982",
+    "citycode": "0937",
+    "level": "county"
+  },
+  {
+    "中文名": "庆阳市",
+    "adcode": "621000",
+    "citycode": "0934",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "定西市",
+    "adcode": "621100",
+    "citycode": "0932",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "陇南市",
+    "adcode": "621200",
+    "citycode": "2935",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "临夏市",
+    "adcode": "622901",
+    "citycode": "0930",
+    "level": "county"
+  },
+  {
+    "中文名": "合作市",
+    "adcode": "623001",
+    "citycode": "0941",
+    "level": "county"
+  },
+  {
+    "中文名": "西宁市",
+    "adcode": "630100",
+    "citycode": "0971",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "海东市",
+    "adcode": "630200",
+    "citycode": "0972",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "同仁市",
+    "adcode": "632301",
+    "citycode": "0973",
+    "level": "county"
+  },
+  {
+    "中文名": "玉树市",
+    "adcode": "632701",
+    "citycode": "0976",
+    "level": "county"
+  },
+  {
+    "中文名": "格尔木市",
+    "adcode": "632801",
+    "citycode": "0977",
+    "level": "county"
+  },
+  {
+    "中文名": "德令哈市",
+    "adcode": "632802",
+    "citycode": "0977",
+    "level": "county"
+  },
+  {
+    "中文名": "茫崖市",
+    "adcode": "632803",
+    "citycode": "0977",
+    "level": "county"
+  },
+  {
+    "中文名": "银川市",
+    "adcode": "640100",
+    "citycode": "0951",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "灵武市",
+    "adcode": "640181",
+    "citycode": "0951",
+    "level": "county"
+  },
+  {
+    "中文名": "石嘴山市",
+    "adcode": "640200",
+    "citycode": "0952",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "吴忠市",
+    "adcode": "640300",
+    "citycode": "0953",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "青铜峡市",
+    "adcode": "640381",
+    "citycode": "0953",
+    "level": "county"
+  },
+  {
+    "中文名": "固原市",
+    "adcode": "640400",
+    "citycode": "0954",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "中卫市",
+    "adcode": "640500",
+    "citycode": "1953",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "乌鲁木齐市",
+    "adcode": "650100",
+    "citycode": "0991",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "克拉玛依市",
+    "adcode": "650200",
+    "citycode": "0990",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "吐鲁番市",
+    "adcode": "650400",
+    "citycode": "0995",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "哈密市",
+    "adcode": "650500",
+    "citycode": "0902",
+    "level": "prefecture"
+  },
+  {
+    "中文名": "昌吉市",
+    "adcode": "652301",
+    "citycode": "0994",
+    "level": "county"
+  },
+  {
+    "中文名": "阜康市",
+    "adcode": "652302",
+    "citycode": "0994",
+    "level": "county"
+  },
+  {
+    "中文名": "博乐市",
+    "adcode": "652701",
+    "citycode": "0909",
+    "level": "county"
+  },
+  {
+    "中文名": "阿拉山口市",
+    "adcode": "652702",
+    "citycode": "0909",
+    "level": "county"
+  },
+  {
+    "中文名": "库尔勒市",
+    "adcode": "652801",
+    "citycode": "0996",
+    "level": "county"
+  },
+  {
+    "中文名": "阿克苏市",
+    "adcode": "652901",
+    "citycode": "0997",
+    "level": "county"
+  },
+  {
+    "中文名": "库车市",
+    "adcode": "652902",
+    "citycode": "0997",
+    "level": "county"
+  },
+  {
+    "中文名": "阿图什市",
+    "adcode": "653001",
+    "citycode": "0908",
+    "level": "county"
+  },
+  {
+    "中文名": "喀什市",
+    "adcode": "653101",
+    "citycode": "0998",
+    "level": "county"
+  },
+  {
+    "中文名": "和田市",
+    "adcode": "653201",
+    "citycode": "0903",
+    "level": "county"
+  },
+  {
+    "中文名": "伊宁市",
+    "adcode": "654002",
+    "citycode": "0999",
+    "level": "county"
+  },
+  {
+    "中文名": "奎屯市",
+    "adcode": "654003",
+    "citycode": "0999",
+    "level": "county"
+  },
+  {
+    "中文名": "霍尔果斯市",
+    "adcode": "654004",
+    "citycode": "0999",
+    "level": "county"
+  },
+  {
+    "中文名": "塔城市",
+    "adcode": "654201",
+    "citycode": "0901",
+    "level": "county"
+  },
+  {
+    "中文名": "乌苏市",
+    "adcode": "654202",
+    "citycode": "0901",
+    "level": "county"
+  },
+  {
+    "中文名": "沙湾市",
+    "adcode": "654203",
+    "citycode": "0901",
+    "level": "county"
+  },
+  {
+    "中文名": "阿勒泰市",
+    "adcode": "654301",
+    "citycode": "0906",
+    "level": "county"
+  },
+  {
+    "中文名": "石河子市",
+    "adcode": "659001",
+    "citycode": "0993",
+    "level": "county"
+  },
+  {
+    "中文名": "阿拉尔市",
+    "adcode": "659002",
+    "citycode": "1997",
+    "level": "county"
+  },
+  {
+    "中文名": "图木舒克市",
+    "adcode": "659003",
+    "citycode": "1998",
+    "level": "county"
+  },
+  {
+    "中文名": "五家渠市",
+    "adcode": "659004",
+    "citycode": "1994",
+    "level": "county"
+  },
+  {
+    "中文名": "北屯市",
+    "adcode": "659005",
+    "citycode": "1906",
+    "level": "county"
+  },
+  {
+    "中文名": "铁门关市",
+    "adcode": "659006",
+    "citycode": "1996",
+    "level": "county"
+  },
+  {
+    "中文名": "双河市",
+    "adcode": "659007",
+    "citycode": "1909",
+    "level": "county"
+  },
+  {
+    "中文名": "可克达拉市",
+    "adcode": "659008",
+    "citycode": "1999",
+    "level": "county"
+  },
+  {
+    "中文名": "昆玉市",
+    "adcode": "659009",
+    "citycode": "1903",
+    "level": "county"
+  },
+  {
+    "中文名": "胡杨河市",
+    "adcode": "659010",
+    "citycode": "0992",
+    "level": "county"
+  },
+  {
+    "中文名": "新星市",
+    "adcode": "659011",
+    "citycode": "2940",
+    "level": "county"
+  },
+  {
+    "中文名": "白杨市",
+    "adcode": "659012",
+    "citycode": "2941",
+    "level": "county"
+  }
+]
