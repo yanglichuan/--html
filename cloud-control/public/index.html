@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>云控系统 | 高级管理后台</title>
+    <!-- 使用更稳定的 CDN -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --accent: #38bdf8;
+        }
+
+        body { 
+            background-color: var(--bg-dark); 
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding-top: 30px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1000px; }
+
+        /* 玻璃拟态卡片 */
+        .card { 
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 16px 16px 0 0 !important;
+        }
+
+        .table { color: var(--text-main); margin-bottom: 0; }
+        .table th { border-top: none; color: var(--text-dim); font-weight: 500; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .table td { vertical-align: middle; border-color: rgba(255, 255, 255, 0.05); padding: 1rem; }
+        .table tbody tr:hover { background: rgba(255, 255, 255, 0.02); }
+
+        code { background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.9rem; }
+
+        .btn-primary { background: var(--primary-color); border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 500; transition: all 0.3s; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4); }
+
+        .btn-action { width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; margin-left: 0.5rem; transition: all 0.2s; }
+        .btn-edit { color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); background: transparent; }
+        .btn-edit:hover { background: var(--accent); color: white; }
+        .btn-delete { color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); background: transparent; }
+        .btn-delete:hover { background: #f43f5e; color: white; }
+
+        /* 模态框美化 */
+        .modal-content { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.1); color: var(--text-main); border-radius: 20px; }
+        .modal-header, .modal-footer { border-color: rgba(255, 255, 255, 0.1); }
+        .form-control { background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); color: white; border-radius: 8px; }
+        .form-control:focus { background: #0f172a; border-color: var(--accent); color: white; box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.2); }
+        
+        .status-badge { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 20px; background: rgba(34, 197, 94, 0.1); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.2); }
+
+        .header-section { margin-bottom: 3rem; text-align: center; }
+        .header-section h1 { font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem; background: linear-gradient(to right, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .header-section p { color: var(--text-dim); }
+
+        /* 动画 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section fade-in">
+        <h1><i class="fas fa-cloud-bolt me-2"></i> 云控系统配置</h1>
+        <p>管理您的远程 K-V 配置项，实时生效到客户端</p>
+    </div>
+
+    <div class="card fade-in" style="animation-delay: 0.1s;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <span class="status-badge"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i> 服务运行中</span>
+            </div>
+            <button class="btn btn-primary" onclick="showAddModal()">
+                <i class="fas fa-plus me-2"></i>添加配置
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">键 (KEY)</th>
+                            <th>配置内容 (VALUE)</th>
+                            <th class="text-end pe-4">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="configList">
+                        <!-- 数据加载 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 模态框 -->
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">编辑配置</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-3">
+                    <label class="form-label text-dim small">键名 (唯一标识)</label>
+                    <input type="text" id="configKey" class="form-control" placeholder="例如: api_endpoint">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label text-dim small">配置内容</label>
+                    <textarea id="configValue" class="form-control" rows="4" placeholder="支持文本、JSON、URL 等..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-link text-dim text-decoration-none" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary px-4" onclick="saveConfig()">确认保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+<script>
+    const API_BASE = '/admin/api';
+    let configModal;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        configModal = new bootstrap.Modal(document.getElementById('configModal'));
+        loadConfigs();
+    });
+
+    async function loadConfigs() {
+        try {
+            const res = await fetch(`${API_BASE}/configs`);
+            const data = await res.json();
+            const tbody = document.getElementById('configList');
+            tbody.innerHTML = '';
+            
+            data.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'fade-in';
+                tr.style.animationDelay = `${0.1 + index * 0.05}s`;
+                tr.innerHTML = `
+                    <td class="ps-4"><code>${item.key}</code></td>
+                    <td><span class="text-truncate d-inline-block" style="max-width: 400px;">${item.value}</span></td>
+                    <td class="text-end pe-4">
+                        <button class="btn-action btn-edit" title="编辑" onclick="editConfig('${item.key}', '${item.value.replace(/'/g, "\\'").replace(/\n/g, "\\n")}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-action btn-delete" title="删除" onclick="deleteConfig('${item.key}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error('加载失败:', err);
+        }
+    }
+
+    function showAddModal() {
+        document.getElementById('modalTitle').innerText = '添加新配置';
+        document.getElementById('configKey').value = '';
+        document.getElementById('configKey').disabled = false;
+        document.getElementById('configValue').value = '';
+        configModal.show();
+    }
+
+    function editConfig(key, value) {
+        document.getElementById('modalTitle').innerText = '编辑配置';
+        document.getElementById('configKey').value = key;
+        document.getElementById('configKey').disabled = true;
+        document.getElementById('configValue').value = value;
+        configModal.show();
+    }
+
+    async function saveConfig() {
+        const key = document.getElementById('configKey').value;
+        const value = document.getElementById('configValue').value;
+        
+        if (!key) return alert('请输入 Key');
+
+        try {
+            const res = await fetch(`${API_BASE}/configs`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key, value })
+            });
+            if (res.ok) {
+                configModal.hide();
+                loadConfigs();
+            } else {
+                const data = await res.json();
+                alert('保存失败: ' + data.message);
+            }
+        } catch (err) {
+            alert('网络错误');
+        }
+    }
+
+    async function deleteConfig(key) {
+        if (!confirm(`确定要彻底删除配置 [${key}] 吗？`)) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/configs/${key}`, { method: 'DELETE' });
+            if (res.ok) {
+                loadConfigs();
+            } else {
+                alert('删除失败');
+            }
+        } catch (err) {
+            alert('网络错误');
+        }
+    }
+</script>
+
+</body>
+</html>
