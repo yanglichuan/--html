@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本地媒体服务器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .video-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .video-list-item:hover {
+            background-color: #f3f4f6;
+            cursor: pointer;
+        }
+        .video-list-item.active {
+            background-color: #e5e7eb;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 flex items-center justify-between">
+            <h1 class="text-3xl font-bold text-gray-800">
+                <i class="fas fa-film text-blue-600 mr-2"></i>本地媒体服务器
+            </h1>
+            <div class="text-sm text-gray-500" id="video-count">加载中...</div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- 播放器区域 -->
+            <div class="lg:col-span-2">
+                <div class="video-container mb-4">
+                    <video id="video-player" controls class="w-full aspect-video">
+                        您的浏览器不支持 HTML5 视频播放。
+                    </video>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm">
+                    <h2 id="current-video-title" class="text-xl font-semibold text-gray-800 mb-2">未选择视频</h2>
+                    <p id="current-video-info" class="text-gray-500">请从右侧列表选择一个视频进行播放</p>
+                </div>
+            </div>
+
+            <!-- 列表区域 -->
+            <div class="bg-white rounded-xl shadow-sm flex flex-col h-[600px]">
+                <div class="p-4 border-b">
+                    <h3 class="font-bold text-gray-700 flex items-center">
+                        <i class="fas fa-list-ul mr-2 text-blue-500"></i>视频库
+                    </h3>
+                </div>
+                <div id="video-list" class="flex-1 overflow-y-auto p-2">
+                    <!-- 视频列表项将在这里动态生成 -->
+                    <div class="text-center py-8 text-gray-400">正在搜索视频文件...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-b-xl text-xs text-gray-400">
+                    <p>视频存放路径: <br><code class="bg-gray-200 px-1 rounded">media_server/videos/</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const videoPlayer = document.getElementById('video-player');
+        const videoList = document.getElementById('video-list');
+        const currentTitle = document.getElementById('current-video-title');
+        const currentInfo = document.getElementById('current-video-info');
+        const videoCount = document.getElementById('video-count');
+
+        let videos = [];
+
+        async function fetchVideos() {
+            try {
+                const response = await fetch('/api/videos');
+                videos = await response.json();
+                renderVideoList();
+                videoCount.textContent = `共 ${videos.length} 个视频`;
+            } catch (error) {
+                console.error('获取视频列表失败:', error);
+                videoList.innerHTML = '<div class="text-red-500 p-4">无法连接到服务器</div>';
+            }
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function renderVideoList() {
+            if (videos.length === 0) {
+                videoList.innerHTML = `
+                    <div class="text-center py-8">
+                        <p class="text-gray-400 mb-2">未发现视频文件</p>
+                        <p class="text-xs text-gray-400">请将 MP4 文件放入 videos 目录</p>
+                    </div>`;
+                return;
+            }
+
+            videoList.innerHTML = videos.map((video, index) => `
+                <div class="video-list-item p-3 mb-2 rounded-lg transition-all border border-transparent" 
+                     onclick="playVideo('${video.name}', ${index})">
+                    <div class="flex items-center">
+                        <div class="bg-blue-100 p-2 rounded mr-3">
+                            <i class="fas fa-play text-blue-600 text-xs"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-gray-800 truncate">${video.name}</div>
+                            <div class="text-xs text-gray-500">${formatSize(video.size)}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function playVideo(name, index) {
+            // 更新 UI 状态
+            document.querySelectorAll('.video-list-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+
+            // 切换视频源
+            videoPlayer.src = `/video/${encodeURIComponent(name)}`;
+            videoPlayer.play();
+
+            // 更新详情
+            currentTitle.textContent = name;
+            currentInfo.textContent = `文件大小: ${formatSize(videos[index].size)}`;
+        }
+
+        // 初始加载
+        fetchVideos();
+    </script>
+</body>
+</html>
