@@ -21,6 +21,26 @@
             background-color: #e5e7eb;
             border-left: 4px solid #3b82f6;
         }
+        .folder-header {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        .folder-header:hover {
+            background-color: #f9fafb;
+        }
+        .folder-content {
+            display: none; /* 默认折叠 */
+        }
+        .folder-content.open {
+            display: block;
+        }
+        .folder-icon {
+            transition: transform 0.2s;
+        }
+        .folder-header.open .folder-icon {
+            transform: rotate(90deg);
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -77,11 +97,90 @@
             try {
                 const response = await fetch('/api/videos');
                 videos = await response.json();
-                renderVideoList();
+                videoList.innerHTML = '';
                 videoCount.textContent = `共 ${videos.length} 个视频`;
+
+                let currentFolder = null;
+                let currentFolderContent = null;
+                let folderIdCounter = 0;
+
+                videos.forEach((video, index) => {
+                    // 如果进入了新文件夹，创建新的折叠块
+                    if (video.folder && video.folder !== currentFolder) {
+                        currentFolder = video.folder;
+                        folderIdCounter++;
+                        const folderId = `folder-${folderIdCounter}`;
+
+                        const folderWrapper = document.createElement('div');
+                        folderWrapper.className = 'mb-2';
+                        
+                        const folderHeader = document.createElement('div');
+                        folderHeader.className = 'folder-header px-2 py-2 mt-2 flex items-center justify-between rounded-lg';
+                        folderHeader.onclick = () => toggleFolder(folderId, folderHeader);
+                        folderHeader.innerHTML = `
+                            <div class="flex items-center text-sm font-bold text-gray-600 uppercase tracking-wider truncate mr-2">
+                                <i class="fas fa-chevron-right folder-icon mr-2 text-gray-400 text-xs"></i>
+                                <i class="fas fa-folder mr-2 text-blue-500"></i>
+                                <span class="truncate">${video.folder}</span>
+                            </div>
+                            <span class="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">
+                                ${videos.filter(v => v.folder === currentFolder).length}
+                            </span>
+                        `;
+                        
+                        currentFolderContent = document.createElement('div');
+                        currentFolderContent.id = folderId;
+                        currentFolderContent.className = 'folder-content pl-4 mt-1';
+                        
+                        folderWrapper.appendChild(folderHeader);
+                        folderWrapper.appendChild(currentFolderContent);
+                        videoList.appendChild(folderWrapper);
+                    }
+
+                    const item = document.createElement('div');
+                    item.className = 'video-list-item p-2 mb-1 rounded-lg transition-all border border-transparent';
+                    item.onclick = (e) => {
+                        e.stopPropagation();
+                        playVideo(video.path, index, item);
+                    };
+                    
+                    item.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="bg-blue-50 p-1.5 rounded mr-3">
+                                <i class="fas fa-play text-blue-600 text-[10px]"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-medium text-gray-700 truncate" title="${video.name}">${video.name}</div>
+                                <div class="text-[10px] text-gray-400">${formatSize(video.size)}</div>
+                            </div>
+                        </div>
+                    `;
+                    currentFolderContent.appendChild(item);
+                });
+
+                if (videos.length === 0) {
+                    videoList.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-gray-400 mb-2">未发现视频文件</p>
+                            <p class="text-xs text-gray-400">请检查外部磁盘是否已挂载</p>
+                        </div>`;
+                }
             } catch (error) {
                 console.error('获取视频列表失败:', error);
                 videoList.innerHTML = '<div class="text-red-500 p-4">无法连接到服务器</div>';
+            }
+        }
+
+        function toggleFolder(folderId, headerElement) {
+            const content = document.getElementById(folderId);
+            const isOpen = content.classList.contains('open');
+            
+            if (isOpen) {
+                content.classList.remove('open');
+                headerElement.classList.remove('open');
+            } else {
+                content.classList.add('open');
+                headerElement.classList.add('open');
             }
         }
 
@@ -93,45 +192,23 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function renderVideoList() {
-            if (videos.length === 0) {
-                videoList.innerHTML = `
-                    <div class="text-center py-8">
-                        <p class="text-gray-400 mb-2">未发现视频文件</p>
-                        <p class="text-xs text-gray-400">请检查外部磁盘是否已挂载</p>
-                    </div>`;
-                return;
+        function playVideo(path, index, element) {
+            // 更新 UI 状态：移除所有视频项的激活状态，仅给当前点击的添加
+            document.querySelectorAll('.video-list-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (element) {
+                element.classList.add('active');
             }
 
-            videoList.innerHTML = videos.map((video, index) => `
-                <div class="video-list-item p-3 mb-2 rounded-lg transition-all border border-transparent" 
-                     onclick="playVideo('${video.path.replace(/'/g, "\\'")}', ${index})">
-                    <div class="flex items-center">
-                        <div class="bg-blue-100 p-2 rounded mr-3">
-                            <i class="fas fa-play text-blue-600 text-xs"></i>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium text-gray-800 truncate" title="${video.name}">${video.name}</div>
-                            <div class="text-xs text-gray-500">${formatSize(video.size)}</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function playVideo(path, index) {
-            // 更新 UI 状态
-            document.querySelectorAll('.video-list-item').forEach((item, i) => {
-                item.classList.toggle('active', i === index);
-            });
-
             // 切换视频源
-            videoPlayer.src = `/video/${encodeURIComponent(path)}`;
+            const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+            videoPlayer.src = `/video/${encodedPath}`;
             videoPlayer.play();
 
             // 更新详情
             currentTitle.textContent = videos[index].name;
-            currentInfo.textContent = `文件路径: ${videos[index].path} | 大小: ${formatSize(videos[index].size)}`;
+            currentInfo.textContent = `所在目录: ${videos[index].folder} | 大小: ${formatSize(videos[index].size)} | 路径: ${path}`;
         }
 
         // 初始加载

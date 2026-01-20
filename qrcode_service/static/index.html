@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二维码生成服务</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden p-8">
+        <div class="text-center mb-8">
+            <div class="inline-block p-4 bg-indigo-100 rounded-full mb-4">
+                <i class="fas fa-qrcode text-indigo-600 text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-800">二维码生成器</h1>
+            <p class="text-gray-500 mt-2">输入 URL 链接，即刻生成二维码</p>
+        </div>
+
+        <div class="space-y-6">
+            <div>
+                <label for="url-input" class="block text-sm font-medium text-gray-700 mb-2">URL 链接</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-link text-gray-400"></i>
+                    </div>
+                    <input type="text" id="url-input" 
+                           class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all"
+                           placeholder="https://example.com">
+                </div>
+            </div>
+
+            <button onclick="generateQR()" id="generate-btn"
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                生成二维码
+            </button>
+
+            <div id="result-container" class="hidden mt-8 pt-8 border-t border-gray-100 text-center">
+                <div class="bg-gray-50 p-4 rounded-xl inline-block mb-4">
+                    <img id="qr-image" src="" alt="二维码" class="mx-auto max-w-full h-auto shadow-sm rounded-lg">
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="downloadQR()" 
+                            class="flex-1 flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                        <i class="fas fa-download mr-2"></i> 下载
+                    </button>
+                    <button onclick="copyImageURL()" 
+                            class="flex-1 flex items-center justify-center py-2 px-4 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-all">
+                        <i class="fas fa-copy mr-2"></i> 复制链接
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-xs text-gray-400">
+            由 FastAPI & qrcode 提供驱动
+        </div>
+    </div>
+
+    <script>
+        const urlInput = document.getElementById('url-input');
+        const qrImage = document.getElementById('qr-image');
+        const resultContainer = document.getElementById('result-container');
+        const generateBtn = document.getElementById('generate-btn');
+
+        async function generateQR() {
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('请输入有效的 URL');
+                return;
+            }
+
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 生成中...';
+
+            try {
+                // 生成二维码图片的 API URL
+                const qrUrl = `/generate?url=${encodeURIComponent(url)}`;
+                
+                // 预加载图片以确保生成成功
+                const img = new Image();
+                img.onload = () => {
+                    qrImage.src = qrUrl;
+                    resultContainer.classList.remove('hidden');
+                    generateBtn.disabled = false;
+                    generateBtn.innerHTML = '生成二维码';
+                };
+                img.onerror = () => {
+                    throw new Error('生成二维码失败');
+                };
+                img.src = qrUrl;
+
+            } catch (error) {
+                alert(error.message);
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '生成二维码';
+            }
+        }
+
+        function downloadQR() {
+            const link = document.createElement('a');
+            link.href = qrImage.src;
+            link.download = 'qrcode.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function copyImageURL() {
+            const fullUrl = window.location.origin + qrImage.getAttribute('src');
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                alert('二维码链接已复制到剪贴板');
+            });
+        }
+
+        // 支持回车触发
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') generateQR();
+        });
+    </script>
+</body>
+</html>

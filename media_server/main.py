@@ -1,15 +1,25 @@
 import os
 import re
 import mimetypes
+import concurrent.futures
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict
 from fastapi import FastAPI, HTTPException, Request, Header
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Local Media Server")
 
+# 简单的内存缓存
+VIDEO_CACHE: Dict = {
+    "data": [],
+    "last_updated": 0,
+    "expiry": 600  # 10分钟缓存
+}
+
 # 配置 CORS
+# ... (keep existing middleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,17 +28,93 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-VIDEO_DIR = Path("/Volumes/T2/64G.周星驰.国语")
+VIDEO_DIR = Path("/Volumes/T2")
+EXTENSIONS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"}
 
-def get_video_path(video_name: str) -> Path:
-    # 确保视频名称安全并正确连接
-    # 支持传入相对路径，以便播放子目录中的文件
-    path = (VIDEO_DIR / video_name).resolve()
-    if not str(path).startswith(str(VIDEO_DIR.resolve())):
-        raise HTTPException(status_code=403, detail="Access denied")
-    if not path.exists() or not path.is_file():
-        raise HTTPException(status_code=404, detail=f"Video not found: {video_name}")
-    return path
+def scan_directory(directory: Path) -> List[dict]:
+    """扫描单个目录及其子目录中的视频文件，但归类到顶层目录"""
+    local_videos = []
+    # 确定该目录相对于 VIDEO_DIR 的顶层名称
+    try:
+        rel_top = directory.relative_to(VIDEO_DIR)
+        top_folder_name = rel_top.parts[0] if rel_top.parts else "根目录"
+    except Exception:
+        top_folder_name = "未知目录"
+
+    try:
+        for root, dirs, files in os.walk(directory):
+            # 过滤掉隐藏目录
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d != "System Volume Information" and d != ".Trashes"]
+            
+            for file in files:
+                if file.startswith("._") or file.startswith("."):
+                    continue
+                    
+                ext = os.path.splitext(file)[1].lower()
+                if ext in EXTENSIONS:
+                    file_path = Path(root) / file
+                    try:
+                        rel_path = file_path.relative_to(VIDEO_DIR)
+                        local_videos.append({
+                            "name": file,
+                            "folder": top_folder_name, # 只记录顶层目录名
+                            "path": str(rel_path),
+                            "size": file_path.stat().st_size
+                        })
+                    except Exception:
+                        continue
+    except Exception as e:
+        print(f"Error scanning {directory}: {e}")
+    return local_videos
+
+@app.get("/api/videos")
+async def list_videos(refresh: bool = False):
+    global VIDEO_CACHE
+    
+    # 检查缓存是否有效
+    now = time.time()
+    if not refresh and VIDEO_CACHE["data"] and (now - VIDEO_CACHE["last_updated"] < VIDEO_CACHE["expiry"]):
+        return VIDEO_CACHE["data"]
+
+    # 获取第一层目录进行并行扫描
+    try:
+        top_level_items = [VIDEO_DIR / item for item in os.listdir(VIDEO_DIR) 
+                          if (VIDEO_DIR / item).is_dir() and not item.startswith(".")]
+        # 也包含根目录下的文件
+        root_files = [VIDEO_DIR / item for item in os.listdir(VIDEO_DIR) 
+                     if (VIDEO_DIR / item).is_file() and not item.startswith(".")]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"无法访问磁盘: {e}")
+
+    all_videos = []
+    
+    # 使用线程池并行扫描
+    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+        # 扫描子目录
+        future_to_dir = {executor.submit(scan_directory, d): d for d in top_level_items}
+        
+        # 处理根目录下的文件
+        for file_path in root_files:
+            ext = file_path.suffix.lower()
+            if ext in EXTENSIONS:
+                all_videos.append({
+                    "name": file_path.name,
+                    "folder": "根目录",
+                    "path": file_path.name,
+                    "size": file_path.stat().st_size
+                })
+
+        for future in concurrent.futures.as_completed(future_to_dir):
+            all_videos.extend(future.result())
+    
+    # 先按文件夹排序，再按文件名排序
+    sorted_videos = sorted(all_videos, key=lambda x: (x["folder"], x["name"]))
+    
+    # 更新缓存
+    VIDEO_CACHE["data"] = sorted_videos
+    VIDEO_CACHE["last_updated"] = time.time()
+    
+    return sorted_videos
 
 @app.get("/", response_class=HTMLResponse)
 async def index():
@@ -38,40 +124,35 @@ async def index():
     with open(index_path, "r", encoding="utf-8") as f:
         return f.read()
 
-@app.get("/api/videos")
-async def list_videos():
-    videos = []
-    # 支持更多常见格式
-    extensions = [".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"]
+def get_video_path(video_name: str) -> Path:
+    # FastAPI path 自动处理了 URL 解码，但为了保险我们手动处理一下可能存在的编码问题
+    from urllib.parse import unquote
+    decoded_name = unquote(video_name)
     
-    # 递归扫描所有子目录
-    for ext in extensions:
-        # 使用 rglob 进行递归搜索
-        for v in VIDEO_DIR.rglob(f"*{ext}"):
-            # 过滤掉 macOS 的隐藏元数据文件 (._ 开头的文件)
-            if v.name.startswith("._"):
-                continue
-                
-            # 获取相对于 VIDEO_DIR 的路径，作为前端调用的标识
-            rel_path = v.relative_to(VIDEO_DIR)
-            videos.append({
-                "name": v.name,
-                "path": str(rel_path),
-                "size": v.stat().st_size
-            })
+    # 尝试多种路径拼接方式
+    potential_paths = [
+        VIDEO_DIR / decoded_name,
+        VIDEO_DIR / video_name
+    ]
     
-    # 按名称排序
-    return sorted(videos, key=lambda x: x["name"])
+    for path in potential_paths:
+        if path.exists() and path.is_file():
+            # 安全检查：确保路径在 VIDEO_DIR 范围内
+            if str(path.resolve()).startswith(str(VIDEO_DIR.resolve())):
+                return path
+    
+    # 如果都没找到，打印详细信息用于调试
+    print(f"DEBUG: Video not found. VIDEO_DIR={VIDEO_DIR}, video_name={video_name}, decoded_name={decoded_name}")
+    raise HTTPException(status_code=404, detail=f"Video not found: {decoded_name}")
 
-@app.get("/video/{video_name}")
+@app.get("/video/{video_name:path}")
 async def stream_video(video_name: str, request: Request, range: Optional[str] = Header(None)):
     video_path = get_video_path(video_name)
     file_size = video_path.stat().st_size
     
-    # 自动识别 MIME 类型
     mime_type, _ = mimetypes.guess_type(video_path)
     if not mime_type:
-        mime_type = "video/mp4"  # 默认值
+        mime_type = "video/mp4"
     
     start, end = 0, file_size - 1
     status_code = 200
@@ -84,25 +165,32 @@ async def stream_video(video_name: str, request: Request, range: Optional[str] =
                 end = int(match.group(2))
             status_code = 206
     
-    # 限制单次读取大小，防止占用过多内存，但保持响应范围逻辑正确
-    requested_length = end - start + 1
-    max_chunk = 1024 * 1024 * 2  # 2MB chunks
-    actual_end = min(start + max_chunk - 1, end)
-    content_length = actual_end - start + 1
+    # 确保范围有效
+    if start > end or start < 0 or end >= file_size:
+        raise HTTPException(status_code=416, detail="Requested range not satisfiable")
 
-    def generate():
+    content_length = end - start + 1
+    
+    def generate_chunks(chunk_size=1024 * 1024): # 1MB chunks
         with open(video_path, "rb") as video:
             video.seek(start)
-            yield video.read(content_length)
+            remaining = content_length
+            while remaining > 0:
+                to_read = min(chunk_size, remaining)
+                data = video.read(to_read)
+                if not data:
+                    break
+                yield data
+                remaining -= len(data)
 
     headers = {
-        "Content-Range": f"bytes {start}-{actual_end}/{file_size}",
+        "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Accept-Ranges": "bytes",
         "Content-Length": str(content_length),
         "Content-Type": mime_type,
     }
     
-    return StreamingResponse(generate(), status_code=status_code, headers=headers)
+    return StreamingResponse(generate_chunks(), status_code=status_code, headers=headers)
 
 if __name__ == "__main__":
     import uvicorn
