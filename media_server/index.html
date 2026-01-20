@@ -98,20 +98,20 @@
                 videoList.innerHTML = `
                     <div class="text-center py-8">
                         <p class="text-gray-400 mb-2">未发现视频文件</p>
-                        <p class="text-xs text-gray-400">请将 MP4 文件放入 videos 目录</p>
+                        <p class="text-xs text-gray-400">请检查外部磁盘是否已挂载</p>
                     </div>`;
                 return;
             }
 
             videoList.innerHTML = videos.map((video, index) => `
                 <div class="video-list-item p-3 mb-2 rounded-lg transition-all border border-transparent" 
-                     onclick="playVideo('${video.name}', ${index})">
+                     onclick="playVideo('${video.path.replace(/'/g, "\\'")}', ${index})">
                     <div class="flex items-center">
                         <div class="bg-blue-100 p-2 rounded mr-3">
                             <i class="fas fa-play text-blue-600 text-xs"></i>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-sm font-medium text-gray-800 truncate">${video.name}</div>
+                            <div class="text-sm font-medium text-gray-800 truncate" title="${video.name}">${video.name}</div>
                             <div class="text-xs text-gray-500">${formatSize(video.size)}</div>
                         </div>
                     </div>
@@ -119,19 +119,19 @@
             `).join('');
         }
 
-        function playVideo(name, index) {
+        function playVideo(path, index) {
             // 更新 UI 状态
             document.querySelectorAll('.video-list-item').forEach((item, i) => {
                 item.classList.toggle('active', i === index);
             });
 
             // 切换视频源
-            videoPlayer.src = `/video/${encodeURIComponent(name)}`;
+            videoPlayer.src = `/video/${encodeURIComponent(path)}`;
             videoPlayer.play();
 
             // 更新详情
-            currentTitle.textContent = name;
-            currentInfo.textContent = `文件大小: ${formatSize(videos[index].size)}`;
+            currentTitle.textContent = videos[index].name;
+            currentInfo.textContent = `文件路径: ${videos[index].path} | 大小: ${formatSize(videos[index].size)}`;
         }
 
         // 初始加载

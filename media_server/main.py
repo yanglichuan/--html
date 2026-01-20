@@ -18,13 +18,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-VIDEO_DIR = Path("/Users/jjjj/Documents/股票/media_server/videos")
-VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+VIDEO_DIR = Path("/Volumes/T2/64G.周星驰.国语")
 
 def get_video_path(video_name: str) -> Path:
     # 确保视频名称安全并正确连接
+    # 支持传入相对路径，以便播放子目录中的文件
     path = (VIDEO_DIR / video_name).resolve()
-    if not path.is_relative_to(VIDEO_DIR.resolve()):
+    if not str(path).startswith(str(VIDEO_DIR.resolve())):
         raise HTTPException(status_code=403, detail="Access denied")
     if not path.exists() or not path.is_file():
         raise HTTPException(status_code=404, detail=f"Video not found: {video_name}")
@@ -43,9 +43,25 @@ async def list_videos():
     videos = []
     # 支持更多常见格式
     extensions = [".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"]
+    
+    # 递归扫描所有子目录
     for ext in extensions:
-        videos.extend(list(VIDEO_DIR.glob(f"*{ext}")))
-    return [{"name": v.name, "size": v.stat().st_size} for v in sorted(videos)]
+        # 使用 rglob 进行递归搜索
+        for v in VIDEO_DIR.rglob(f"*{ext}"):
+            # 过滤掉 macOS 的隐藏元数据文件 (._ 开头的文件)
+            if v.name.startswith("._"):
+                continue
+                
+            # 获取相对于 VIDEO_DIR 的路径，作为前端调用的标识
+            rel_path = v.relative_to(VIDEO_DIR)
+            videos.append({
+                "name": v.name,
+                "path": str(rel_path),
+                "size": v.stat().st_size
+            })
+    
+    # 按名称排序
+    return sorted(videos, key=lambda x: x["name"])
 
 @app.get("/video/{video_name}")
 async def stream_video(video_name: str, request: Request, range: Optional[str] = Header(None)):
