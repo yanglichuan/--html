@@ -1,13 +1,35 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+
+# 数据库连接配置 (PostgreSQL)
+SQLALCHEMY_DATABASE_URL = "postgresql://fastapi_user:fastapi_pass@localhost/fastapi_db"
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+# SQLAlchemy 模型
+class ItemDB(Base):
+    __tablename__ = "items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    price = Column(Float)
+    description = Column(String, nullable=True)
+
+# 创建表
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-    title="FastAPI 丰富示例项目",
-    description="这是一个包含增删改查、数据校验和 Swagger 文档的丰富 FastAPI 示例",
-    version="1.0.0",
+    title="FastAPI PostgreSQL 示例项目",
+    description="这是一个使用 PostgreSQL 存储、SQLAlchemy ORM 的增删改查示例",
+    version="1.1.0",
     root_path="/fastapi"
 )
 
@@ -20,64 +42,80 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 模拟数据库
-items_db = [
-    {"id": 1, "name": "苹果", "price": 5.5, "description": "新鲜的红富士"},
-    {"id": 2, "name": "香蕉", "price": 3.2, "description": "进口香蕉"},
-]
-
-# 数据模型
-class Item(BaseModel):
+# Pydantic 模型
+class ItemBase(BaseModel):
     name: str
     price: float
     description: Optional[str] = None
 
-class ItemResponse(Item):
+class ItemCreate(ItemBase):
+    pass
+
+class ItemResponse(ItemBase):
     id: int
+
+    class Config:
+        orm_mode = True
+
+# 依赖项：获取数据库会话
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @app.get("/", tags=["基础"])
 async def read_root():
-    return {"message": "欢迎使用 FastAPI 示例接口", "docs": "/docs"}
+    return {"message": "欢迎使用 FastAPI PostgreSQL 示例接口", "docs": "/docs"}
 
 @app.get("/items", response_model=List[ItemResponse], tags=["商品管理"])
-async def read_items(skip: int = 0, limit: int = 10):
+async def read_items(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     """获取商品列表"""
-    return items_db[skip : skip + limit]
+    items = db.query(ItemDB).offset(skip).limit(limit).all()
+    return items
 
 @app.get("/items/{item_id}", response_model=ItemResponse, tags=["商品管理"])
-async def read_item(item_id: int):
+async def read_item(item_id: int, db: Session = Depends(get_db)):
     """获取单个商品详情"""
-    for item in items_db:
-        if item["id"] == item_id:
-            return item
-    raise HTTPException(status_code=404, detail="商品不存在")
+    item = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+    if item is None:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    return item
 
 @app.post("/items", response_model=ItemResponse, tags=["商品管理"])
-async def create_item(item: Item):
+async def create_item(item: ItemCreate, db: Session = Depends(get_db)):
     """新增商品"""
-    new_id = max([i["id"] for i in items_db]) + 1 if items_db else 1
-    new_item = {"id": new_id, **item.dict()}
-    items_db.append(new_item)
-    return new_item
+    db_item = ItemDB(**item.dict())
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @app.put("/items/{item_id}", response_model=ItemResponse, tags=["商品管理"])
-async def update_item(item_id: int, item: Item):
+async def update_item(item_id: int, item: ItemCreate, db: Session = Depends(get_db)):
     """更新商品"""
-    for index, existing_item in enumerate(items_db):
-        if existing_item["id"] == item_id:
-            updated_item = {"id": item_id, **item.dict()}
-            items_db[index] = updated_item
-            return updated_item
-    raise HTTPException(status_code=404, detail="商品不存在")
+    db_item = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    
+    for key, value in item.dict().items():
+        setattr(db_item, key, value)
+    
+    db.commit()
+    db.refresh(db_item)
+    return db_item
 
 @app.delete("/items/{item_id}", tags=["商品管理"])
-async def delete_item(item_id: int):
+async def delete_item(item_id: int, db: Session = Depends(get_db)):
     """删除商品"""
-    for index, item in enumerate(items_db):
-        if item["id"] == item_id:
-            items_db.pop(index)
-            return {"message": "删除成功"}
-    raise HTTPException(status_code=404, detail="商品不存在")
+    db_item = db.query(ItemDB).filter(ItemDB.id == item_id).first()
+    if db_item is None:
+        raise HTTPException(status_code=404, detail="商品不存在")
+    
+    db.delete(db_item)
+    db.commit()
+    return {"message": "删除成功"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=4001)

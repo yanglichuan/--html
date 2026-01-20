@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastAPI + PostgreSQL 商品管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <header class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800">商品管理系统</h1>
+            <div class="text-sm text-gray-500">后端地址: 115.191.33.218/fastapi</div>
+        </header>
+
+        <!-- 表单部分 -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 id="formTitle" class="text-xl font-semibold mb-4 text-blue-600">添加新商品</h2>
+            <form id="itemForm" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="hidden" id="itemId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">商品名称</label>
+                    <input type="text" id="name" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">价格</label>
+                    <input type="number" step="0.01" id="price" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">描述</label>
+                    <input type="text" id="description" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="md:col-span-3 flex justify-end gap-2">
+                    <button type="button" onclick="resetForm()" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">重置</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">提交保存</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- 列表部分 -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">名称</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">价格</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">描述</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="itemList" class="bg-white divide-y divide-gray-200">
+                    <!-- 数据将通过 JS 动态填充 -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://115.191.33.218/fastapi';
+
+        // 获取列表
+        async function fetchItems() {
+            try {
+                const res = await axios.get(`${API_BASE}/items`);
+                const tbody = document.getElementById('itemList');
+                tbody.innerHTML = res.data.map(item => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.id}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">¥${item.price.toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.description || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-blue-600 hover:text-blue-900 mr-3">编辑</button>
+                            <button onclick="deleteItem(${item.id})" class="text-red-600 hover:text-red-900">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                console.error('获取列表失败:', err);
+                alert('获取数据失败，请检查后端服务是否运行');
+            }
+        }
+
+        // 提交表单 (新增或更新)
+        document.getElementById('itemForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('itemId').value;
+            const data = {
+                name: document.getElementById('name').value,
+                price: parseFloat(document.getElementById('price').value),
+                description: document.getElementById('description').value
+            };
+
+            try {
+                if (id) {
+                    await axios.put(`${API_BASE}/items/${id}`, data);
+                } else {
+                    await axios.post(`${API_BASE}/items`, data);
+                }
+                resetForm();
+                fetchItems();
+            } catch (err) {
+                console.error('提交失败:', err);
+                alert('操作失败: ' + (err.response?.data?.detail || err.message));
+            }
+        };
+
+        // 编辑回显
+        function editItem(item) {
+            document.getElementById('formTitle').innerText = '编辑商品';
+            document.getElementById('itemId').value = item.id;
+            document.getElementById('name').value = item.name;
+            document.getElementById('price').value = item.price;
+            document.getElementById('description').value = item.description || '';
+        }
+
+        // 删除
+        async function deleteItem(id) {
+            if (!confirm('确定要删除这个商品吗？')) return;
+            try {
+                await axios.delete(`${API_BASE}/items/${id}`);
+                fetchItems();
+            } catch (err) {
+                alert('删除失败');
+            }
+        }
+
+        // 重置
+        function resetForm() {
+            document.getElementById('formTitle').innerText = '添加新商品';
+            document.getElementById('itemId').value = '';
+            document.getElementById('itemForm').reset();
+        }
+
+        // 初始化
+        fetchItems();
+    </script>
+</body>
+</html>
