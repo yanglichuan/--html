@@ -1,0 +1,348 @@
+# 服务器信息文档
+
+## 基本信息
+- IP: 115.191.33.218
+- 域名: yanglc.top / www.yanglc.top
+- 系统: Linux 5.15.120 (火山引擎)
+- 内存: 3.6GB (已用 1.9GB)
+- 磁盘: 40GB (已用 11GB, 29%)
+- SSH: root@115.191.33.218 密码: 123456aA
+
+---
+
+## Docker 容器
+
+| 容器名 | 状态 | 端口 | 说明 |
+|--------|------|------|------|
+| npm_deployment-app-1 | ✅ 运行中 | 80,81,443,8001,8006-8008,18790,28790 | Nginx Proxy Manager |
+| log_server-log-server-1 | ✅ 运行中 | 9999 | 日志服务 |
+| beszel | ✅ 运行中 | 8090 | 监控面板 |
+| beszel-agent | ✅ 运行中 | - | 监控代理 |
+
+---
+
+## PM2 进程 (Node.js 服务)
+
+| 名称 | 端口 | 状态 | 说明 |
+|------|------|------|------|
+| stock-backend | 3000 | ✅ 运行 | 股票后端 |
+| cloud-control | 3001 | ✅ 运行 | 云控系统 |
+| analytics-system | 3002 | ✅ 运行 | 统计系统 |
+| upload-system | 3003 | ✅ 运行 | 文件上传 |
+| bilibili-client | 3005 | ✅ 运行 | B站客户端 |
+| netease-api | 3006 | ✅ 运行 | 网易云API |
+| fastapi-demo | 4001 | ✅ 运行 | FastAPI示例 |
+
+---
+
+## 系统服务
+
+| 服务 | 状态 |
+|------|------|
+| MySQL (3306) | ✅ 运行 |
+| PostgreSQL (5432) | ✅ 运行 |
+| Redis (6379) | ✅ 运行 |
+| Docker | ✅ 运行 |
+| clawdbot-gateway (18789) | ✅ 运行 |
+
+---
+
+## 端口映射总览
+
+| 端口 | 服务 | 状态 | 外网访问 |
+|------|------|------|----------|
+| 22 | SSH | ✅ | ✅ |
+| 80 | HTTP (NPM) | ✅ | ✅ |
+| 81 | NPM 管理面板 | ✅ | ✅ |
+| 443 | HTTPS | ✅ | ✅ |
+| 3000 | stock-backend | ✅ | 内网 |
+| 3001 | cloud-control | ✅ | 内网 |
+| 3002 | analytics | ✅ | 内网 |
+| 3003 | upload | ✅ | 内网 |
+| 3005 | bilibili | ✅ | 内网 |
+| 3006 | netease | ✅ | 内网 |
+| 4001 | fastapi | ✅ | 内网 |
+| 8001 | bilibili/netease代理 | ✅ | ✅ |
+| 8006 | QR Code | ✅ | ✅ |
+| 8007/8008 | 36Kr新闻 | ✅ | ✅ |
+| 8090 | Beszel监控 | ✅ | ✅ |
+| 9999 | 日志服务 | ✅ | ✅ |
+| 18789 | Clawdbot | ✅ | 内网 |
+| 18790 | Clawdbot HTTPS | ✅ | ✅ |
+| 28790 | Clawdbot Dashboard | ✅ | ✅ |
+
+---
+
+## 目录结构
+
+### 项目目录 (/root/)
+```
+/root/
+├── npm_deployment/          # Nginx Proxy Manager 配置
+│   ├── data/               # NPM 数据目录
+│   │   ├── nginx/          # Nginx 配置
+│   │   │   ├── custom/     # 自定义配置
+│   │   │   │   ├── http.conf              # 主HTTP配置
+│   │   │   │   └── common_locations.conf  # 路由配置
+│   │   │   └── proxy_host/ # 代理主机配置
+│   │   └── html/           # 容器内静态文件
+│   └── docker-compose.yml
+├── stock-backend/          # 股票后端
+├── cloud-control/          # 云控系统
+├── user-system/            # 用户系统
+├── bilibili-client/        # B站客户端
+├── netease-api/            # 网易云API
+├── fastapi-demo/           # FastAPI示例
+├── qrcode-service/         # 二维码服务
+├── kr36-service/           # 36Kr新闻
+├── beszel/                 # 监控系统
+├── clawd/                  # Clawdbot
+└── log_server/             # 日志服务
+```
+
+### Web 目录 (/var/www/)
+```
+/var/www/
+├── huoshan/                # 主站静态文件 (NPM默认根目录)
+│   ├── index.html          # 首页
+│   ├── dice-3d.html        # 掷骰子
+│   ├── music.html          # 音乐页
+│   ├── upload.html         # 上传页
+│   ├── uploads/            # 上传文件目录
+│   └── assets/             # 静态资源
+├── html/                   # 备用HTML目录
+└── frontend/               # 前端项目
+```
+
+---
+
+## Nginx 路由配置
+
+### HTTP (端口 80) - yanglc.top / 115.191.33.218
+
+| 路径 | 目标 | 说明 |
+|------|------|------|
+| / | /var/www/huoshan | 静态文件 |
+| /api/ | 172.17.0.1:8080 | 后端API |
+| /api/qt/ | push2.eastmoney.com | 东方财富股票 |
+| /news/ | 172.17.0.1:18007 | 36Kr新闻 |
+| /gupiao/ | /usr/share/testpage/ | 股票页面 |
+| /cloud/ | 172.17.0.1:3001 | 云控系统 |
+| /admin/api/ | 172.17.0.1:3001 | 管理API |
+| /analytics/ | 172.17.0.1:3002 | 统计系统 |
+| /upload-api/ | 172.17.0.1:3003 | 上传API |
+| /uploads/ | /var/www/huoshan/uploads/ | 上传文件 |
+| /fastapi | 172.17.0.1:4001 | FastAPI |
+| /qrcode/ | 172.17.0.1:18006 | 二维码 |
+| /generate | 172.17.0.1:18006 | 生成二维码 |
+| /pdf/ | 172.17.0.1:18080 | PDF服务 |
+| /bilibili/ | 172.17.0.1:3005 | B站 |
+| /netease-api/ | 172.17.0.1:3006 | 网易云 |
+
+### 其他端口
+
+| 端口 | 域名 | 服务 |
+|------|------|------|
+| 81 | - | NPM 管理面板 |
+| 443 | yanglc.top | HTTPS (同80路由) |
+| 8001 | - | bilibili + netease |
+| 8006 | - | QR Code |
+| 8007/8008 | - | 36Kr |
+| 18790 | - | Clawdbot HTTPS |
+| 28790 | - | Clawdbot Dashboard |
+
+---
+
+## 访问地址
+
+### 主站
+| 说明 | 域名 | IP |
+|------|------|-----|
+| 首页 | https://yanglc.top/ | http://115.191.33.218/ |
+
+### 管理面板
+| 说明 | 域名 | IP |
+|------|------|-----|
+| NPM管理 | https://yanglc.top:81/ | http://115.191.33.218:81/ |
+| Beszel监控 | https://yanglc.top:8090/ | http://115.191.33.218:8090/ |
+| Clawdbot | https://yanglc.top:18790/ | https://115.191.33.218:18790/ |
+| Clawdbot Dashboard | https://yanglc.top:28790/ | https://115.191.33.218:28790/ |
+
+### 功能页面
+| 说明 | 域名 | IP |
+|------|------|-----|
+| 掷骰子 | https://yanglc.top/dice-3d.html | http://115.191.33.218/dice-3d.html |
+| 音乐 | https://yanglc.top/music.html | http://115.191.33.218/music.html |
+| 上传页面 | https://yanglc.top/upload.html | http://115.191.33.218/upload.html |
+| 股票系统 | https://yanglc.top/gupiao/ | http://115.191.33.218/gupiao/ |
+| 二维码生成 | https://yanglc.top/qrcode/ | http://115.191.33.218/qrcode/ |
+| PDF工具 | https://yanglc.top/pdf/ | http://115.191.33.218/pdf/ |
+| FastAPI | https://yanglc.top/fastapi | http://115.191.33.218/fastapi |
+| 36Kr新闻 | https://yanglc.top/news/ | http://115.191.33.218/news/ |
+
+### API 接口
+| 说明 | 域名 | IP |
+|------|------|-----|
+| 后端API | https://yanglc.top/api/ | http://115.191.33.218/api/ |
+| 云控系统 | https://yanglc.top/cloud/ | http://115.191.33.218/cloud/ |
+| 管理API | https://yanglc.top/admin/api/ | http://115.191.33.218/admin/api/ |
+| 统计系统 | https://yanglc.top/analytics/ | http://115.191.33.218/analytics/ |
+| 上传API | https://yanglc.top/upload-api/ | http://115.191.33.218/upload-api/ |
+| 股票行情 | https://yanglc.top/api/qt/ | http://115.191.33.218/api/qt/ |
+| B站API | https://yanglc.top/bilibili/ | http://115.191.33.218/bilibili/ |
+| 网易云API | https://yanglc.top/netease-api/ | http://115.191.33.218/netease-api/ |
+
+### 独立端口服务
+| 说明 | 域名 | IP |
+|------|------|-----|
+| B站+网易云 | https://yanglc.top:8001/ | http://115.191.33.218:8001/ |
+| 二维码服务 | https://yanglc.top:8006/ | http://115.191.33.218:8006/ |
+| 36Kr新闻 | https://yanglc.top:8007/ | http://115.191.33.218:8007/ |
+| 日志服务 | https://yanglc.top:9999/ | http://115.191.33.218:9999/ |
+
+---
+
+## 服务架构关系
+
+```
+                                    ┌─────────────────────────────────────┐
+                                    │           外部访问                   │
+                                    │  yanglc.top / 115.191.33.218        │
+                                    └──────────────┬──────────────────────┘
+                                                   │
+                    ┌──────────────────────────────┼──────────────────────────────┐
+                    │                              ▼                              │
+                    │         Nginx Proxy Manager (Docker: npm_deployment-app-1)  │
+                    │                    端口: 80, 81, 443                        │
+                    │                                                             │
+                    │   ┌─────────────────────────────────────────────────────┐   │
+                    │   │              路由分发 (common_locations.conf)        │   │
+                    │   └─────────────────────────────────────────────────────┘   │
+                    └──────────────────────────────┬──────────────────────────────┘
+                                                   │
+        ┌──────────────┬──────────────┬────────────┼────────────┬──────────────┬──────────────┐
+        │              │              │            │            │              │              │
+        ▼              ▼              ▼            ▼            ▼              ▼              ▼
+┌──────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│ 静态文件      │ │ 股票系统  │ │ 云控系统  │ │ 统计系统  │ │ 上传系统  │ │ B站/网易  │ │ 其他服务  │
+│ /var/www/    │ │          │ │          │ │          │ │          │ │          │ │          │
+│ huoshan/     │ │ :3000    │ │ :3001    │ │ :3002    │ │ :3003    │ │ :3005/06 │ │ :4001等  │
+└──────────────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
+                      │            │            │            │            │            │
+                      └────────────┴────────────┴─────┬──────┴────────────┴────────────┘
+                                                      │
+                                                      ▼
+                                    ┌─────────────────────────────────────┐
+                                    │           PM2 进程管理               │
+                                    │         (7个 Node.js 服务)           │
+                                    └─────────────────────────────────────┘
+                                                      │
+                      ┌───────────────────────────────┼───────────────────────────────┐
+                      │                               │                               │
+                      ▼                               ▼                               ▼
+              ┌──────────────┐               ┌──────────────┐               ┌──────────────┐
+              │    MySQL     │               │  PostgreSQL  │               │    Redis     │
+              │    :3306     │               │    :5432     │               │    :6379     │
+              └──────────────┘               └──────────────┘               └──────────────┘
+```
+
+### 服务依赖关系
+
+| 服务 | 依赖 | 说明 |
+|------|------|------|
+| stock-backend (3000) | MySQL, Redis | 股票数据后端，提供 /api/ 接口 |
+| cloud-control (3001) | MySQL | 云控系统，管理设备和任务 |
+| analytics-system (3002) | MySQL | 统计分析，记录访问数据 |
+| upload-system (3003) | 文件系统 | 文件上传，存储到 /var/www/huoshan/uploads/ |
+| bilibili-client (3005) | 外部API | B站数据代理 |
+| netease-api (3006) | 外部API | 网易云音乐API代理 |
+| fastapi-demo (4001) | 无 | FastAPI 示例服务 |
+
+### Docker 容器关系
+
+| 容器 | 网络 | 依赖 | 说明 |
+|------|------|------|------|
+| npm_deployment-app-1 | bridge (172.17.0.x) | 无 | 反向代理，所有HTTP流量入口 |
+| log_server-log-server-1 | bridge | 无 | 独立日志收集服务 |
+| beszel | bridge | beszel-agent | 监控面板 |
+| beszel-agent | host | 无 | 系统监控代理 |
+
+### 数据流向
+
+```
+用户请求 → NPM (80/443) → 路由匹配 → 后端服务 → 数据库
+                ↓
+           静态文件 (/var/www/huoshan/)
+```
+
+### 独立服务 (不经过 NPM 80端口)
+
+| 端口 | 服务 | 说明 |
+|------|------|------|
+| 81 | NPM 管理面板 | 直接访问 NPM 后台 |
+| 8001 | bilibili + netease | 独立端口访问 |
+| 8006 | QR Code | 二维码服务独立端口 |
+| 8007/8008 | 36Kr | 新闻服务独立端口 |
+| 8090 | Beszel | 监控面板 |
+| 9999 | Log Server | 日志服务 |
+| 18789 | Clawdbot | 内网访问 |
+| 18790/28790 | Clawdbot HTTPS | 外网访问 |
+
+---
+
+## 配置文件位置
+
+| 配置 | 路径 |
+|------|------|
+| NPM Docker | /root/npm_deployment/docker-compose.yml |
+| Nginx主配置 | /root/npm_deployment/data/nginx/custom/http.conf |
+| 路由配置 | /root/npm_deployment/data/nginx/custom/common_locations.conf |
+| SSL证书 | /etc/letsencrypt/live/yanglc.top/ |
+
+---
+
+## 常用命令
+
+```bash
+# SSH 登录
+ssh root@115.191.33.218
+
+# 查看 PM2 进程
+pm2 list
+
+# 重启 PM2 服务
+pm2 restart all
+
+# 查看 Docker 容器
+docker ps
+
+# 重启 NPM
+docker restart npm_deployment-app-1
+
+# 查看 NPM 日志
+docker logs npm_deployment-app-1
+
+# 部署静态文件到主站
+scp file.html root@115.191.33.218:/var/www/huoshan/
+docker exec npm_deployment-app-1 cp /data/html/file.html /var/www/huoshan/
+```
+
+---
+
+## 已知问题
+
+1. **proxy_host/4.conf 配置损坏** - 已备份并删除，原配置在 4.conf.bak
+2. **HTTPS 443 端口** - 需要有效SSL证书才能正常工作
+
+---
+
+*最后更新: 2026-01-30*
+
+
+
+
+
+
+
+
+
