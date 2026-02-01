@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Metaballs</title>
+    <style>body { margin: 0; background: #000; overflow: hidden; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const blobs = [];
+    for(let i=0; i<10; i++){
+        blobs.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            vx: Math.random()*4-2,
+            vy: Math.random()*4-2,
+            r: Math.random()*50+40
+        });
+    }
+
+    function draw() {
+        // Low res trick for speed
+        const w = canvas.width/10;
+        const h = canvas.height/10;
+        const img = ctx.createImageData(w, h);
+        
+        for(let y=0; y<h; y++){
+            for(let x=0; x<w; x++){
+                let sum = 0;
+                // Upscale coordinates
+                const rx = x*10;
+                const ry = y*10;
+                
+                for(let b of blobs){
+                    const dx = rx - b.x;
+                    const dy = ry - b.y;
+                    const d2 = dx*dx + dy*dy;
+                    sum += (b.r*b.r) / d2;
+                }
+                
+                const idx = (x + y*w)*4;
+                if(sum > 1.0){
+                    const col = Math.min(255, sum*50);
+                    img.data[idx] = col;    // R
+                    img.data[idx+1] = col/2; // G
+                    img.data[idx+2] = 255-col; // B
+                    img.data[idx+3] = 255;
+                } else {
+                    img.data[idx+3] = 0;
+                }
+            }
+        }
+        
+        const tmp = document.createElement('canvas');
+        tmp.width = w;
+        tmp.height = h;
+        tmp.getContext('2d').putImageData(img,0,0);
+        
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.drawImage(tmp, 0,0,canvas.width,canvas.height);
+        
+        blobs.forEach(b => {
+            b.x += b.vx;
+            b.y += b.vy;
+            if(b.x < 0 || b.x > canvas.width) b.vx *= -1;
+            if(b.y < 0 || b.y > canvas.height) b.vy *= -1;
+        });
+        
+        requestAnimationFrame(draw);
+    }
+    draw();
+</script>
+</body>
+</html>

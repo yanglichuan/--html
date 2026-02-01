@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>3D Galaxy</title>
+    <style>body { margin: 0; overflow: hidden; background-color: #000; }</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const geometry = new THREE.BufferGeometry();
+    const vertices = [];
+    for (let i = 0; i < 10000; i++) {
+        const x = THREE.MathUtils.randFloatSpread(2000);
+        const y = THREE.MathUtils.randFloatSpread(2000);
+        const z = THREE.MathUtils.randFloatSpread(2000);
+        vertices.push(x, y, z);
+    }
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    const material = new THREE.PointsMaterial({ color: 0xffffff, size: 2 }); // White stars
+    const starField = new THREE.Points(geometry, material);
+    scene.add(starField);
+    
+    // Add a colorful spiral galaxy
+    const galaxyGeometry = new THREE.BufferGeometry();
+    const galaxyVertices = [];
+    const galaxyColors = [];
+    const color = new THREE.Color();
+    for(let i=0; i<5000; i++){
+        const angle = i * 0.1;
+        const radius = i * 0.05;
+        const x = Math.cos(angle) * radius * 5;
+        const y = (Math.random()-0.5) * 10;
+        const z = Math.sin(angle) * radius * 5;
+        galaxyVertices.push(x, y, z);
+        
+        color.setHSL(i/5000, 1.0, 0.5);
+        galaxyColors.push(color.r, color.g, color.b);
+    }
+    galaxyGeometry.setAttribute('position', new THREE.Float32BufferAttribute(galaxyVertices, 3));
+    galaxyGeometry.setAttribute('color', new THREE.Float32BufferAttribute(galaxyColors, 3));
+    const galaxyMaterial = new THREE.PointsMaterial({ size: 2, vertexColors: true });
+    const galaxy = new THREE.Points(galaxyGeometry, galaxyMaterial);
+    scene.add(galaxy);
+
+    camera.position.z = 100;
+
+    function animate() {
+        requestAnimationFrame(animate);
+        starField.rotation.y += 0.0005;
+        galaxy.rotation.y -= 0.002;
+        galaxy.rotation.z += 0.001;
+        renderer.render(scene, camera);
+    }
+    animate();
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+</script>
+</body>
+</html>

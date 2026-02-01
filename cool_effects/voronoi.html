@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Voronoi</title>
+    <style>body { margin: 0; background: #000; overflow: hidden; }</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const points = [];
+    for(let i=0; i<50; i++){
+        points.push({
+            x: Math.random()*canvas.width,
+            y: Math.random()*canvas.height,
+            vx: Math.random()*2-1,
+            vy: Math.random()*2-1,
+            color: `hsl(${Math.random()*360}, 70%, 50%)`
+        });
+    }
+
+    function draw() {
+        const w = canvas.width/4; // Low res optimization
+        const h = canvas.height/4;
+        const img = ctx.createImageData(w, h);
+        
+        for(let y=0; y<h; y++){
+            for(let x=0; x<w; x++){
+                let minDist = Infinity;
+                let minIdx = 0;
+                
+                const rx = x*4;
+                const ry = y*4;
+                
+                for(let i=0; i<points.length; i++){
+                    const dx = rx - points[i].x;
+                    const dy = ry - points[i].y;
+                    const d = dx*dx + dy*dy;
+                    if(d < minDist){
+                        minDist = d;
+                        minIdx = i;
+                    }
+                }
+                
+                const idx = (x + y*w)*4;
+                const c = points[minIdx].color.match(/\d+/g); // naive parse
+                // Just mapping to simple colors for speed if naive parse fails
+                // But let's use a simpler solid color approach in JS loop? Too slow.
+                // Let's do simple RGB distance based color
+                const r = (minIdx * 30) % 255;
+                const g = (minIdx * 50) % 255;
+                const b = (minIdx * 80) % 255;
+                
+                img.data[idx] = r;
+                img.data[idx+1] = g;
+                img.data[idx+2] = b;
+                img.data[idx+3] = 255;
+            }
+        }
+        
+        const tmp = document.createElement('canvas');
+        tmp.width = w;
+        tmp.height = h;
+        tmp.getContext('2d').putImageData(img,0,0);
+        ctx.drawImage(tmp, 0,0,canvas.width,canvas.height);
+        
+        points.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            if(p.x < 0 || p.x > canvas.width) p.vx *= -1;
+            if(p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        });
+        
+        requestAnimationFrame(draw);
+    }
+    draw();
+</script>
+</body>
+</html>

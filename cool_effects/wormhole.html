@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wormhole</title>
+    <style>body { margin: 0; overflow: hidden; background: #000; }</style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    // Create a tube
+    const path = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 20, -50),
+        new THREE.Vector3(20, 0, -100),
+        new THREE.Vector3(0, -20, -150),
+        new THREE.Vector3(-20, 0, -200),
+        new THREE.Vector3(0, 0, -250)
+    ]);
+    
+    const geometry = new THREE.TubeGeometry(path, 100, 5, 20, false);
+    const material = new THREE.MeshBasicMaterial({ 
+        color: 0x00ff00, 
+        wireframe: true,
+        transparent: true,
+        opacity: 0.3
+    });
+    const tube = new THREE.Mesh(geometry, material);
+    scene.add(tube);
+    
+    // Add particles inside
+    const pGeo = new THREE.BufferGeometry();
+    const pVerts = [];
+    for(let i=0; i<2000; i++){
+        pVerts.push(
+            (Math.random()-0.5)*50,
+            (Math.random()-0.5)*50,
+            (Math.random()-0.5)*300
+        );
+    }
+    pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pVerts, 3));
+    const pMat = new THREE.PointsMaterial({color: 0xff00ff, size: 0.5});
+    const particles = new THREE.Points(pGeo, pMat);
+    scene.add(particles);
+
+    camera.position.z = 10;
+    
+    let speed = 0.5;
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        camera.position.z -= speed;
+        if(camera.position.z < -200) camera.position.z = 10;
+        
+        tube.rotation.z += 0.005;
+        particles.rotation.z -= 0.002;
+        
+        renderer.render(scene, camera);
+    }
+    animate();
+</script>
+</body>
+</html>

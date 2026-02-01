@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cyberpunk</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #050011; display: flex; justify-content: center; align-items: center; height: 100vh; perspective: 500px; }
+        .grid {
+            position: absolute;
+            bottom: -100px;
+            width: 200%;
+            height: 1000px;
+            background: 
+                linear-gradient(transparent 0%, #ff00ff 2%, transparent 3%),
+                linear-gradient(90deg, transparent 0%, #00ffff 2%, transparent 3%);
+            background-size: 50px 50px;
+            transform: rotateX(60deg);
+            animation: move 2s linear infinite;
+            box-shadow: 0 0 50px #ff00ff;
+        }
+        @keyframes move {
+            from { background-position: 0 0; }
+            to { background-position: 0 50px; }
+        }
+        .sun {
+            position: absolute;
+            top: 100px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: linear-gradient(#ffcc00, #ff0055);
+            box-shadow: 0 0 100px #ff0055;
+            -webkit-box-reflect: below 10px linear-gradient(transparent, rgba(0,0,0,0.5));
+        }
+        .scanline {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 10px;
+            background: rgba(0, 255, 0, 0.1);
+            animation: scan 5s linear infinite;
+            pointer-events: none;
+        }
+        @keyframes scan { from {top:0} to {top:100%} }
+        h1 {
+            position: absolute;
+            top: 40%;
+            color: #0ff;
+            font-family: monospace;
+            font-size: 5rem;
+            text-shadow: 4px 4px #f0f;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="sun"></div>
+    <div class="grid"></div>
+    <h1>CYBERPUNK</h1>
+    <div class="scanline"></div>
+</body>
+</html>
