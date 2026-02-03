@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT 认证功能测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h3 {
+            margin-top: 0;
+            color: #555;
+            font-size: 1.1em;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: 500;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s, opacity 0.3s;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        .btn-register {
+            background-color: #2196F3;
+            color: white;
+        }
+        .btn-login {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-test {
+            background-color: #FF9800;
+            color: white;
+        }
+        .result-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #2d2d2d;
+            color: #00ff00;
+            font-family: monospace;
+            border-radius: 4px;
+            font-size: 0.9em;
+            min-height: 40px;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+        .hidden {
+            display: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+        .status-success { background: #e8f5e9; color: #2e7d32; }
+        .status-error { background: #ffebee; color: #c62828; }
+        
+        /* Token display styling */
+        #tokenDisplay {
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🔐 JWT 认证系统测试</h2>
+
+    <!-- 注册模块 -->
+    <div class="section">
+        <h3>1. 用户注册</h3>
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="regUsername" placeholder="输入新用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="regPassword" placeholder="输入密码">
+        </div>
+        <button class="btn-register" onclick="register()">注册用户</button>
+        <div id="regResult" class="result-box hidden"></div>
+    </div>
+
+    <!-- 登录模块 -->
+    <div class="section">
+        <h3>2. 用户登录</h3>
+        <div class="form-group">
+            <label>用户名</label>
+            <input type="text" id="loginUsername" placeholder="已注册的用户名">
+        </div>
+        <div class="form-group">
+            <label>密码</label>
+            <input type="password" id="loginPassword" placeholder="密码">
+        </div>
+        <button class="btn-login" onclick="login()">登录获取 Token</button>
+        <div id="loginResult" class="result-box hidden"></div>
+    </div>
+
+    <!-- 接口测试模块 -->
+    <div class="section">
+        <h3>3. 权限验证测试</h3>
+        <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
+            点击按钮携带 Token 访问受保护接口 (/auth/user/profile)
+        </p>
+        <button class="btn-test" onclick="testProtectedResource()">发起受保护请求</button>
+        <div id="testResult" class="result-box hidden"></div>
+    </div>
+</div>
+
+<script>
+    // 基础 API 路径，根据之前的 Nginx 配置
+    const BASE_URL = '/springboot/auth';
+    let currentToken = '';
+
+    async function register() {
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+        const resultBox = document.getElementById('regResult');
+        
+        if (!username || !password) {
+            showResult(resultBox, '请输入用户名和密码', true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const text = await response.text();
+            showResult(resultBox, response.ok ? `✅ ${text}` : `❌ ${text}`, !response.ok);
+            
+            // 自动填充登录框
+            if (response.ok) {
+                document.getElementById('loginUsername').value = username;
+                document.getElementById('loginPassword').value = password;
+            }
+        } catch (error) {
+            showResult(resultBox, `❌ 请求失败: ${error.message}`, true);
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
+        const resultBox = document.getElementById('loginResult');
+
+        if (!username || !password) {
+            showResult(resultBox, '请输入用户名和密码', true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                currentToken = data.token;
+                showResult(resultBox, `✅ 登录成功!\nToken:\n<span id="tokenDisplay">${data.token}</span>`, false);
+            } else {
+                showResult(resultBox, '❌ 登录失败: 用户名或密码错误', true);
+            }
+        } catch (error) {
+            showResult(resultBox, `❌ 请求失败: ${error.message}`, true);
+        }
+    }
+
+    async function testProtectedResource() {
+        const resultBox = document.getElementById('testResult');
+        
+        if (!currentToken) {
+            showResult(resultBox, '⚠️ 请先登录获取 Token', true);
+            return;
+        }
+
+        try {
+            const response = await fetch(`${BASE_URL}/user/profile`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${currentToken}`
+                }
+            });
+
+            const text = await response.text();
+            if (response.ok) {
+                showResult(resultBox, `✅ 验证通过!\n服务器响应: "${text}"`, false);
+            } else {
+                showResult(resultBox, `⛔ 访问被拒绝 (${response.status})`, true);
+            }
+        } catch (error) {
+            showResult(resultBox, `❌ 请求失败: ${error.message}`, true);
+        }
+    }
+
+    function showResult(element, html, isError) {
+        element.innerHTML = html;
+        element.classList.remove('hidden');
+        element.style.color = isError ? '#ff5252' : '#00ff00';
+        element.style.borderColor = isError ? '#ff5252' : '#4CAF50';
+    }
+</script>
+
+</body>
+</html>
