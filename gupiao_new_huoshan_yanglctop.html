@@ -1075,12 +1075,12 @@
     <script>
         // --- 本地代理配置 ---
         // 将 eastmoney API 请求通过本地代理转发，解决 CORS 和 TLS 指纹检测问题
-        const PROXY_BASE = 'http://localhost:9500/proxy';
+        const PROXY_BASE = 'https://yanglc.top/api/eastmoney';
 
         // --- Web Worker Setup (Off-Main-Thread Architecture) ---
         const workerScript = `
             importScripts('https://cdn.jsdelivr.net/npm/pinyin-match@1.2.5/dist/main.js');
-            const PROXY_BASE = 'http://localhost:9500/proxy';
+            const PROXY_BASE = 'https://yanglc.top/api/eastmoney';
 
             let allStocksCache = [];
             
@@ -1117,7 +1117,7 @@
                 const fields = 'f2,f3,f12,f13,f14,f127';
 
                 // 1. Get total count
-                const seedUrl = \`http://localhost:9500/proxy/clist?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
+                const seedUrl = \`https://yanglc.top/api/eastmoney/clist?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
                 const seedRes = await getJSON(seedUrl);
                 if (!seedRes?.data) throw new Error('Sync failed');
 
@@ -1128,7 +1128,7 @@
                 // 2. Parallel Fetch
                 const tasks = [];
                 for (let i = 1; i <= pageCount; i++) {
-                    const url = \`http://localhost:9500/proxy/clist?pn=\${i}&pz=\${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
+                    const url = \`https://yanglc.top/api/eastmoney/clist?pn=\${i}&pz=\${pageSize}&po=1&np=1&fltt=2&invt=2&fid=f3&fs=\${fs}&fields=\${fields}\`;
                     tasks.push(getJSON(url));
                 }
 
@@ -1754,7 +1754,7 @@
         async function updateStockDetail() {
             // f127:行业, f9:PE, f23:PB, f20:总市值, f21:流通市值, f183:ROE, f184:净利润, f186:净利增长, f187:营收增长, f168:换手, f171:振幅, f108:股息
             const fields = 'f58,f127,f9,f23,f20,f21,f183,f184,f185,f186,f187,f168,f171,f108';
-            const url = `http://localhost:9500/proxy/stock?secid=${currentStock.id}&fields=${fields}`;
+            const url = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=${fields}`;
             const res = await getJSON(url);
             if (res?.data) {
                 const d = res.data;
@@ -1829,8 +1829,8 @@
         // const indexCache = ... (Removed in favor of SmartFetch)
 
         async function updateStats() {
-            const curUrl = `http://localhost:9500/proxy/stock?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
-            const zsUrl = `http://localhost:9500/proxy/stock?secid=${ZS_ID}&fields=f43,f170`;
+            const curUrl = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
+            const zsUrl = `https://yanglc.top/api/eastmoney/stock?secid=${ZS_ID}&fields=f43,f170`;
             const [curRes, zsRes] = await Promise.all([getJSON(curUrl), getJSON(zsUrl, 'CN')]);
 
             if (curRes?.data) {
@@ -2173,8 +2173,8 @@
 
             // Smart Cache Strategy is now handled by getJSON
             const [curRes, zsRes] = await Promise.all([
-                getJSON(`http://localhost:9500/proxy/trends?secid=${currentStock.id}&fields2=f51,f52,f53&ndays=1`),
-                getJSON(`http://localhost:9500/proxy/trends?secid=${ZS_ID}&fields2=f51,f52,f53&ndays=1`, 'CN')
+                getJSON(`https://yanglc.top/api/eastmoney/trends?secid=${currentStock.id}&fields2=f51,f52,f53&ndays=1`),
+                getJSON(`https://yanglc.top/api/eastmoney/trends?secid=${ZS_ID}&fields2=f51,f52,f53&ndays=1`, 'CN')
             ]);
 
             // if (typeof intradayChart !== 'undefined') intradayChart.hideLoading();
