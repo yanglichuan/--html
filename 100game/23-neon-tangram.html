@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Tangram - Game 23/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">PUZZLE</div>
+            <div id="level" class="value">1 / 10</div>
+        </div>
+        <div class="stat">
+            <div class="label">SYNC STATUS</div>
+            <div id="status" class="value">SEARCHING</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>GEOMETRY SYNCED</h1>
+        <p id="final-stats" style="font-size: 24px; margin-bottom: 20px;">All Puzzles Complete</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <div class="controls-hint">Drag Shapes to Fill the Target Area</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const levelEl = document.getElementById('level');
+        const statusEl = document.getElementById('status');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 600, height = 600;
+        let shapes, target, level, gameActive, draggingShape = null, offset = { x: 0, y: 0 };
+
+        const LEVELS = [
+            {
+                target: { x: 200, y: 200, w: 200, h: 200 },
+                shapes: [
+                    { x: 50, y: 50, w: 100, h: 200, color: '#00f2ff' },
+                    { x: 450, y: 50, w: 100, h: 200, color: '#ff007a' }
+                ]
+            },
+            {
+                target: { x: 150, y: 150, w: 300, h: 300 },
+                shapes: [
+                    { x: 50, y: 50, w: 150, h: 300, color: '#00f2ff' },
+                    { x: 400, y: 50, w: 150, h: 300, color: '#bc00ff' }
+                ]
+            }
+        ];
+
+        class Shape {
+            constructor(x, y, w, h, color) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.color = color;
+                this.originalX = x;
+                this.originalY = y;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = draggingShape === this ? 20 : 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+            contains(px, py) {
+                return px > this.x && px < this.x + this.w && py > this.y && py < this.y + this.h;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            level = 0;
+            loadLevel();
+            gameActive = true;
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function loadLevel() {
+            const data = LEVELS[level];
+            target = data.target;
+            shapes = data.shapes.map(s => new Shape(s.x, s.y, s.w, s.h, s.color));
+            levelEl.textContent = `${level + 1} / ${LEVELS.length}`;
+            statusEl.textContent = 'SEARCHING';
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Target area
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.setLineDash([5, 5]);
+            ctx.strokeRect(target.x, target.y, target.w, target.h);
+            ctx.setLineDash([]);
+
+            shapes.forEach(s => s.draw());
+
+            checkWin();
+        }
+
+        function checkWin() {
+            const allInPlace = shapes.every(s => 
+                s.x >= target.x - 5 && s.x + s.w <= target.x + target.w + 5 &&
+                s.y >= target.y - 5 && s.y + s.h <= target.y + target.h + 5
+            );
+
+            if (allInPlace) {
+                statusEl.textContent = 'SYNCED';
+                if (level < LEVELS.length - 1) {
+                    setTimeout(() => {
+                        level++;
+                        loadLevel();
+                    }, 1000);
+                } else {
+                    gameActive = false;
+                    gameOverEl.style.display = 'flex';
+                }
+            }
+        }
+
+        canvas.addEventListener('mousedown', e => {
+            const rect = canvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            shapes.forEach(s => {
+                if (s.contains(mx, my)) {
+                    draggingShape = s;
+                    offset.x = mx - s.x;
+                    offset.y = my - s.y;
+                }
+            });
+        });
+
+        window.addEventListener('mousemove', e => {
+            if (draggingShape) {
+                const rect = canvas.getBoundingClientRect();
+                draggingShape.x = (e.clientX - rect.left) - offset.x;
+                draggingShape.y = (e.clientY - rect.top) - offset.y;
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            draggingShape = null;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

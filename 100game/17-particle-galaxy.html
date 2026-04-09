@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle Galaxy - Game 17/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: radial-gradient(circle at center, #0a0a20 0%, #050505 100%);
+            max-width: 100%;
+            max-height: 100vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">COLLECTED</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">ENERGY</div>
+            <div id="energy" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>GALAXY COLLAPSE</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Collected: 0</p>
+        <button onclick="initGame()">RESTART MISSION</button>
+    </div>
+
+    <div class="controls-hint">Move Mouse or Touch to Attract Particles</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const energyEl = document.getElementById('energy');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width, height;
+        let particles, targets, score, energy, gameActive, mouse = { x: 0, y: 0, active: false };
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.radius = Math.random() * 2 + 1;
+                this.color = Math.random() > 0.5 ? '#00f2ff' : '#bc00ff';
+            }
+            update() {
+                if (mouse.active) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 200) {
+                        this.vx += (dx / dist) * 0.5;
+                        this.vy += (dy / dist) * 0.5;
+                        energy -= 0.005;
+                    }
+                }
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > width) this.vx = -this.vx;
+                if (this.y < 0 || this.y > height) this.vy = -this.vy;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        class Target {
+            constructor() {
+                this.x = Math.random() * (width - 100) + 50;
+                this.y = Math.random() * (height - 100) + 50;
+                this.radius = 15;
+                this.color = '#39ff14';
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function initGame() {
+            resize();
+            particles = [];
+            for (let i = 0; i < 200; i++) particles.push(new Particle());
+            targets = [];
+            for (let i = 0; i < 3; i++) targets.push(new Target());
+            score = 0;
+            energy = 100;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            energyEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Collected: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+
+                targets.forEach((t, i) => {
+                    if (Math.hypot(p.x - t.x, p.y - t.y) < p.radius + t.radius) {
+                        score++;
+                        scoreEl.textContent = score;
+                        energy = Math.min(100, energy + 2);
+                        targets[i] = new Target();
+                    }
+                });
+            });
+
+            targets.forEach(t => t.draw());
+
+            energy -= 0.05;
+            energyEl.textContent = Math.max(0, Math.floor(energy)) + '%';
+            if (energy <= 0) endGame();
+        }
+
+        window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        window.addEventListener('mousedown', () => mouse.active = true);
+        window.addEventListener('mouseup', () => mouse.active = false);
+        window.addEventListener('touchstart', (e) => { mouse.active = true; mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; e.preventDefault(); });
+        window.addEventListener('touchend', () => mouse.active = false);
+        window.addEventListener('resize', resize);
+
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Library Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .book-card { margin-bottom: 20px; }
+        .status-AVAILABLE { color: green; font-weight: bold; }
+        .status-BORROWED { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="mb-4">📚 Library Management System</h1>
+    
+    <!-- Add Book Form -->
+    <div class="card mb-4">
+        <div class="card-header">Add New Book</div>
+        <div class="card-body">
+            <form id="addBookForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="title" placeholder="Title" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="author" placeholder="Author" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="isbn" placeholder="ISBN" required>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">Add Book</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="mb-3">
+        <input type="text" class="form-control" id="searchInput" placeholder="Search by title or author...">
+    </div>
+
+    <!-- Book List -->
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>ISBN</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody id="bookList">
+        <!-- Books will be loaded here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const API_URL = '/api/books';
+
+    // Load books on start
+    fetchBooks();
+
+    document.getElementById('addBookForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const book = {
+            title: document.getElementById('title').value,
+            author: document.getElementById('author').value,
+            isbn: document.getElementById('isbn').value,
+            status: 'AVAILABLE'
+        };
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(book)
+        });
+
+        if (response.ok) {
+            document.getElementById('addBookForm').reset();
+            fetchBooks();
+        } else {
+            const err = await response.json();
+            alert('Error: ' + JSON.stringify(err));
+        }
+    });
+
+    document.getElementById('searchInput').addEventListener('input', (e) => {
+        const keyword = e.target.value;
+        if (keyword.length > 0) {
+            fetchBooks(`${API_URL}/search?keyword=${keyword}`);
+        } else {
+            fetchBooks();
+        }
+    });
+
+    async function fetchBooks(url = API_URL) {
+        const response = await fetch(url);
+        const books = await response.json();
+        const tbody = document.getElementById('bookList');
+        tbody.innerHTML = '';
+
+        books.forEach(book => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${book.id}</td>
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.isbn}</td>
+                <td class="status-${book.status}">${book.status}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="deleteBook(${book.id})">Delete</button>
+                    ${book.status === 'AVAILABLE' 
+                        ? `<button class="btn btn-sm btn-success" onclick="borrowBook(${book.id})">Borrow</button>`
+                        : `<button class="btn btn-sm btn-warning" onclick="returnBook(${book.id})">Return</button>`
+                    }
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    async function deleteBook(id) {
+        if(confirm('Are you sure?')) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            fetchBooks();
+        }
+    }
+
+    async function borrowBook(id) {
+        await fetch(`${API_URL}/${id}/borrow`, { method: 'POST' });
+        fetchBooks();
+    }
+
+    async function returnBook(id) {
+        await fetch(`${API_URL}/${id}/return`, { method: 'POST' });
+        fetchBooks();
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Shooter - Game 05/100</title>
+    <style>
+        :root {
+            --bg: #05050a;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: radial-gradient(circle at center, #0a0a20 0%, #05050a 100%);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 100%;
+            max-height: 100vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            pointer-events: none;
+        }
+
+        .score {
+            font-size: 32px;
+            font-weight: 900;
+            color: var(--p-blue);
+            text-shadow: 0 0 10px var(--p-blue);
+            font-family: monospace;
+        }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 10, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            pointer-events: all;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 14px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div id="score" class="score">000000</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>UNIVERSE COLLAPSED</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0</p>
+        <button onclick="initGame()">RESTART</button>
+    </div>
+
+    <div class="instructions">Move Mouse to Aim & Click to Fire</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width, height;
+        let player, projectiles, enemies, particles, score, gameActive;
+
+        class Player {
+            constructor(x, y, radius, color) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, radius, color, velocity) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.velocity = velocity;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+
+            update() {
+                this.draw();
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+            }
+        }
+
+        class Enemy {
+            constructor(x, y, radius, color, velocity) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.velocity = velocity;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            update() {
+                this.draw();
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+            }
+        }
+
+        class Particle {
+            constructor(x, y, radius, color, velocity) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.velocity = velocity;
+                this.alpha = 1;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+
+            update() {
+                this.draw();
+                this.velocity.x *= 0.99;
+                this.velocity.y *= 0.99;
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.alpha -= 0.01;
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function spawnEnemies() {
+            if (!gameActive) return;
+            const radius = Math.random() * (30 - 4) + 4;
+            let x, y;
+            if (Math.random() < 0.5) {
+                x = Math.random() < 0.5 ? 0 - radius : width + radius;
+                y = Math.random() * height;
+            } else {
+                x = Math.random() * width;
+                y = Math.random() < 0.5 ? 0 - radius : height + radius;
+            }
+            const color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+            const angle = Math.atan2(height / 2 - y, width / 2 - x);
+            const velocity = {
+                x: Math.cos(angle) * (1 + score / 5000),
+                y: Math.sin(angle) * (1 + score / 5000)
+            };
+            enemies.push(new Enemy(x, y, radius, color, velocity));
+            setTimeout(spawnEnemies, Math.max(1000 - score / 100, 300));
+        }
+
+        function initGame() {
+            resize();
+            player = new Player(width / 2, height / 2, 10, '#fff');
+            projectiles = [];
+            enemies = [];
+            particles = [];
+            score = 0;
+            gameActive = true;
+            scoreEl.textContent = '000000';
+            gameOverEl.style.display = 'none';
+            spawnEnemies();
+            animate();
+        }
+
+        let animationId;
+        function animate() {
+            if (!gameActive) return;
+            animationId = requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(5, 5, 10, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            player.draw();
+
+            particles.forEach((particle, index) => {
+                if (particle.alpha <= 0) {
+                    particles.splice(index, 1);
+                } else {
+                    particle.update();
+                }
+            });
+
+            projectiles.forEach((projectile, index) => {
+                projectile.update();
+                if (projectile.x + projectile.radius < 0 || projectile.x - projectile.radius > width || projectile.y + projectile.radius < 0 || projectile.y - projectile.radius > height) {
+                    projectiles.splice(index, 1);
+                }
+            });
+
+            enemies.forEach((enemy, index) => {
+                enemy.update();
+                const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+                if (dist - enemy.radius - player.radius < 1) {
+                    cancelAnimationFrame(animationId);
+                    gameActive = false;
+                    document.getElementById('final-score').textContent = `Score: ${score}`;
+                    gameOverEl.style.display = 'flex';
+                }
+
+                projectiles.forEach((projectile, projectileIndex) => {
+                    const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y);
+                    if (dist - enemy.radius - projectile.radius < 1) {
+                        // Create particles
+                        for (let i = 0; i < enemy.radius * 2; i++) {
+                            particles.push(new Particle(projectile.x, projectile.y, Math.random() * 2, enemy.color, {
+                                x: (Math.random() - 0.5) * (Math.random() * 6),
+                                y: (Math.random() - 0.5) * (Math.random() * 6)
+                            }));
+                        }
+
+                        if (enemy.radius - 10 > 5) {
+                            score += 100;
+                            enemy.radius -= 10;
+                            projectiles.splice(projectileIndex, 1);
+                        } else {
+                            score += 250;
+                            enemies.splice(index, 1);
+                            projectiles.splice(projectileIndex, 1);
+                        }
+                        scoreEl.textContent = String(score).padStart(6, '0');
+                    }
+                });
+            });
+        }
+
+        window.addEventListener('click', (event) => {
+            if (!gameActive) return;
+            const angle = Math.atan2(event.clientY - height / 2, event.clientX - width / 2);
+            const velocity = { x: Math.cos(angle) * 5, y: Math.sin(angle) * 5 };
+            projectiles.push(new Projectile(width / 2, height / 2, 5, '#00f2ff', velocity));
+        });
+
+        window.addEventListener('resize', resize);
+        initGame();
+    </script>
+</body>
+</html>

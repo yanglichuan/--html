@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost Shot - Game 28/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: radial-gradient(circle at center, #0a0a20 0%, #05050a 100%);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 100%;
+            max-height: 100vh;
+            cursor: crosshair;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .crosshair {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--p-blue);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+        .crosshair::before, .crosshair::after {
+            content: '';
+            position: absolute;
+            background: var(--p-blue);
+        }
+        .crosshair::before { top: 50%; left: 0; width: 100%; height: 2px; transform: translateY(-50%); }
+        .crosshair::after { left: 50%; top: 0; height: 100%; width: 2px; transform: translateX(-50%); }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">ELIMINATED</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">INTEGRITY</div>
+            <div id="health" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    <div id="crosshair" class="crosshair"></div>
+
+    <div id="game-over" class="game-over">
+        <h1>SYSTEM BREACHED</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0</p>
+        <button onclick="initGame()">RE-AUTHORIZE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const crosshair = document.getElementById('crosshair');
+        const scoreEl = document.getElementById('score');
+        const healthEl = document.getElementById('health');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width, height;
+        let ghosts, particles, score, health, gameActive;
+
+        class Ghost {
+            constructor() {
+                this.radius = 20 + Math.random() * 30;
+                this.x = Math.random() * (width - this.radius * 2) + this.radius;
+                this.y = Math.random() * (height - this.radius * 2) + this.radius;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.alpha = 0;
+                this.targetAlpha = 0.6;
+                this.life = 2000 + Math.random() * 3000;
+                this.born = Date.now();
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < this.radius || this.x > width - this.radius) this.vx = -this.vx;
+                if (this.y < this.radius || this.y > height - this.radius) this.vy = -this.vy;
+                
+                if (this.alpha < this.targetAlpha) this.alpha += 0.01;
+                
+                if (Date.now() - this.born > this.life) {
+                    health -= 10;
+                    healthEl.textContent = health + '%';
+                    if (health <= 0) endGame();
+                    return true;
+                }
+                return false;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x - 8, this.y - 5, 4, 0, Math.PI * 2);
+                ctx.arc(this.x + 8, this.y - 5, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 10;
+                this.vy = (Math.random() - 0.5) * 10;
+                this.alpha = 1;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.02;
+                return this.alpha <= 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = '#ff007a';
+                ctx.fillRect(this.x, this.y, 4, 4);
+                ctx.restore();
+            }
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        function initGame() {
+            resize();
+            ghosts = [];
+            particles = [];
+            score = 0;
+            health = 100;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            healthEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            spawnGhost();
+            animate();
+        }
+
+        function spawnGhost() {
+            if (!gameActive) return;
+            ghosts.push(new Ghost());
+            setTimeout(spawnGhost, Math.max(300, 1500 - (score / 10)));
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Score: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            ghosts.forEach((g, i) => {
+                if (g.update()) ghosts.splice(i, 1);
+                else g.draw();
+            });
+
+            particles.forEach((p, i) => {
+                if (p.update()) particles.splice(i, 1);
+                else p.draw();
+            });
+        }
+
+        window.addEventListener('mousemove', e => {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+        });
+
+        window.addEventListener('mousedown', e => {
+            if (!gameActive) return;
+            let hit = false;
+            ghosts.forEach((g, i) => {
+                if (Math.hypot(e.clientX - g.x, e.clientY - g.y) < g.radius) {
+                    ghosts.splice(i, 1);
+                    score += 100;
+                    scoreEl.textContent = score;
+                    hit = true;
+                    for (let j = 0; j < 10; j++) particles.push(new Particle(e.clientX, e.clientY));
+                }
+            });
+        });
+
+        window.addEventListener('resize', resize);
+        initGame();
+    </script>
+</body>
+</html>

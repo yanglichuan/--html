@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Decoder - Game 39/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-green: #39ff14;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header { margin-bottom: 20px; text-align: center; }
+        h1 {
+            font-size: 32px;
+            color: var(--p-green);
+            text-shadow: 0 0 15px var(--p-green);
+        }
+
+        #code-display {
+            font-size: 48px;
+            letter-spacing: 10px;
+            margin-bottom: 30px;
+            color: var(--p-green);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 15px;
+        }
+
+        .btn {
+            width: 80px;
+            height: 80px;
+            border: 1px solid var(--p-green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { background: rgba(57, 255, 20, 0.1); }
+        .btn:active { background: var(--p-green); color: black; }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button.reset-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: transparent;
+            border: 1px solid var(--p-green);
+            color: var(--p-green);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>MATRIX DECODER</h1>
+        <p id="hint" style="color: var(--p-green); margin-top: 5px;">MATCH THE PATTERN</hint>
+    </div>
+
+    <div id="code-display">____</div>
+
+    <div class="grid">
+        <div class="btn" onclick="inputNum(1)">1</div>
+        <div class="btn" onclick="inputNum(2)">2</div>
+        <div class="btn" onclick="inputNum(3)">3</div>
+        <div class="btn" onclick="inputNum(4)">4</div>
+        <div class="btn" onclick="inputNum(5)">5</div>
+        <div class="btn" onclick="inputNum(6)">6</div>
+        <div class="btn" onclick="inputNum(7)">7</div>
+        <div class="btn" onclick="inputNum(8)">8</div>
+        <div class="btn" onclick="inputNum(9)">9</div>
+    </div>
+
+    <div id="game-over" class="game-over">
+        <h2 style="font-size: 48px; color: var(--p-green);">ACCESS GRANTED</h2>
+        <button class="reset-btn" onclick="initGame()">NEXT CODE</button>
+    </div>
+
+    <script>
+        const codeDisplay = document.getElementById('code-display');
+        const gameOverEl = document.getElementById('game-over');
+        
+        let targetCode, currentInput, level;
+
+        function initGame() {
+            level = 4;
+            targetCode = "";
+            for(let i=0; i<level; i++) targetCode += Math.floor(Math.random() * 9) + 1;
+            currentInput = "";
+            updateDisplay();
+            gameOverEl.style.display = 'none';
+        }
+
+        function inputNum(n) {
+            currentInput += n;
+            updateDisplay();
+            
+            if (currentInput.length === targetCode.length) {
+                if (currentInput === targetCode) {
+                    setTimeout(() => {
+                        gameOverEl.style.display = 'flex';
+                    }, 200);
+                } else {
+                    currentInput = "";
+                    setTimeout(updateDisplay, 200);
+                }
+            }
+        }
+
+        function updateDisplay() {
+            let display = "";
+            for(let i=0; i<targetCode.length; i++) {
+                if (i < currentInput.length) display += currentInput[i];
+                else display += "_";
+            }
+            codeDisplay.textContent = display;
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

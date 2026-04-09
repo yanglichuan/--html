@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Snake - Game 22/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-green: #39ff14;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            box-shadow: 0 0 50px rgba(57, 255, 20, 0.1);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            text-shadow: 0 0 10px var(--p-green);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-green); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: var(--p-green);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--p-green);
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-green);
+            color: var(--p-green);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: var(--p-green);
+            color: black;
+            box-shadow: 0 0 30px var(--p-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">DATA HARVESTED</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">NODE LENGTH</div>
+            <div id="length" class="value">3</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>CONNECTION LOST</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px; color: var(--p-green);">Data: 0</p>
+        <button onclick="initGame()">RE-ESTABLISH</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const lengthEl = document.getElementById('length');
+        const gameOverEl = document.getElementById('game-over');
+
+        const GRID_SIZE = 20;
+        let width, height, cols, rows;
+        let snake, food, dx, dy, nextDx, nextDy, score, gameActive, speed;
+
+        function resize() {
+            width = canvas.width = 600;
+            height = canvas.height = 400;
+            cols = width / GRID_SIZE;
+            rows = height / GRID_SIZE;
+        }
+
+        function initGame() {
+            resize();
+            snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
+            dx = 1; dy = 0; nextDx = 1; nextDy = 0;
+            score = 0; speed = 100;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            lengthEl.textContent = '3';
+            gameOverEl.style.display = 'none';
+            spawnFood();
+            gameLoop();
+        }
+
+        function spawnFood() {
+            food = {
+                x: Math.floor(Math.random() * cols),
+                y: Math.floor(Math.random() * rows),
+                char: Math.random() > 0.5 ? "1" : "0"
+            };
+            if (snake.some(p => p.x === food.x && p.y === food.y)) spawnFood();
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.3)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Matrix background
+            ctx.font = "14px Courier New";
+            ctx.fillStyle = "rgba(57, 255, 20, 0.05)";
+            for(let i=0; i<10; i++) {
+                ctx.fillText(Math.random() > 0.5 ? "1" : "0", Math.random() * width, Math.random() * height);
+            }
+
+            // Draw Snake
+            snake.forEach((p, i) => {
+                const isHead = i === 0;
+                ctx.fillStyle = isHead ? '#39ff14' : `rgba(57, 255, 20, ${1 - i/snake.length})`;
+                ctx.font = isHead ? "bold 20px Courier New" : "18px Courier New";
+                ctx.shadowBlur = isHead ? 15 : 5;
+                ctx.shadowColor = '#39ff14';
+                ctx.fillText(isHead ? "@" : "x", p.x * GRID_SIZE, p.y * GRID_SIZE + GRID_SIZE);
+                ctx.shadowBlur = 0;
+            });
+
+            // Draw Food
+            ctx.fillStyle = '#39ff14';
+            ctx.font = "bold 22px Courier New";
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#39ff14';
+            ctx.fillText(food.char, food.x * GRID_SIZE, food.y * GRID_SIZE + GRID_SIZE);
+            ctx.shadowBlur = 0;
+        }
+
+        function update() {
+            dx = nextDx; dy = nextDy;
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows ||
+                snake.some(p => p.x === head.x && p.y === head.y)) {
+                return endGame();
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score += 100;
+                scoreEl.textContent = score;
+                lengthEl.textContent = snake.length;
+                speed = Math.max(50, 100 - (score / 500));
+                spawnFood();
+            } else {
+                snake.pop();
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Data: ${score}`;
+        }
+
+        function gameLoop() {
+            if (!gameActive) return;
+            update();
+            draw();
+            setTimeout(gameLoop, speed);
+        }
+
+        window.addEventListener('keydown', e => {
+            switch(e.key) {
+                case 'ArrowUp': if (dy === 0) { nextDx = 0; nextDy = -1; } break;
+                case 'ArrowDown': if (dy === 0) { nextDx = 0; nextDy = 1; } break;
+                case 'ArrowLeft': if (dx === 0) { nextDx = -1; nextDy = 0; } break;
+                case 'ArrowRight': if (dx === 0) { nextDx = 1; nextDy = 0; } break;
+            }
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

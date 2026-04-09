@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Neon Ball - Game 40/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">BOUNCES</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">BEST</div>
+            <div id="best" class="value">0</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>SYNC LOST</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Bounces: 0</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <div class="controls-hint">Move Paddle to Keep the Ball Bouncing</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const bestEl = document.getElementById('best');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 400, height = 600;
+        let ball, paddle, score, bestScore, gameActive;
+
+        class Ball {
+            constructor() {
+                this.radius = 10;
+                this.reset();
+            }
+            reset() {
+                this.x = width / 2;
+                this.y = 100;
+                this.vx = 4;
+                this.vy = 4;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x - this.radius < 0 || this.x + this.radius > width) this.vx = -this.vx;
+                if (this.y - this.radius < 0) this.vy = -this.vy;
+
+                if (this.y + this.radius > height) {
+                    endGame();
+                }
+
+                if (this.y + this.radius > paddle.y && this.y - this.radius < paddle.y + paddle.h &&
+                    this.x > paddle.x && this.x < paddle.x + paddle.w) {
+                    this.vy = -Math.abs(this.vy) * 1.05;
+                    this.vx += (this.x - (paddle.x + paddle.w/2)) * 0.1;
+                    score++;
+                    scoreEl.textContent = score;
+                }
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Paddle {
+            constructor() {
+                this.w = 80;
+                this.h = 10;
+                this.x = (width - this.w) / 2;
+                this.y = height - 100;
+            }
+            draw() {
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            ball = new Ball();
+            paddle = new Paddle();
+            score = 0;
+            bestScore = parseInt(localStorage.getItem('neon-ball-best')) || 0;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            bestEl.textContent = bestScore;
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function endGame() {
+            gameActive = false;
+            if (score > bestScore) {
+                bestScore = score;
+                localStorage.setItem('neon-ball-best', bestScore);
+            }
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Bounces: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            paddle.draw();
+            ball.update();
+            ball.draw();
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = (e.clientX - rect.left) - paddle.w / 2;
+            if (paddle.x < 0) paddle.x = 0;
+            if (paddle.x + paddle.w > width) paddle.x = width - paddle.w;
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            paddle.x = (e.touches[0].clientX - rect.left) - paddle.w / 2;
+            if (paddle.x < 0) paddle.x = 0;
+            if (paddle.x + paddle.w > width) paddle.x = width - paddle.w;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

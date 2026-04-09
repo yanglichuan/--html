@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gravity Ball - Game 14/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">LEVEL</div>
+            <div id="level" class="value">1</div>
+        </div>
+        <div class="stat">
+            <div class="label">FAILURES</div>
+            <div id="fails" class="value">0</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>GRAVITY COLLAPSE</h1>
+        <p id="final-level" style="font-size: 24px; margin-bottom: 20px;">Level Reached: 1</p>
+        <button onclick="initGame()">RESET GRAVITY</button>
+    </div>
+
+    <div class="controls-hint">Move Mouse or Tilt Device to Control Ball</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const levelEl = document.getElementById('level');
+        const failsEl = document.getElementById('fails');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 600, height = 600;
+        let ball, obstacles, goal, level, fails, gameActive, gravity;
+
+        class Ball {
+            constructor() {
+                this.radius = 12;
+                this.reset();
+            }
+            reset() {
+                this.x = 50;
+                this.y = 50;
+                this.vx = 0;
+                this.vy = 0;
+            }
+            update() {
+                this.vx += gravity.x * 0.5;
+                this.vy += gravity.y * 0.5;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x - this.radius < 0 || this.x + this.radius > width ||
+                    this.y - this.radius < 0 || this.y + this.radius > height) {
+                    this.fail();
+                }
+            }
+            fail() {
+                fails++;
+                failsEl.textContent = fails;
+                this.reset();
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Obstacle {
+            constructor(x, y, w, h) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.color = '#ff007a';
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+            checkCollision(b) {
+                if (b.x + b.radius > this.x && b.x - b.radius < this.x + this.w &&
+                    b.y + b.radius > this.y && b.y - b.radius < this.y + this.h) {
+                    b.fail();
+                }
+            }
+        }
+
+        function createLevel(lvl) {
+            obstacles = [];
+            const count = Math.min(lvl * 2, 20);
+            for (let i = 0; i < count; i++) {
+                obstacles.push(new Obstacle(
+                    Math.random() * (width - 100) + 50,
+                    Math.random() * (height - 100) + 50,
+                    40 + Math.random() * 100,
+                    20
+                ));
+            }
+            goal = { x: width - 50, y: height - 50, radius: 20 };
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            ball = new Ball();
+            level = 1;
+            fails = 0;
+            gravity = { x: 0, y: 0 };
+            gameActive = true;
+            levelEl.textContent = '1';
+            failsEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            createLevel(level);
+            animate();
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Goal
+            ctx.fillStyle = '#39ff14';
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#39ff14';
+            ctx.beginPath();
+            ctx.arc(goal.x, goal.y, goal.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ball.update();
+            ball.draw();
+
+            obstacles.forEach(obs => {
+                obs.draw();
+                obs.checkCollision(ball);
+            });
+
+            if (Math.hypot(ball.x - goal.x, ball.y - goal.y) < ball.radius + goal.radius) {
+                level++;
+                levelEl.textContent = level;
+                ball.reset();
+                createLevel(level);
+            }
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            gravity.x = (e.clientX - rect.left - width / 2) / (width / 2);
+            gravity.y = (e.clientY - rect.top - height / 2) / (height / 2);
+        });
+
+        window.addEventListener('deviceorientation', e => {
+            gravity.x = e.gamma / 45;
+            gravity.y = e.beta / 45;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

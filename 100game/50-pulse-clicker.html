@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>脉冲点击器 - Pulse Clicker</title>
+    <style>
+        :root {
+            --bg-color: #000;
+            --pulse-color: #00f2ff;
+            --upgrade-color: #ff00ff;
+            --text-color: #fff;
+            --button-bg: #111;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 80%);
+        }
+
+        #header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--pulse-color);
+            background: rgba(0, 242, 255, 0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--pulse-color);
+        }
+
+        #energy-display {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+            text-shadow: 0 0 20px var(--pulse-color);
+        }
+
+        #energy-label {
+            font-size: 14px;
+            color: var(--pulse-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #click-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        #core {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #fff 0%, var(--pulse-color) 40%, transparent 70%);
+            box-shadow: 0 0 50px var(--pulse-color);
+            transition: transform 0.1s;
+            position: relative;
+            z-index: 5;
+        }
+
+        #core:active {
+            transform: scale(0.95);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 2px solid var(--pulse-color);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            color: var(--pulse-color);
+            font-weight: bold;
+            font-size: 20px;
+            animation: floatUp 1s ease-out forwards;
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(1.5); opacity: 0; }
+        }
+
+        #upgrades-panel {
+            height: 40%;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 2px solid var(--upgrade-color);
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .upgrade-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--upgrade-color);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .upgrade-item:hover {
+            background: rgba(255, 0, 255, 0.2);
+            box-shadow: 0 0 10px var(--upgrade-color);
+        }
+
+        .upgrade-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #555;
+            background: #111;
+            box-shadow: none;
+        }
+
+        .upgrade-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .upgrade-name {
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--upgrade-color);
+        }
+
+        .upgrade-cost {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .upgrade-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        #stats-bar {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background: #111;
+            font-size: 12px;
+            color: #888;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <div id="energy-display">0</div>
+            <div id="energy-label">PULSE ENERGY</div>
+        </div>
+
+        <div id="stats-bar">
+            <span>PER CLICK: <span id="ppc-display">1</span></span>
+            <span>PER SECOND: <span id="pps-display">0</span></span>
+        </div>
+
+        <div id="click-area">
+            <div id="core"></div>
+        </div>
+
+        <div id="upgrades-panel">
+            <!-- Upgrades generated by JS -->
+        </div>
+    </div>
+
+    <script>
+        const gameData = {
+            energy: 0,
+            clickPower: 1,
+            autoPower: 0,
+            upgrades: [
+                { id: 'cursor', name: 'Auto Clicker', cost: 15, power: 0.1, count: 0, type: 'auto' },
+                { id: 'battery', name: 'Power Cell', cost: 100, power: 1, count: 0, type: 'auto' },
+                { id: 'amplifier', name: 'Pulse Amp', cost: 500, power: 5, count: 0, type: 'click' },
+                { id: 'reactor', name: 'Fusion Core', cost: 1000, power: 10, count: 0, type: 'auto' },
+                { id: 'supercomputer', name: 'AI Network', cost: 5000, power: 50, count: 0, type: 'auto' },
+                { id: 'satellite', name: 'Orbital Beam', cost: 20000, power: 200, count: 0, type: 'auto' }
+            ]
+        };
+
+        // Load save
+        const saved = localStorage.getItem('pulseClickerSave');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                gameData.energy = parsed.energy || 0;
+                gameData.clickPower = parsed.clickPower || 1; // Recalculate usually but simple save for now
+                // Actually better to save counts and recalculate powers
+                if (parsed.upgrades) {
+                    parsed.upgrades.forEach((u, i) => {
+                        if (gameData.upgrades[i]) gameData.upgrades[i].count = u.count;
+                    });
+                }
+            } catch (e) {
+                console.error("Save load failed", e);
+            }
+        }
+
+        const energyEl = document.getElementById('energy-display');
+        const ppcEl = document.getElementById('ppc-display');
+        const ppsEl = document.getElementById('pps-display');
+        const upgradesPanel = document.getElementById('upgrades-panel');
+        const core = document.getElementById('core');
+        const clickArea = document.getElementById('click-area');
+
+        function updateStats() {
+            // Recalculate powers
+            let click = 1;
+            let auto = 0;
+            
+            gameData.upgrades.forEach(u => {
+                if (u.type === 'click') click += u.power * u.count;
+                if (u.type === 'auto') auto += u.power * u.count;
+            });
+
+            gameData.clickPower = click;
+            gameData.autoPower = auto;
+
+            ppcEl.textContent = Math.floor(click);
+            ppsEl.textContent = auto.toFixed(1);
+        }
+
+        function renderUpgrades() {
+            upgradesPanel.innerHTML = '';
+            gameData.upgrades.forEach((u, index) => {
+                const el = document.createElement('div');
+                el.className = 'upgrade-item';
+                el.id = `upgrade-${index}`;
+                el.onclick = () => buyUpgrade(index);
+                
+                // Calculate cost: base * 1.15^count
+                const cost = Math.floor(u.cost * Math.pow(1.15, u.count));
+                
+                el.innerHTML = `
+                    <div class="upgrade-info">
+                        <span class="upgrade-name">${u.name}</span>
+                        <span class="upgrade-cost">Cost: ${cost} | +${u.power} ${u.type === 'click' ? 'Click' : 'PPS'}</span>
+                    </div>
+                    <div class="upgrade-count">${u.count}</div>
+                `;
+                upgradesPanel.appendChild(el);
+            });
+        }
+
+        function buyUpgrade(index) {
+            const u = gameData.upgrades[index];
+            const cost = Math.floor(u.cost * Math.pow(1.15, u.count));
+            
+            if (gameData.energy >= cost) {
+                gameData.energy -= cost;
+                u.count++;
+                updateStats();
+                renderUpgrades();
+                updateUI();
+                saveGame();
+            }
+        }
+
+        function checkUpgradesAvailability() {
+            gameData.upgrades.forEach((u, index) => {
+                const el = document.getElementById(`upgrade-${index}`);
+                const cost = Math.floor(u.cost * Math.pow(1.15, u.count));
+                if (gameData.energy < cost) {
+                    el.classList.add('disabled');
+                } else {
+                    el.classList.remove('disabled');
+                }
+            });
+        }
+
+        function updateUI() {
+            energyEl.textContent = Math.floor(gameData.energy);
+            checkUpgradesAvailability();
+        }
+
+        function handleClick(e) {
+            // Prevent double firing on touch devices if both touchstart and click are handled
+            // Just use 'click' for desktop and 'touchstart' for mobile?
+            // e.preventDefault(); 
+            
+            gameData.energy += gameData.clickPower;
+            updateUI();
+            
+            // Visuals
+            createParticle(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY, `+${Math.floor(gameData.clickPower)}`);
+            createPulse();
+        }
+
+        function createParticle(x, y, text) {
+            const el = document.createElement('div');
+            el.className = 'particle';
+            el.textContent = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            clickArea.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function createPulse() {
+            const el = document.createElement('div');
+            el.className = 'pulse-ring';
+            el.style.animation = 'pulse 0.5s ease-out forwards';
+            clickArea.appendChild(el); // Append to clickArea, but position is centered in CSS relative to core?
+            // Wait, CSS says pulse-ring is centered. So we just append it to core?
+            // Actually CSS says pulse-ring position absolute top 50% left 50%.
+            // If we append to clickArea, we need to position it at click location?
+            // Or just pulse the core?
+            // Let's append to clickArea but position it at center of screen for now as per CSS
+            // Actually, if I append to clickArea, it will be centered in clickArea if I use flex centering?
+            // No, absolute positioning.
+            // Let's append to core's parent or core itself.
+            // If I append to core, it scales with core.
+            // Let's append to clickArea and ensure it's centered.
+            // CSS: .pulse-ring { top: 50%; left: 50%; ... }
+            // This centers it in the parent (clickArea). Correct.
+            
+            setTimeout(() => el.remove(), 500);
+        }
+
+        // Auto loop
+        setInterval(() => {
+            if (gameData.autoPower > 0) {
+                gameData.energy += gameData.autoPower / 10; // 10 ticks per second
+                updateUI();
+            }
+        }, 100);
+
+        // Save loop
+        setInterval(saveGame, 10000);
+
+        function saveGame() {
+            localStorage.setItem('pulseClickerSave', JSON.stringify(gameData));
+        }
+
+        core.addEventListener('mousedown', handleClick);
+        core.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // Prevent mouse emulation
+            handleClick(e);
+        });
+
+        // Init
+        updateStats();
+        renderUpgrades();
+        updateUI();
+
+    </script>
+</body>
+</html>

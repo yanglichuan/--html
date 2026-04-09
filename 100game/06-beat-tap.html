@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beat Tap - Game 06/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff007a;
+            --neon-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(180deg, #111 0%, #000 100%);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .lane {
+            position: absolute;
+            top: 0;
+            width: 25%;
+            height: 100%;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .lane:last-child { border-right: none; }
+
+        .tap-zone {
+            position: absolute;
+            bottom: 50px;
+            width: 100%;
+            height: 60px;
+            border-top: 2px solid var(--neon-blue);
+            border-bottom: 2px solid var(--neon-blue);
+            background: rgba(0, 242, 255, 0.1);
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        .note {
+            position: absolute;
+            width: 100%;
+            height: 15px;
+            background: linear-gradient(to right, var(--neon-pink), var(--neon-purple));
+            box-shadow: 0 0 15px var(--neon-pink);
+            border-radius: 4px;
+        }
+
+        .score-panel {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .score {
+            font-size: 40px;
+            font-weight: 900;
+            color: var(--neon-blue);
+            text-shadow: 0 0 15px var(--neon-blue);
+            font-family: monospace;
+        }
+
+        .combo {
+            font-size: 18px;
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .feedback {
+            position: absolute;
+            bottom: 150px;
+            width: 100%;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        .key-hints {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        .start-screen, .game-over-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container" id="game-container">
+        <div class="lane" style="left: 0;"></div>
+        <div class="lane" style="left: 25%;"></div>
+        <div class="lane" style="left: 50%;"></div>
+        <div class="lane" style="left: 75%;"></div>
+        
+        <div class="tap-zone"></div>
+        
+        <div class="score-panel">
+            <div id="score" class="score">0</div>
+            <div id="combo" class="combo">0x COMBO</div>
+        </div>
+
+        <div id="feedback" class="feedback">PERFECT</div>
+
+        <div class="key-hints">
+            <span>[D]</span><span>[F]</span><span>[J]</span><span>[K]</span>
+        </div>
+
+        <div id="start-screen" class="start-screen">
+            <h1>BEAT TAP</h1>
+            <p style="color: var(--neon-pink); margin-bottom: 20px;">Hit notes as they pass the blue line</p>
+            <button onclick="startGame()">SYNC START</button>
+        </div>
+
+        <div id="game-over" class="game-over-screen" style="display: none;">
+            <h1 style="color: var(--neon-pink);">SESSION ENDED</h1>
+            <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0</p>
+            <button onclick="startGame()">RETRY</button>
+        </div>
+    </div>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo');
+        const feedbackEl = document.getElementById('feedback');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+
+        let score = 0, combo = 0, gameActive = false;
+        let notes = [];
+        let noteSpeed = 5;
+        let lastNoteTime = 0;
+        let animationId;
+
+        const keys = { 'd': 0, 'f': 1, 'j': 2, 'k': 3 };
+
+        class Note {
+            constructor(lane) {
+                this.lane = lane;
+                this.y = -20;
+                this.hit = false;
+                this.el = document.createElement('div');
+                this.el.className = 'note';
+                this.el.style.left = (lane * 25) + '%';
+                container.appendChild(this.el);
+            }
+
+            update() {
+                this.y += noteSpeed;
+                this.el.style.top = this.y + 'px';
+                
+                if (this.y > 600 && !this.hit) {
+                    this.remove();
+                    resetCombo();
+                    return true;
+                }
+                return false;
+            }
+
+            remove() {
+                if (this.el.parentNode) {
+                    container.removeChild(this.el);
+                }
+                this.hit = true;
+            }
+        }
+
+        function startGame() {
+            score = 0; combo = 0;
+            scoreEl.textContent = '0';
+            comboEl.textContent = '0x COMBO';
+            gameActive = true;
+            notes.forEach(n => n.remove());
+            notes = [];
+            noteSpeed = 5;
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            loop(0);
+        }
+
+        function loop(timestamp) {
+            if (!gameActive) return;
+
+            if (timestamp - lastNoteTime > Math.max(800 - (score/50), 400)) {
+                notes.push(new Note(Math.floor(Math.random() * 4)));
+                lastNoteTime = timestamp;
+            }
+
+            for (let i = notes.length - 1; i >= 0; i--) {
+                if (notes[i].update()) {
+                    notes.splice(i, 1);
+                }
+            }
+
+            animationId = requestAnimationFrame(loop);
+        }
+
+        function handleInput(lane) {
+            if (!gameActive) return;
+
+            const tapY = 550; // Middle of tap zone
+            const tolerance = 40;
+            
+            let hitIndex = -1;
+            let minDiff = 1000;
+
+            notes.forEach((note, index) => {
+                if (note.lane === lane && !note.hit) {
+                    const diff = Math.abs(note.y - tapY);
+                    if (diff < tolerance && diff < minDiff) {
+                        minDiff = diff;
+                        hitIndex = index;
+                    }
+                }
+            });
+
+            if (hitIndex !== -1) {
+                const diff = minDiff;
+                let points = 100;
+                let text = "PERFECT";
+                let color = "#00f2ff";
+
+                if (diff > 20) {
+                    points = 50;
+                    text = "GREAT";
+                    color = "#00ff85";
+                }
+
+                showFeedback(text, color);
+                score += points * (1 + Math.floor(combo / 10) * 0.1);
+                score = Math.floor(score);
+                combo++;
+                scoreEl.textContent = score;
+                comboEl.textContent = combo + 'x COMBO';
+                notes[hitIndex].remove();
+                notes.splice(hitIndex, 1);
+                
+                if (score % 2000 === 0) noteSpeed += 0.5;
+            } else {
+                resetCombo();
+            }
+        }
+
+        function showFeedback(text, color) {
+            feedbackEl.textContent = text;
+            feedbackEl.style.color = color;
+            feedbackEl.style.textShadow = `0 0 10px ${color}`;
+            feedbackEl.style.opacity = 1;
+            setTimeout(() => feedbackEl.style.opacity = 0, 200);
+        }
+
+        function resetCombo() {
+            combo = 0;
+            comboEl.textContent = '0x COMBO';
+            showFeedback("MISS", "#ff007a");
+        }
+
+        window.addEventListener('keydown', (e) => {
+            const lane = keys[e.key.toLowerCase()];
+            if (lane !== undefined) handleInput(lane);
+        });
+
+        container.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const rect = container.getBoundingClientRect();
+            const touchX = e.touches[0].clientX - rect.left;
+            const lane = Math.floor(touchX / (rect.width / 4));
+            handleInput(lane);
+        });
+    </script>
+</body>
+</html>

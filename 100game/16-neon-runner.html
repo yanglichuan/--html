@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Runner - Game 16/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">DISTANCE</div>
+            <div id="distance" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">SPEED</div>
+            <div id="speed" class="value">1X</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>SYSTEM OVERLOAD</h1>
+        <p id="final-dist" style="font-size: 24px; margin-bottom: 20px;">Distance: 0 M</p>
+        <button onclick="initGame()">RESTART RUN</button>
+    </div>
+
+    <div class="controls-hint">Click or Space to Jump</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const distEl = document.getElementById('distance');
+        const speedEl = document.getElementById('speed');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 400;
+        let player, obstacles, gameActive, distance, speed, offset;
+
+        class Player {
+            constructor() {
+                this.w = 30;
+                this.h = 30;
+                this.x = 100;
+                this.y = height - this.h - 50;
+                this.vy = 0;
+                this.gravity = 0.8;
+                this.jumpPower = -15;
+                this.onGround = true;
+            }
+            jump() {
+                if (this.onGround) {
+                    this.vy = this.jumpPower;
+                    this.onGround = false;
+                }
+            }
+            update() {
+                this.vy += this.gravity;
+                this.y += this.vy;
+                if (this.y > height - this.h - 50) {
+                    this.y = height - this.h - 50;
+                    this.vy = 0;
+                    this.onGround = true;
+                }
+            }
+            draw() {
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Obstacle {
+            constructor() {
+                this.w = 20 + Math.random() * 30;
+                this.h = 30 + Math.random() * 50;
+                this.x = width + 100;
+                this.y = height - this.h - 50;
+                this.color = '#ff007a';
+            }
+            update() {
+                this.x -= speed;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            player = new Player();
+            obstacles = [];
+            gameActive = true;
+            distance = 0;
+            speed = 6;
+            offset = 0;
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function spawnObstacle() {
+            if (!gameActive) return;
+            obstacles.push(new Obstacle());
+            setTimeout(spawnObstacle, 1500 - (speed * 50) + Math.random() * 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-dist').textContent = `Distance: ${Math.floor(distance)} M`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Ground
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, height - 50);
+            ctx.lineTo(width, height - 50);
+            ctx.stroke();
+
+            // Grid lines
+            offset = (offset + speed) % 50;
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)';
+            for (let i = -50; i < width; i += 50) {
+                ctx.beginPath();
+                ctx.moveTo(i + (50 - offset), height - 50);
+                ctx.lineTo(i + (50 - offset), height);
+                ctx.stroke();
+            }
+
+            player.update();
+            player.draw();
+
+            obstacles.forEach((obs, i) => {
+                obs.update();
+                obs.draw();
+                if (obs.x < -100) obstacles.splice(i, 1);
+
+                // Collision Detection
+                if (player.x < obs.x + obs.w &&
+                    player.x + player.w > obs.x &&
+                    player.y < obs.y + obs.h &&
+                    player.y + player.h > obs.y) {
+                    endGame();
+                }
+            });
+
+            distance += speed / 10;
+            speed += 0.001;
+            distEl.textContent = Math.floor(distance);
+            speedEl.textContent = (speed/6).toFixed(1) + 'X';
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space' || e.key === 'ArrowUp') player.jump();
+        });
+        canvas.addEventListener('mousedown', () => player.jump());
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); player.jump(); });
+
+        initGame();
+        spawnObstacle();
+    </script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Helix Jump - Game 30/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">DEPTH</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">STATUS</div>
+            <div id="status" class="value">DESCENDING</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>DESCENT HALTED</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Depth: 0</p>
+        <button onclick="initGame()">RE-AUTHORIZE</button>
+    </div>
+
+    <div class="controls-hint">Use Left/Right Arrows or Drag to Rotate Helix</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 400, height = 600;
+        let ball, platforms, rotation, score, gameActive;
+
+        class Ball {
+            constructor() {
+                this.radius = 10;
+                this.x = width / 2;
+                this.y = 150;
+                this.vy = 0;
+                this.gravity = 0.4;
+                this.jump = -10;
+            }
+            update() {
+                this.vy += this.gravity;
+                this.y += this.vy;
+                
+                platforms.forEach((p, i) => {
+                    if (this.y + this.radius > p.y && this.y - this.radius < p.y + 10) {
+                        const relAngle = (Math.atan2(0, 1) - rotation) % (Math.PI * 2);
+                        // Simplified 2D Helix check
+                        if (this.vy > 0 && Math.abs(rotation % (Math.PI * 2)) < 0.5) {
+                            this.vy = this.jump;
+                            if (p.danger) endGame();
+                        } else if (this.vy > 0 && Math.abs((rotation + Math.PI) % (Math.PI * 2)) < 0.5) {
+                            // Gap
+                        }
+                    }
+                });
+
+                if (this.y > height) endGame();
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Platform {
+            constructor(y) {
+                this.y = y;
+                this.danger = Math.random() > 0.8;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(width / 2, this.y);
+                ctx.rotate(rotation);
+                
+                ctx.fillStyle = this.danger ? '#ff007a' : '#00f2ff';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = ctx.fillStyle;
+                
+                // Draw 2 segments with a gap
+                ctx.fillRect(-100, 0, 80, 10);
+                ctx.fillRect(20, 0, 80, 10);
+                
+                ctx.restore();
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            ball = new Ball();
+            platforms = [];
+            for (let i = 0; i < 10; i++) platforms.push(new Platform(300 + i * 150));
+            rotation = 0;
+            score = 0;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Depth: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Center Pole
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.fillRect(width / 2 - 10, 0, 20, height);
+
+            ball.update();
+            ball.draw();
+
+            platforms.forEach((p, i) => {
+                p.draw();
+                if (ball.y > p.y + 50) {
+                    platforms.splice(i, 1);
+                    platforms.push(new Platform(platforms[platforms.length - 1].y + 150));
+                    score++;
+                    scoreEl.textContent = score;
+                }
+            });
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft') rotation -= 0.2;
+            if (e.key === 'ArrowRight') rotation += 0.2;
+        });
+
+        let startX;
+        canvas.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+        canvas.addEventListener('touchmove', e => {
+            const dx = e.touches[0].clientX - startX;
+            rotation += dx * 0.01;
+            startX = e.touches[0].clientX;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

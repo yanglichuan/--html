@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Chess - Game 34/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+            --cell-dark: #111;
+            --cell-light: #1a1a1a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(8, 50px);
+            grid-template-rows: repeat(8, 50px);
+            border: 2px solid var(--p-blue);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cell.dark { background: var(--cell-dark); }
+        .cell.light { background: var(--cell-light); }
+        .cell.selected { background: rgba(0, 242, 255, 0.3); box-shadow: inset 0 0 10px var(--p-blue); }
+        .cell.valid-move { position: relative; }
+        .cell.valid-move::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--p-blue);
+            border-radius: 50%;
+            opacity: 0.5;
+        }
+
+        .piece.white { color: var(--p-blue); text-shadow: 0 0 10px var(--p-blue); }
+        .piece.black { color: var(--p-pink); text-shadow: 0 0 10px var(--p-pink); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button.reset-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CYBER CHESS</h1>
+        <p id="turn-info" style="color: var(--p-blue); letter-spacing: 1px;">WHITE'S TURN</p>
+    </div>
+
+    <div id="board"></div>
+
+    <div id="game-over" class="game-over">
+        <h2 id="winner-text" style="font-size: 48px; color: var(--p-blue);">WHITE VICTORIOUS</h2>
+        <button class="reset-btn" onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <script>
+        const boardEl = document.getElementById('board');
+        const turnInfo = document.getElementById('turn-info');
+        const gameOverEl = document.getElementById('game-over');
+        const winnerText = document.getElementById('winner-text');
+
+        let board = [];
+        let selectedCell = null;
+        let turn = 'white';
+        let validMoves = [];
+
+        const PIECES = {
+            white: { K: '♔', Q: '♕', R: '♖', B: '♗', N: '♘', P: '♙' },
+            black: { K: '♚', Q: '♛', R: '♜', B: '♝', N: '♞', P: '♟' }
+        };
+
+        function initGame() {
+            board = Array(8).fill().map(() => Array(8).fill(null));
+            setupBoard();
+            renderBoard();
+            turn = 'white';
+            turnInfo.textContent = "WHITE'S TURN";
+            turnInfo.style.color = 'var(--p-blue)';
+            gameOverEl.style.display = 'none';
+        }
+
+        function setupBoard() {
+            // Kings
+            board[0][4] = { type: 'K', color: 'black' };
+            board[7][4] = { type: 'K', color: 'white' };
+            // Simplified setup for small game
+            board[0][3] = { type: 'Q', color: 'black' };
+            board[7][3] = { type: 'Q', color: 'white' };
+            for(let i=0; i<8; i++) {
+                board[1][i] = { type: 'P', color: 'black' };
+                board[6][i] = { type: 'P', color: 'white' };
+            }
+        }
+
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const el = document.createElement('div');
+                    el.className = `cell ${(r + c) % 2 === 0 ? 'light' : 'dark'}`;
+                    const piece = board[r][c];
+                    if (piece) {
+                        const pEl = document.createElement('span');
+                        pEl.className = `piece ${piece.color}`;
+                        pEl.textContent = PIECES[piece.color][piece.type];
+                        el.appendChild(pEl);
+                    }
+                    if (selectedCell && selectedCell.r === r && selectedCell.c === c) el.classList.add('selected');
+                    if (validMoves.some(m => m.r === r && m.c === c)) el.classList.add('valid-move');
+                    
+                    el.onclick = () => handleCellClick(r, c);
+                    boardEl.appendChild(el);
+                }
+            }
+        }
+
+        function handleCellClick(r, c) {
+            const piece = board[r][c];
+            
+            if (selectedCell) {
+                const move = validMoves.find(m => m.r === r && m.c === c);
+                if (move) {
+                    board[r][c] = board[selectedCell.r][selectedCell.c];
+                    board[selectedCell.r][selectedCell.c] = null;
+                    selectedCell = null;
+                    validMoves = [];
+                    switchTurn();
+                    renderBoard();
+                    return;
+                }
+            }
+
+            if (piece && piece.color === turn) {
+                selectedCell = { r, c };
+                calculateValidMoves(r, c);
+            } else {
+                selectedCell = null;
+                validMoves = [];
+            }
+            renderBoard();
+        }
+
+        function calculateValidMoves(r, c) {
+            validMoves = [];
+            const piece = board[r][c];
+            if (piece.type === 'P') {
+                const dir = piece.color === 'white' ? -1 : 1;
+                if (board[r+dir] && !board[r+dir][c]) validMoves.push({r: r+dir, c});
+            }
+            // Simplified moves for this mini-game
+            if (piece.type === 'K' || piece.type === 'Q') {
+                [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr, dc]) => {
+                    if (board[r+dr] && (board[r+dr][c+dc] === null || board[r+dr][c+dc].color !== piece.color)) {
+                        validMoves.push({r: r+dr, c: c+dc});
+                    }
+                });
+            }
+        }
+
+        function switchTurn() {
+            turn = turn === 'white' ? 'black' : 'white';
+            turnInfo.textContent = `${turn.toUpperCase()}'S TURN`;
+            turnInfo.style.color = turn === 'white' ? 'var(--p-blue)' : 'var(--p-pink)';
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

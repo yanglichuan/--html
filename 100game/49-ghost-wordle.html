@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>幽灵猜词 - Ghost Wordle</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --ghost-white: rgba(255, 255, 255, 0.8);
+            --ghost-green: rgba(0, 255, 65, 0.6);
+            --ghost-yellow: rgba(255, 255, 0, 0.6);
+            --ghost-gray: rgba(100, 100, 100, 0.3);
+            --neon-blue: #00f2ff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--ghost-white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--neon-blue);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--neon-blue);
+            letter-spacing: 2px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(6, 1fr);
+            gap: 5px;
+            padding: 10px;
+            flex-grow: 1;
+            max-height: 400px; /* Limit height to keep keyboard visible */
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+        }
+
+        .tile {
+            border: 2px solid var(--ghost-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.5s;
+        }
+
+        .tile.filled {
+            border-color: var(--ghost-white);
+            box-shadow: 0 0 5px var(--ghost-white);
+        }
+
+        .tile.correct {
+            background-color: var(--ghost-green);
+            border-color: var(--ghost-green);
+            color: #000;
+        }
+
+        .tile.present {
+            background-color: var(--ghost-yellow);
+            border-color: var(--ghost-yellow);
+            color: #000;
+        }
+
+        .tile.absent {
+            background-color: var(--ghost-gray);
+            border-color: transparent;
+        }
+
+        #keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px;
+            width: 100%;
+        }
+
+        .key-row {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .key {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            height: 50px;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            user-select: none;
+            transition: all 0.1s;
+        }
+
+        .key:active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .key.wide {
+            flex: 1.5;
+            font-size: 12px;
+        }
+
+        .key.correct { background-color: var(--ghost-green); color: #000; }
+        .key.present { background-color: var(--ghost-yellow); color: #000; }
+        .key.absent { background-color: var(--ghost-gray); opacity: 0.5; }
+
+        #message {
+            position: absolute;
+            top: 10%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px 30px;
+            border: 1px solid var(--neon-blue);
+            border-radius: 5px;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            text-align: center;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            display: none;
+        }
+
+        .modal-content {
+            background: #111;
+            border: 2px solid var(--neon-blue);
+            padding: 30px;
+            text-align: center;
+            max-width: 80%;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>GHOST WORDLE</h1>
+        </header>
+
+        <div id="board">
+            <!-- Grid generated by JS -->
+        </div>
+
+        <div id="keyboard">
+            <!-- Keyboard generated by JS -->
+        </div>
+    </div>
+
+    <div id="message"></div>
+
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title"></h2>
+            <p id="modal-word"></p>
+            <button onclick="initGame()">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <script>
+        const WORD_LENGTH = 5;
+        const MAX_GUESSES = 6;
+        
+        // Simple word list
+        const WORDS = [
+            "GHOST", "NIGHT", "DEATH", "BLOOD", "WITCH", "MAGIC", "SKULL", "GRAVE", 
+            "DEMON", "DEVIL", "CURSE", "SCARE", "FEAR", "PANIC", "SHOCK", "CREEP",
+            "HAUNT", "SPOOK", "ALIEN", "SPACE", "LASER", "ROBOT", "CYBER", "NEON",
+            "POWER", "FORCE", "STORM", "FLASH", "LIGHT", "DARK", "BLACK", "SHADE",
+            "SHADOW", "DREAM", "SLEEP", "AWAKE", "ALIVE", "HUMAN", "WORLD", "EARTH",
+            "SOLAR", "LUNAR", "STARS", "COMET", "ORBIT", "PILOT", "DRIVE", "SPEED",
+            "TRACK", "TRACE", "ERROR", "GLITCH", "VIRUS", "CODE", "DATA", "INPUT"
+        ];
+
+        let secretWord = "";
+        let guesses = [];
+        let currentGuess = "";
+        let gameOver = false;
+
+        const board = document.getElementById('board');
+        const keyboard = document.getElementById('keyboard');
+        const messageEl = document.getElementById('message');
+        const modal = document.getElementById('game-over-modal');
+
+        function initGame() {
+            secretWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            guesses = [];
+            currentGuess = "";
+            gameOver = false;
+            modal.style.display = 'none';
+            messageEl.style.display = 'none';
+            
+            createBoard();
+            createKeyboard();
+        }
+
+        function createBoard() {
+            board.innerHTML = '';
+            for (let i = 0; i < MAX_GUESSES; i++) {
+                const row = document.createElement('div');
+                row.className = 'row';
+                for (let j = 0; j < WORD_LENGTH; j++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.id = `tile-${i}-${j}`;
+                    row.appendChild(tile);
+                }
+                board.appendChild(row);
+            }
+        }
+
+        function createKeyboard() {
+            keyboard.innerHTML = '';
+            const rows = [
+                "QWERTYUIOP",
+                "ASDFGHJKL",
+                "ZXCVBNM"
+            ];
+
+            rows.forEach((rowChars, rowIndex) => {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'key-row';
+                
+                if (rowIndex === 2) {
+                    const enterKey = createKey("ENTER", true);
+                    enterKey.onclick = submitGuess;
+                    rowEl.appendChild(enterKey);
+                }
+
+                for (let char of rowChars) {
+                    const key = createKey(char);
+                    key.onclick = () => handleInput(char);
+                    rowEl.appendChild(key);
+                }
+
+                if (rowIndex === 2) {
+                    const backKey = createKey("⌫", true);
+                    backKey.onclick = deleteChar;
+                    rowEl.appendChild(backKey);
+                }
+
+                keyboard.appendChild(rowEl);
+            });
+        }
+
+        function createKey(char, wide = false) {
+            const key = document.createElement('div');
+            key.className = `key ${wide ? 'wide' : ''}`;
+            key.textContent = char;
+            key.dataset.key = char;
+            return key;
+        }
+
+        function handleInput(char) {
+            if (gameOver) return;
+            if (currentGuess.length < WORD_LENGTH) {
+                currentGuess += char;
+                updateGrid();
+            }
+        }
+
+        function deleteChar() {
+            if (gameOver) return;
+            if (currentGuess.length > 0) {
+                currentGuess = currentGuess.slice(0, -1);
+                updateGrid();
+            }
+        }
+
+        function updateGrid() {
+            const row = guesses.length;
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                const tile = document.getElementById(`tile-${row}-${i}`);
+                tile.textContent = currentGuess[i] || "";
+                if (currentGuess[i]) tile.classList.add('filled');
+                else tile.classList.remove('filled');
+            }
+        }
+
+        function submitGuess() {
+            if (gameOver) return;
+            if (currentGuess.length !== WORD_LENGTH) {
+                showMessage("Not enough letters");
+                return;
+            }
+
+            // In a real game, check if word is valid. Here we skip validity check for simplicity
+            // or we check if it's in our limited dictionary? 
+            // Let's skip dictionary check to avoid frustration with limited list.
+
+            const result = checkGuess(currentGuess);
+            animateReveal(result);
+        }
+
+        function checkGuess(guess) {
+            const result = Array(WORD_LENGTH).fill('absent');
+            const secretArr = secretWord.split('');
+            const guessArr = guess.split('');
+
+            // Check correct (Green)
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (guessArr[i] === secretArr[i]) {
+                    result[i] = 'correct';
+                    secretArr[i] = null;
+                    guessArr[i] = null;
+                }
+            }
+
+            // Check present (Yellow)
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (guessArr[i] !== null) {
+                    const index = secretArr.indexOf(guessArr[i]);
+                    if (index !== -1) {
+                        result[i] = 'present';
+                        secretArr[index] = null;
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        function animateReveal(result) {
+            const row = guesses.length;
+            let completed = 0;
+
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                setTimeout(() => {
+                    const tile = document.getElementById(`tile-${row}-${i}`);
+                    const status = result[i];
+                    tile.classList.add(status);
+                    
+                    // Update keyboard
+                    const key = document.querySelector(`.key[data-key="${currentGuess[i]}"]`);
+                    if (key) {
+                        // Only upgrade status (absent -> present -> correct)
+                        const currentStatus = key.classList.contains('correct') ? 2 :
+                                            key.classList.contains('present') ? 1 : 0;
+                        const newStatus = status === 'correct' ? 2 :
+                                        status === 'present' ? 1 : 0;
+                        
+                        if (newStatus > currentStatus) {
+                            key.classList.remove('correct', 'present', 'absent');
+                            key.classList.add(status);
+                        } else if (newStatus === 0 && currentStatus === 0) {
+                            key.classList.add('absent');
+                        }
+                    }
+                }, i * 200);
+            }
+
+            setTimeout(() => {
+                if (currentGuess === secretWord) {
+                    endGame(true);
+                } else if (guesses.length === MAX_GUESSES - 1) {
+                    endGame(false);
+                } else {
+                    guesses.push(currentGuess);
+                    currentGuess = "";
+                }
+            }, WORD_LENGTH * 200 + 100);
+        }
+
+        function showMessage(msg) {
+            messageEl.textContent = msg;
+            messageEl.style.display = 'block';
+            setTimeout(() => {
+                messageEl.style.display = 'none';
+            }, 2000);
+        }
+
+        function endGame(win) {
+            gameOver = true;
+            setTimeout(() => {
+                document.getElementById('modal-title').textContent = win ? "VICTORY" : "GAME OVER";
+                document.getElementById('modal-word').textContent = `The word was: ${secretWord}`;
+                modal.style.display = 'flex';
+            }, 500);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (gameOver) return;
+            const key = e.key.toUpperCase();
+            if (key === 'ENTER') submitGuess();
+            else if (key === 'BACKSPACE') deleteChar();
+            else if (/^[A-Z]$/.test(key)) handleInput(key);
+        });
+
+        initGame();
+
+    </script>
+</body>
+</html>

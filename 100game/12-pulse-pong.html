@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Pong - Game 12/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff007a;
+            --neon-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .score-box {
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .score-val { font-size: 48px; font-weight: 900; text-shadow: 0 0 15px var(--neon-blue); }
+        .score-label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 2px; }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--neon-pink), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--neon-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="score-box">
+            <div class="score-label">PLAYER</div>
+            <div id="player-score" class="score-val">0</div>
+        </div>
+        <div class="score-box">
+            <div class="score-label">AI</div>
+            <div id="ai-score" class="score-val">0</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1 id="status-text">VICTORY</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0 - 0</p>
+        <button onclick="initGame()">REMATCH</button>
+    </div>
+
+    <div class="controls-hint">Move Mouse or Touch to Control Paddle</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const pScoreEl = document.getElementById('player-score');
+        const aiScoreEl = document.getElementById('ai-score');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 500;
+        let ball, player, ai, pScore, aiScore, gameActive;
+
+        const PADDLE_WIDTH = 12;
+        const PADDLE_HEIGHT = 80;
+        const BALL_RADIUS = 8;
+
+        class Paddle {
+            constructor(x, color) {
+                this.x = x;
+                this.y = height / 2 - PADDLE_HEIGHT / 2;
+                this.color = color;
+                this.targetY = this.y;
+            }
+            update() {
+                this.y += (this.targetY - this.y) * 0.15;
+                if (this.y < 0) this.y = 0;
+                if (this.y + PADDLE_HEIGHT > height) this.y = height - PADDLE_HEIGHT;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.roundRect(this.x, this.y, PADDLE_WIDTH, PADDLE_HEIGHT, 6);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Ball {
+            constructor() {
+                this.reset();
+            }
+            reset() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.dx = Math.random() > 0.5 ? 5 : -5;
+                this.dy = (Math.random() - 0.5) * 6;
+                this.speed = 5;
+            }
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.y + BALL_RADIUS > height || this.y - BALL_RADIUS < 0) this.dy = -this.dy;
+
+                // Player collision
+                if (this.dx < 0 && this.x - BALL_RADIUS < player.x + PADDLE_WIDTH && 
+                    this.y > player.y && this.y < player.y + PADDLE_HEIGHT) {
+                    this.dx = -this.dx * 1.05;
+                    this.dy = (this.y - (player.y + PADDLE_HEIGHT / 2)) * 0.2;
+                }
+
+                // AI collision
+                if (this.dx > 0 && this.x + BALL_RADIUS > ai.x && 
+                    this.y > ai.y && this.y < ai.y + PADDLE_HEIGHT) {
+                    this.dx = -this.dx * 1.05;
+                    this.dy = (this.y - (ai.y + PADDLE_HEIGHT / 2)) * 0.2;
+                }
+
+                if (this.x < 0) { aiScore++; updateScores(); this.reset(); }
+                if (this.x > width) { pScore++; updateScores(); this.reset(); }
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, BALL_RADIUS, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function updateScores() {
+            pScoreEl.textContent = pScore;
+            aiScoreEl.textContent = aiScore;
+            if (pScore >= 10 || aiScore >= 10) endGame();
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            player = new Paddle(30, '#00f2ff');
+            ai = new Paddle(width - 30 - PADDLE_WIDTH, '#ff007a');
+            ball = new Ball();
+            pScore = 0;
+            aiScore = 0;
+            gameActive = true;
+            pScoreEl.textContent = '0';
+            aiScoreEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            animate();
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('status-text').textContent = pScore >= 10 ? 'VICTORY' : 'DEFEAT';
+            document.getElementById('final-score').textContent = `Score: ${pScore} - ${aiScore}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            // Center line
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(width / 2, 0); ctx.lineTo(width / 2, height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            player.update();
+            player.draw();
+
+            // AI Logic
+            ai.targetY = ball.y - PADDLE_HEIGHT / 2;
+            ai.update();
+            ai.draw();
+
+            ball.update();
+            ball.draw();
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            player.targetY = (e.clientY - rect.top) - PADDLE_HEIGHT / 2;
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            player.targetY = (e.touches[0].clientY - rect.top) - PADDLE_HEIGHT / 2;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

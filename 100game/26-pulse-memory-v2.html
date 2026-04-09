@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Memory V2 - Game 26/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            letter-spacing: 5px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .stats {
+            display: flex;
+            gap: 40px;
+            margin-top: 10px;
+            font-family: monospace;
+            color: var(--p-blue);
+            text-transform: uppercase;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+        }
+
+        .pad {
+            width: 100px;
+            height: 100px;
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pad.active-blue { background: var(--p-blue); box-shadow: 0 0 30px var(--p-blue); }
+        .pad.active-pink { background: var(--p-pink); box-shadow: 0 0 30px var(--p-pink); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 35px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 20px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PULSE MEMORY</h1>
+        <div class="stats">
+            <div>LEVEL: <span id="level">1</span></div>
+            <div>STATUS: <span id="status">WATCH</span></div>
+        </div>
+    </div>
+
+    <div id="grid"></div>
+
+    <div id="game-over" class="game-over">
+        <h2 style="font-size: 48px; color: var(--p-pink);">SYNC FAILED</h2>
+        <p id="final-stats" style="font-size: 24px; margin-top: 10px; color: var(--p-blue);">Level: 1</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <script>
+        const gridEl = document.getElementById('grid');
+        const levelEl = document.getElementById('level');
+        const statusEl = document.getElementById('status');
+        const gameOverEl = document.getElementById('game-over');
+
+        let sequence, playerSequence, level, gameActive, isShowing;
+
+        function initGame() {
+            sequence = [];
+            level = 1;
+            gameActive = true;
+            isShowing = false;
+            levelEl.textContent = level;
+            gameOverEl.style.display = 'none';
+            gridEl.innerHTML = '';
+
+            for (let i = 0; i < 9; i++) {
+                const pad = document.createElement('div');
+                pad.className = 'pad';
+                pad.dataset.id = i;
+                pad.onclick = () => handlePadClick(i);
+                gridEl.appendChild(pad);
+            }
+
+            nextLevel();
+        }
+
+        function nextLevel() {
+            playerSequence = [];
+            sequence.push(Math.floor(Math.random() * 9));
+            showSequence();
+        }
+
+        async function showSequence() {
+            isShowing = true;
+            statusEl.textContent = 'WATCH';
+            statusEl.style.color = '#ff007a';
+            
+            for (let id of sequence) {
+                await pulsePad(id, 'active-blue');
+                await new Promise(r => setTimeout(r, 200));
+            }
+            
+            isShowing = false;
+            statusEl.textContent = 'REPEAT';
+            statusEl.style.color = '#00f2ff';
+        }
+
+        function pulsePad(id, className) {
+            return new Promise(r => {
+                const pad = gridEl.children[id];
+                pad.classList.add(className);
+                setTimeout(() => {
+                    pad.classList.remove(className);
+                    r();
+                }, 400);
+            });
+        }
+
+        function handlePadClick(id) {
+            if (!gameActive || isShowing) return;
+
+            playerSequence.push(id);
+            const index = playerSequence.length - 1;
+
+            if (playerSequence[index] !== sequence[index]) {
+                endGame();
+                return;
+            }
+
+            pulsePad(id, 'active-blue');
+
+            if (playerSequence.length === sequence.length) {
+                level++;
+                levelEl.textContent = level;
+                setTimeout(nextLevel, 1000);
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            document.getElementById('final-stats').textContent = `Level: ${level}`;
+            gameOverEl.style.display = 'flex';
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

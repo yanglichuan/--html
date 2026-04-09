@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Flight - Game 25/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">DISTANCE</div>
+            <div id="distance" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">FUEL</div>
+            <div id="fuel" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>FLIGHT TERMINATED</h1>
+        <p id="final-stats" style="font-size: 24px; margin-bottom: 20px;">Distance: 0 M</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <div class="controls-hint">Hold Space or Click to Ascend</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const distanceEl = document.getElementById('distance');
+        const fuelEl = document.getElementById('fuel');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 400;
+        let ship, obstacles, fuelCells, gameActive, distance, fuel, speed, offset;
+
+        class Ship {
+            constructor() {
+                this.x = 100;
+                this.y = height / 2;
+                this.vy = 0;
+                this.gravity = 0.5;
+                this.thrust = -0.8;
+                this.thrusting = false;
+                this.width = 30;
+                this.height = 20;
+            }
+            update() {
+                if (this.thrusting && fuel > 0) {
+                    this.vy += this.thrust;
+                    fuel -= 0.1;
+                    fuelEl.textContent = Math.max(0, Math.floor(fuel)) + '%';
+                }
+                this.vy += this.gravity;
+                this.y += this.vy;
+                if (this.y < 0) { this.y = 0; this.vy = 0; }
+                if (this.y > height - this.height) { this.y = height - this.height; this.vy = 0; }
+            }
+            draw() {
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + this.width, this.y + this.height / 2);
+                ctx.lineTo(this.x, this.y + this.height);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Obstacle {
+            constructor() {
+                this.w = 30 + Math.random() * 50;
+                this.h = 50 + Math.random() * 200;
+                this.x = width + 100;
+                this.y = Math.random() > 0.5 ? 0 : height - this.h;
+                this.color = '#ff007a';
+            }
+            update() {
+                this.x -= speed;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class FuelCell {
+            constructor() {
+                this.x = width + 100;
+                this.y = Math.random() * (height - 30) + 15;
+                this.radius = 10;
+                this.color = '#39ff14';
+            }
+            update() {
+                this.x -= speed;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            ship = new Ship();
+            obstacles = [];
+            fuelCells = [];
+            distance = 0;
+            fuel = 100;
+            speed = 6;
+            gameActive = true;
+            distanceEl.textContent = '0';
+            fuelEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            spawnObstacle();
+            spawnFuel();
+            animate();
+        }
+
+        function spawnObstacle() {
+            if (!gameActive) return;
+            obstacles.push(new Obstacle());
+            setTimeout(spawnObstacle, 1000 - (speed * 50) + Math.random() * 1000);
+        }
+
+        function spawnFuel() {
+            if (!gameActive) return;
+            fuelCells.push(new FuelCell());
+            setTimeout(spawnFuel, 2000 + Math.random() * 3000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-stats').textContent = `Distance: ${Math.floor(distance)} M`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            ship.update();
+            ship.draw();
+
+            obstacles.forEach((obs, i) => {
+                obs.update();
+                obs.draw();
+                if (obs.x < -100) obstacles.splice(i, 1);
+                if (ship.x < obs.x + obs.w && ship.x + ship.width > obs.x &&
+                    ship.y < obs.y + obs.h && ship.y + ship.height > obs.y) endGame();
+            });
+
+            fuelCells.forEach((f, i) => {
+                f.update();
+                f.draw();
+                if (f.x < -100) fuelCells.splice(i, 1);
+                if (Math.hypot(ship.x + ship.width / 2 - f.x, ship.y + ship.height / 2 - f.y) < ship.width / 2 + f.radius) {
+                    fuel = Math.min(100, fuel + 20);
+                    fuelEl.textContent = Math.floor(fuel) + '%';
+                    fuelCells.splice(i, 1);
+                }
+            });
+
+            distance += speed / 10;
+            speed += 0.001;
+            distanceEl.textContent = Math.floor(distance);
+        }
+
+        window.addEventListener('keydown', e => { if (e.code === 'Space') ship.thrusting = true; });
+        window.addEventListener('keyup', e => { if (e.code === 'Space') ship.thrusting = false; });
+        canvas.addEventListener('mousedown', () => ship.thrusting = true);
+        window.addEventListener('mouseup', () => ship.thrusting = false);
+
+        initGame();
+    </script>
+</body>
+</html>

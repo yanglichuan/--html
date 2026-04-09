@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霓虹垂钓 - Neon Fishing</title>
+    <style>
+        :root {
+            --bg-color: #000;
+            --water-color: #001133;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-yellow: #fefe33;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: #fff;
+            touch-action: none;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+            background: linear-gradient(to bottom, #000 0%, var(--water-color) 30%);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #score-board {
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #upgrade-menu {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border-top: 2px solid var(--neon-blue);
+            padding: 20px;
+            display: none;
+            pointer-events: auto;
+            box-sizing: border-box;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .upgrade-btn {
+            background: transparent;
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .upgrade-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+        }
+
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            margin-bottom: 20px;
+        }
+
+        button.start-btn {
+            background: transparent;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            padding: 15px 40px;
+            font-size: 24px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button.start-btn:hover {
+            background: var(--neon-pink);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-pink);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-layer">
+            <div id="score-board">
+                <span>SCORE: <span id="score">0</span></span>
+                <span>DEPTH: <span id="depth">0</span>m</span>
+            </div>
+        </div>
+
+        <div id="upgrade-menu">
+            <h2 style="margin: 0 0 10px 0; color: var(--neon-blue);">SHOP</h2>
+            <button class="upgrade-btn" onclick="upgrade('speed')">
+                <span>Line Speed</span>
+                <span id="cost-speed">100</span>
+            </button>
+            <button class="upgrade-btn" onclick="upgrade('depth')">
+                <span>Max Depth</span>
+                <span id="cost-depth">200</span>
+            </button>
+            <button class="upgrade-btn" style="border-color: var(--neon-pink); color: var(--neon-pink);" onclick="closeShop()">RESUME</button>
+        </div>
+
+        <div id="start-screen">
+            <h1>NEON FISHING</h1>
+            <p>Tap to cast. Tap to reel in.</p>
+            <button class="start-btn" onclick="startGame()">CAST OFF</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const depthEl = document.getElementById('depth');
+        const upgradeMenu = document.getElementById('upgrade-menu');
+        const startScreen = document.getElementById('start-screen');
+        const costSpeedEl = document.getElementById('cost-speed');
+        const costDepthEl = document.getElementById('cost-depth');
+
+        let width, height;
+        let animationId;
+        let score = 0;
+        let gameState = 'start'; // start, casting, reeling, shop
+        
+        let hook = { x: 0, y: 0, speed: 5, depth: 0, maxDepth: 500, state: 'idle' }; // idle, dropping, rising
+        let fishes = [];
+        let particles = [];
+        
+        let upgrades = {
+            speed: { level: 1, cost: 100 },
+            depth: { level: 1, cost: 200 }
+        };
+
+        function resize() {
+            width = canvas.width = window.innerWidth > 600 ? 600 : window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            hook.x = width / 2;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Fish {
+            constructor(depth) {
+                this.y = depth;
+                this.size = 20 + Math.random() * 30;
+                this.speed = (Math.random() * 2 + 1) * (Math.random() < 0.5 ? 1 : -1);
+                this.x = this.speed > 0 ? -this.size : width + this.size;
+                this.type = Math.floor(Math.random() * 3); // 0: blue (common), 1: pink (rare), 2: green (junk/bomb)
+                this.caught = false;
+                
+                if (this.type === 0) {
+                    this.color = '#00f2ff';
+                    this.value = 10;
+                } else if (this.type === 1) {
+                    this.color = '#ff00ff';
+                    this.value = 50;
+                } else {
+                    this.color = '#00ff41'; // Toxic/Junk
+                    this.value = -20;
+                    this.size = 15;
+                }
+            }
+
+            update() {
+                if (!this.caught) {
+                    this.x += this.speed;
+                } else {
+                    this.x = hook.x;
+                    this.y = hook.y + this.size/2; // Hang below hook
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                if (this.speed > 0 || this.caught) {
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x - this.size, this.y - this.size/3);
+                    ctx.lineTo(this.x - this.size, this.y + this.size/3);
+                } else {
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(this.x + this.size, this.y - this.size/3);
+                    ctx.lineTo(this.x + this.size, this.y + this.size/3);
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function spawnFish() {
+            if (fishes.length < 20) {
+                const depth = 200 + Math.random() * (hook.maxDepth + 300); // Fish exist deeper than maxDepth too
+                fishes.push(new Fish(depth));
+            }
+        }
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameState = 'idle';
+            hook.y = 100; // Water surface
+            animate();
+        }
+
+        function castLine() {
+            if (gameState === 'idle') {
+                gameState = 'casting';
+                hook.state = 'dropping';
+            } else if (gameState === 'casting') {
+                gameState = 'reeling';
+                hook.state = 'rising';
+            }
+        }
+
+        function update() {
+            if (gameState === 'shop') return;
+
+            // Spawn fish
+            if (Math.random() < 0.05) spawnFish();
+
+            // Update fish
+            fishes.forEach(f => f.update());
+            // Remove off-screen fish
+            fishes = fishes.filter(f => f.x > -100 && f.x < width + 100 && !f.caught || f.caught);
+
+            // Hook logic
+            if (hook.state === 'dropping') {
+                hook.y += hook.speed * (1 + upgrades.speed.level * 0.2);
+                if (hook.y >= hook.maxDepth * (1 + upgrades.depth.level * 0.5) + 200) { // Offset for visual
+                    hook.state = 'rising';
+                    gameState = 'reeling';
+                }
+            } else if (hook.state === 'rising') {
+                hook.y -= hook.speed * (1 + upgrades.speed.level * 0.2);
+                if (hook.y <= 100) {
+                    hook.state = 'idle';
+                    gameState = 'idle';
+                    collectFish();
+                }
+            }
+
+            // Camera follow hook
+            // Actually simpler: move world up/down.
+            // But let's keep hook moving and camera centered on hook if deep.
+            
+            // Collision detection
+            if (hook.state === 'rising' || hook.state === 'dropping') { // Can catch while dropping too? Maybe only rising?
+                // Usually catch while dropping -> hook stops -> reel in?
+                // Or catch while rising?
+                // Let's say catch while colliding.
+                fishes.forEach(f => {
+                    if (!f.caught) {
+                        const dx = f.x - hook.x;
+                        const dy = f.y - hook.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if (dist < f.size) {
+                            f.caught = true;
+                            // If rising, catch multiple?
+                            // If dropping, catch one and start rising immediately?
+                            if (hook.state === 'dropping') {
+                                hook.state = 'rising';
+                                gameState = 'reeling';
+                            }
+                        }
+                    }
+                });
+            }
+            
+            depthEl.textContent = Math.floor((hook.y - 100) / 10);
+        }
+
+        function collectFish() {
+            let catchValue = 0;
+            let caughtCount = 0;
+            fishes = fishes.filter(f => {
+                if (f.caught) {
+                    catchValue += f.value;
+                    caughtCount++;
+                    createParticle(hook.x, 100, `+${f.value}`);
+                    return false; // Remove from list
+                }
+                return true;
+            });
+
+            if (catchValue !== 0) {
+                score += catchValue;
+                if (score < 0) score = 0;
+                scoreEl.textContent = score;
+                checkShop();
+            } else {
+                // No catch, maybe show shop?
+                // checkShop();
+            }
+        }
+
+        function createParticle(x, y, text) {
+            // Simple visual effect
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw water gradient
+            const grad = ctx.createLinearGradient(0, 0, 0, height);
+            grad.addColorStop(0, '#001133');
+            grad.addColorStop(1, '#000011');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 100, width, height - 100);
+
+            // Camera transform
+            ctx.save();
+            let camY = 0;
+            if (hook.y > height / 2) {
+                camY = -hook.y + height / 2;
+            }
+            ctx.translate(0, camY);
+
+            // Draw line
+            ctx.beginPath();
+            ctx.moveTo(hook.x, 0); // From top (boat position)
+            // Boat is at y=100 relative to world?
+            // Actually line starts from y=100 (surface).
+            ctx.lineTo(hook.x, hook.y);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw hook
+            ctx.beginPath();
+            ctx.arc(hook.x, hook.y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // Draw fishes
+            fishes.forEach(f => f.draw());
+
+            ctx.restore();
+
+            // Draw UI overlay for depth markers?
+        }
+
+        function animate() {
+            update();
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function checkShop() {
+            // Show shop button? Or auto open if score high enough?
+            // Let's just add a shop button always visible or open on catch.
+            // For now, let's open shop if user clicks Shop button (which I should add)
+            // Or just open shop automatically after every cast?
+            upgradeMenu.style.display = 'flex';
+            gameState = 'shop';
+            
+            // Update costs
+            costSpeedEl.textContent = Math.floor(upgrades.speed.cost * Math.pow(1.5, upgrades.speed.level));
+            costDepthEl.textContent = Math.floor(upgrades.depth.cost * Math.pow(1.5, upgrades.depth.level));
+        }
+
+        function closeShop() {
+            upgradeMenu.style.display = 'none';
+            gameState = 'idle';
+        }
+
+        function upgrade(type) {
+            const u = upgrades[type];
+            const cost = Math.floor(u.cost * Math.pow(1.5, u.level));
+            if (score >= cost) {
+                score -= cost;
+                scoreEl.textContent = score;
+                u.level++;
+                
+                // Update button text immediately
+                if (type === 'speed') costSpeedEl.textContent = Math.floor(u.cost * Math.pow(1.5, u.level));
+                if (type === 'depth') costDepthEl.textContent = Math.floor(u.cost * Math.pow(1.5, u.level));
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') return;
+            if (gameState === 'idle' || gameState === 'casting') {
+                castLine();
+            }
+        });
+
+    </script>
+</body>
+</html>

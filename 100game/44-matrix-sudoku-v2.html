@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>矩阵数独 V2 - Matrix Sudoku V2</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --matrix-green: #00ff41;
+            --matrix-dark: #003b00;
+            --matrix-glow: #008f11;
+            --text-color: #ffffff;
+            --error-red: #ff0000;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        #game-container {
+            position: relative;
+            z-index: 10;
+            width: 95%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 2px solid var(--matrix-green);
+            box-shadow: 0 0 30px var(--matrix-dark);
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+        }
+
+        h1 {
+            margin: 0;
+            text-align: center;
+            font-size: 24px;
+            color: var(--matrix-green);
+            text-shadow: 0 0 10px var(--matrix-green);
+            letter-spacing: 5px;
+        }
+
+        #sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            border: 3px solid var(--matrix-green);
+            background: var(--matrix-dark);
+            aspect-ratio: 1;
+        }
+
+        .cell {
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--matrix-glow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            color: var(--matrix-green);
+        }
+
+        .cell:hover {
+            background: rgba(0, 255, 65, 0.2);
+        }
+
+        .cell.fixed {
+            color: #fff;
+            background: rgba(0, 255, 65, 0.1);
+        }
+
+        .cell.selected {
+            background: var(--matrix-green) !important;
+            color: #000 !important;
+            box-shadow: inset 0 0 10px #000;
+        }
+
+        .cell.error {
+            background: rgba(255, 0, 0, 0.3);
+            color: var(--error-red);
+        }
+
+        /* 3x3 block borders */
+        .cell:nth-child(3n) { border-right: 2px solid var(--matrix-green); }
+        .cell:nth-child(9n) { border-right: 1px solid var(--matrix-glow); }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: 2px solid var(--matrix-green); }
+
+        #keypad {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .key {
+            padding: 10px;
+            border: 1px solid var(--matrix-green);
+            background: transparent;
+            color: var(--matrix-green);
+            text-align: center;
+            cursor: pointer;
+            font-size: 18px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .key:active, .key.active {
+            background: var(--matrix-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--matrix-green);
+        }
+
+        .key.clear {
+            grid-column: span 1;
+            color: var(--error-red);
+            border-color: var(--error-red);
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--matrix-green);
+            font-size: 14px;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 8px;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: transparent;
+            border: 2px solid var(--matrix-green);
+            color: var(--matrix-green);
+            font-family: inherit;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--matrix-green);
+            color: #000;
+            box-shadow: 0 0 20px var(--matrix-green);
+        }
+
+        .hidden { display: none !important; }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch {
+            animation: glitch 0.2s infinite;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+    
+    <div id="game-container">
+        <h1>MATRIX SUDOKU</h1>
+        <div id="stats">
+            <div>MODE: DECRYPTING</div>
+            <div>TIME: <span id="timer">00:00</span></div>
+        </div>
+        <div id="sudoku-grid"></div>
+        <div id="keypad">
+            <div class="key" data-val="1">1</div>
+            <div class="key" data-val="2">2</div>
+            <div class="key" data-val="3">3</div>
+            <div class="key" data-val="4">4</div>
+            <div class="key" data-val="5">5</div>
+            <div class="key" data-val="6">6</div>
+            <div class="key" data-val="7">7</div>
+            <div class="key" data-val="8">8</div>
+            <div class="key" data-val="9">9</div>
+            <div class="key clear" data-val="0">X</div>
+        </div>
+        <div id="overlay">
+            <h2 style="color: var(--matrix-green)">SYSTEM LOCKED</h2>
+            <p style="text-align: center">Solve the logical sequence to bypass the firewall.</p>
+            <button id="start-btn" class="btn">BYPASS</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+        const gridEl = document.getElementById('sudoku-grid');
+        const timerEl = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const overlay = document.getElementById('overlay');
+
+        // Matrix Rain
+        let characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$+-*/=%\"'#&_(),.;:?!\\|{}<>[]^~";
+        characters = characters.split("");
+        let fontSize = 14;
+        let columns;
+        let drops;
+
+        function initMatrix() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            columns = canvas.width / fontSize;
+            drops = [];
+            for (let x = 0; x < columns; x++) drops[x] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#00ff41";
+            ctx.font = fontSize + "px arial";
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+
+        window.addEventListener('resize', initMatrix);
+        initMatrix();
+        setInterval(drawMatrix, 33);
+
+        // Sudoku Logic
+        let solution = [];
+        let puzzle = [];
+        let selectedCell = null;
+        let startTime;
+        let timerInterval;
+
+        function generateSudoku() {
+            // Simple generator: start with solved then remove
+            solution = Array(81).fill(0);
+            solveSudoku(solution);
+            puzzle = [...solution];
+            let attempts = 40; // Difficulty: number of cells to remove
+            while (attempts > 0) {
+                let idx = Math.floor(Math.random() * 81);
+                if (puzzle[idx] !== 0) {
+                    puzzle[idx] = 0;
+                    attempts--;
+                }
+            }
+            renderGrid();
+        }
+
+        function solveSudoku(board) {
+            for (let i = 0; i < 81; i++) {
+                if (board[i] === 0) {
+                    let nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
+                    for (let num of nums) {
+                        if (isValid(board, i, num)) {
+                            board[i] = num;
+                            if (solveSudoku(board)) return true;
+                            board[i] = 0;
+                        }
+                    }
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function isValid(board, idx, num) {
+            let r = Math.floor(idx / 9);
+            let c = idx % 9;
+            // Row
+            for (let i = 0; i < 9; i++) if (board[r * 9 + i] === num) return false;
+            // Col
+            for (let i = 0; i < 9; i++) if (board[i * 9 + c] === num) return false;
+            // Box
+            let boxR = Math.floor(r / 3) * 3;
+            let boxC = Math.floor(c / 3) * 3;
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[(boxR + i) * 9 + (boxC + j)] === num) return false;
+                }
+            }
+            return true;
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            for (let i = 0; i < 81; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (puzzle[i] !== 0) {
+                    cell.textContent = puzzle[i];
+                    cell.classList.add('fixed');
+                }
+                cell.dataset.idx = i;
+                cell.addEventListener('click', () => selectCell(cell));
+                gridEl.appendChild(cell);
+            }
+        }
+
+        function selectCell(cell) {
+            if (selectedCell) selectedCell.classList.remove('selected');
+            selectedCell = cell;
+            selectedCell.classList.add('selected');
+        }
+
+        function inputNum(num) {
+            if (!selectedCell || selectedCell.classList.contains('fixed')) return;
+            const idx = parseInt(selectedCell.dataset.idx);
+            if (num === 0) {
+                selectedCell.textContent = '';
+                puzzle[idx] = 0;
+                selectedCell.classList.remove('error');
+            } else {
+                selectedCell.textContent = num;
+                puzzle[idx] = num;
+                if (num !== solution[idx]) {
+                    selectedCell.classList.add('error');
+                    selectedCell.classList.add('glitch');
+                    setTimeout(() => selectedCell.classList.remove('glitch'), 500);
+                } else {
+                    selectedCell.classList.remove('error');
+                }
+            }
+            checkWin();
+        }
+
+        function checkWin() {
+            if (puzzle.every((val, i) => val === solution[i])) {
+                clearInterval(timerInterval);
+                alert("ACCESS GRANTED. SYSTEM BYPASSED.");
+                overlay.classList.remove('hidden');
+                document.querySelector('#overlay h2').textContent = "SYSTEM BYPASSED";
+                startBtn.textContent = "RE-BYPASS";
+            }
+        }
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = Math.floor((now - startTime) / 1000);
+            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            timerEl.textContent = `${m}:${s}`;
+        }
+
+        // Controls
+        document.querySelectorAll('.key').forEach(key => {
+            key.addEventListener('click', () => {
+                inputNum(parseInt(key.dataset.val));
+            });
+        });
+
+        window.addEventListener('keydown', e => {
+            if (e.key >= '1' && e.key <= '9') inputNum(parseInt(e.key));
+            if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') inputNum(0);
+        });
+
+        startBtn.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            generateSudoku();
+            startTime = new Date();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        });
+
+    </script>
+</body>
+</html>

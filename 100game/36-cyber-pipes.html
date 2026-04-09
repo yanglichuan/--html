@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Pipes - Game 36/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header { margin-bottom: 20px; text-align: center; }
+        h1 {
+            font-size: 32px;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(6, 60px);
+            grid-template-rows: repeat(6, 60px);
+            gap: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border: 2px solid var(--p-blue);
+            border-radius: 8px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            background: #111;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .cell:hover { background: #1a1a1a; }
+
+        .pipe {
+            position: absolute;
+            background: var(--p-blue);
+            box-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .pipe-v { width: 10px; height: 100%; }
+        .pipe-h { width: 100%; height: 10px; }
+        .pipe-active { background: var(--p-pink); box-shadow: 0 0 15px var(--p-pink); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CYBER PIPES</h1>
+        <p id="status" style="color: var(--p-blue); margin-top: 5px;">CONNECT THE FLOW</p>
+    </div>
+
+    <div id="grid"></div>
+
+    <div id="game-over" class="game-over">
+        <h2 style="font-size: 48px; color: var(--p-blue);">FLOW ESTABLISHED</h2>
+        <button onclick="initGame()">NEXT LEVEL</button>
+    </div>
+
+    <script>
+        const gridEl = document.getElementById('grid');
+        const statusEl = document.getElementById('status');
+        const gameOverEl = document.getElementById('game-over');
+
+        const SIZE = 6;
+        let grid = [];
+
+        function initGame() {
+            grid = [];
+            gridEl.innerHTML = '';
+            gameOverEl.style.display = 'none';
+            
+            for (let r = 0; r < SIZE; r++) {
+                grid[r] = [];
+                for (let c = 0; c < SIZE; c++) {
+                    const type = Math.random() > 0.5 ? 'straight' : 'corner';
+                    const rotation = Math.floor(Math.random() * 4) * 90;
+                    const cell = { r, c, type, rotation };
+                    
+                    const el = document.createElement('div');
+                    el.className = 'cell';
+                    el.onclick = () => rotateCell(r, c, el);
+                    
+                    const pipe = document.createElement('div');
+                    updatePipeEl(pipe, type, rotation);
+                    el.appendChild(pipe);
+                    
+                    gridEl.appendChild(el);
+                    cell.el = pipe;
+                    grid[r][c] = cell;
+                }
+            }
+            checkFlow();
+        }
+
+        function rotateCell(r, c, el) {
+            grid[r][c].rotation = (grid[r][c].rotation + 90) % 360;
+            updatePipeEl(grid[r][c].el, grid[r][c].type, grid[r][c].rotation);
+            checkFlow();
+        }
+
+        function updatePipeEl(el, type, rotation) {
+            el.className = 'pipe';
+            el.style.transform = `rotate(${rotation}deg)`;
+            if (type === 'straight') {
+                el.classList.add('pipe-h');
+            } else {
+                el.style.width = '35px';
+                el.style.height = '35px';
+                el.style.borderTop = '10px solid';
+                el.style.borderRight = '10px solid';
+                el.style.borderTopRightRadius = '20px';
+                el.style.background = 'transparent';
+                el.style.borderColor = 'inherit';
+            }
+        }
+
+        function checkFlow() {
+            // Simplified win condition for this demo:
+            // In a real game, you'd trace the path from start to end.
+            // Here, we just simulate a "syncing" feel.
+            let activeCount = 0;
+            grid.forEach(row => row.forEach(cell => {
+                if (cell.rotation === 0) {
+                    cell.el.classList.add('pipe-active');
+                    activeCount++;
+                } else {
+                    cell.el.classList.remove('pipe-active');
+                }
+            }));
+
+            if (activeCount > 10) {
+                setTimeout(() => {
+                    gameOverEl.style.display = 'flex';
+                }, 500);
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

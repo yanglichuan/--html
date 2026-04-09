@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>矩阵解密 - Matrix Mastermind</title>
+    <style>
+        :root {
+            --bg-color: #000;
+            --matrix-green: #00ff41;
+            --matrix-dark: #003b00;
+            --neon-white: #fff;
+            --error-red: #ff0000;
+            --warn-yellow: #ffff00;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--matrix-green);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #matrix-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+        }
+
+        #game-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            max-width: 500px;
+            max-height: 800px;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--matrix-green);
+            background: rgba(0, 0, 0, 0.85);
+            box-shadow: 0 0 20px var(--matrix-dark);
+        }
+
+        #header {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--matrix-green);
+            background: rgba(0, 59, 0, 0.3);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--matrix-green);
+        }
+
+        #game-board {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column-reverse; /* New attempts at bottom? No, top down usually. Let's do bottom up like a stack */
+            gap: 5px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background: rgba(0, 20, 0, 0.5);
+        }
+
+        .row.active {
+            border-color: var(--matrix-green);
+            box-shadow: 0 0 10px var(--matrix-dark);
+            background: rgba(0, 59, 0, 0.2);
+        }
+
+        .attempt-number {
+            font-size: 14px;
+            width: 20px;
+            text-align: center;
+            opacity: 0.7;
+        }
+
+        .slots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .slot {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background: #111;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: inset 0 0 5px #000;
+        }
+
+        .slot:hover {
+            border-color: var(--matrix-green);
+        }
+
+        .feedback {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            width: 30px;
+        }
+
+        .peg {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #222;
+            border: 1px solid #444;
+        }
+
+        .peg.exact {
+            background: var(--error-red); /* Red usually means hit/exact in Mastermind? Or Black? Let's use Red for "Hot" */
+            box-shadow: 0 0 5px var(--error-red);
+        }
+
+        .peg.color {
+            background: var(--warn-yellow); /* White usually. Let's use Yellow */
+            box-shadow: 0 0 5px var(--warn-yellow);
+        }
+
+        #controls {
+            padding: 15px;
+            border-top: 1px solid var(--matrix-green);
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #color-picker {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-option.selected {
+            transform: scale(1.2);
+            border-color: var(--matrix-white);
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        #action-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--matrix-green);
+            color: var(--matrix-green);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--matrix-green);
+            color: #000;
+            box-shadow: 0 0 15px var(--matrix-green);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #555;
+            color: #555;
+        }
+
+        #message-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+
+        #message-content {
+            border: 2px solid var(--matrix-green);
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 0 30px var(--matrix-green);
+            background: #000;
+        }
+
+        .secret-reveal {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            justify-content: center;
+        }
+
+    </style>
+</head>
+<body>
+    <canvas id="matrix-bg"></canvas>
+    
+    <div id="game-container">
+        <div id="header">
+            <h1>DECODE MATRIX</h1>
+            <div id="status">ATTEMPT: <span id="attempt-count">1</span>/10</div>
+        </div>
+
+        <div id="game-board">
+            <!-- Rows will be added here -->
+        </div>
+
+        <div id="controls">
+            <div id="color-picker">
+                <!-- Colors generated by JS -->
+            </div>
+            <div id="action-buttons">
+                <button onclick="clearRow()">Clear</button>
+                <button id="submit-btn" onclick="submitGuess()">Hack</button>
+            </div>
+        </div>
+
+        <div id="message-modal">
+            <div id="message-content">
+                <h2 id="result-title">ACCESS GRANTED</h2>
+                <div class="secret-reveal" id="secret-code-display"></div>
+                <button onclick="initGame()">Reboot System</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Matrix Rain Effect
+        const canvas = document.getElementById('matrix-bg');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*";
+        const drops = [];
+        const fontSize = 14;
+        const columns = canvas.width / fontSize;
+
+        for (let i = 0; i < columns; i++) {
+            drops[i] = 1;
+        }
+
+        function drawMatrix() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = "#0F0";
+            ctx.font = fontSize + "px monospace";
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+            requestAnimationFrame(drawMatrix);
+        }
+        drawMatrix();
+
+        // Game Logic
+        const colors = [
+            '#ff0000', // Red
+            '#00ff00', // Green
+            '#0000ff', // Blue
+            '#ffff00', // Yellow
+            '#ff00ff', // Magenta
+            '#00ffff'  // Cyan
+        ];
+        
+        let secretCode = [];
+        let currentGuess = [null, null, null, null];
+        let attempts = 0;
+        const maxAttempts = 10;
+        let selectedColor = colors[0];
+        
+        const gameBoard = document.getElementById('game-board');
+        const colorPicker = document.getElementById('color-picker');
+        const attemptCountEl = document.getElementById('attempt-count');
+        const messageModal = document.getElementById('message-modal');
+        const resultTitle = document.getElementById('result-title');
+        const secretCodeDisplay = document.getElementById('secret-code-display');
+
+        function initGame() {
+            secretCode = [];
+            for (let i = 0; i < 4; i++) {
+                secretCode.push(colors[Math.floor(Math.random() * colors.length)]);
+            }
+            console.log("Secret (for debugging):", secretCode);
+            
+            attempts = 0;
+            currentGuess = [null, null, null, null];
+            gameBoard.innerHTML = '';
+            messageModal.style.display = 'none';
+            
+            setupColorPicker();
+            createRow();
+            updateStatus();
+        }
+
+        function setupColorPicker() {
+            colorPicker.innerHTML = '';
+            colors.forEach(color => {
+                const el = document.createElement('div');
+                el.className = 'color-option';
+                el.style.backgroundColor = color;
+                el.style.boxShadow = `0 0 5px ${color}`;
+                if (color === selectedColor) el.classList.add('selected');
+                
+                el.onclick = () => {
+                    selectedColor = color;
+                    document.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                    el.classList.add('selected');
+                };
+                colorPicker.appendChild(el);
+            });
+        }
+
+        function createRow() {
+            const row = document.createElement('div');
+            row.className = 'row active';
+            row.id = `row-${attempts}`;
+            
+            const num = document.createElement('div');
+            num.className = 'attempt-number';
+            num.textContent = attempts + 1;
+            
+            const slotsDiv = document.createElement('div');
+            slotsDiv.className = 'slots';
+            
+            for (let i = 0; i < 4; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'slot';
+                slot.dataset.index = i;
+                slot.onclick = () => fillSlot(i);
+                slotsDiv.appendChild(slot);
+            }
+            
+            const feedbackDiv = document.createElement('div');
+            feedbackDiv.className = 'feedback';
+            for (let i = 0; i < 4; i++) {
+                const peg = document.createElement('div');
+                peg.className = 'peg';
+                feedbackDiv.appendChild(peg);
+            }
+            
+            row.appendChild(num);
+            row.appendChild(slotsDiv);
+            row.appendChild(feedbackDiv);
+            
+            // Insert at top (actually bottom of flex-col-reverse? No, let's just append)
+            // If flex-direction is column-reverse, appending adds to "top".
+            // Let's use prepend to add to top physically in DOM
+            gameBoard.insertBefore(row, gameBoard.firstChild);
+        }
+
+        function fillSlot(index) {
+            currentGuess[index] = selectedColor;
+            const slots = document.getElementById(`row-${attempts}`).querySelectorAll('.slot');
+            slots[index].style.backgroundColor = selectedColor;
+            slots[index].style.boxShadow = `0 0 10px ${selectedColor}`;
+            slots[index].style.borderColor = selectedColor;
+        }
+
+        function clearRow() {
+            currentGuess = [null, null, null, null];
+            const slots = document.getElementById(`row-${attempts}`).querySelectorAll('.slot');
+            slots.forEach(slot => {
+                slot.style.backgroundColor = '#111';
+                slot.style.boxShadow = 'inset 0 0 5px #000';
+                slot.style.borderColor = '#333';
+            });
+        }
+
+        function submitGuess() {
+            if (currentGuess.includes(null)) {
+                alert("Complete the code sequence first!");
+                return;
+            }
+
+            const feedback = checkGuess(currentGuess);
+            displayFeedback(feedback);
+            
+            if (feedback.exact === 4) {
+                endGame(true);
+            } else {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                    endGame(false);
+                } else {
+                    document.getElementById(`row-${attempts-1}`).classList.remove('active');
+                    createRow();
+                    updateStatus();
+                    currentGuess = [null, null, null, null];
+                }
+            }
+        }
+
+        function checkGuess(guess) {
+            let exact = 0;
+            let color = 0;
+            
+            const secretCopy = [...secretCode];
+            const guessCopy = [...guess];
+            
+            // Check exact matches
+            for (let i = 0; i < 4; i++) {
+                if (guessCopy[i] === secretCopy[i]) {
+                    exact++;
+                    secretCopy[i] = null; // Mark as matched
+                    guessCopy[i] = null;
+                }
+            }
+            
+            // Check color matches
+            for (let i = 0; i < 4; i++) {
+                if (guessCopy[i] !== null) {
+                    const index = secretCopy.indexOf(guessCopy[i]);
+                    if (index !== -1) {
+                        color++;
+                        secretCopy[index] = null; // Mark as matched
+                    }
+                }
+            }
+            
+            return { exact, color };
+        }
+
+        function displayFeedback(feedback) {
+            const pegs = document.getElementById(`row-${attempts}`).querySelectorAll('.peg');
+            let pegIndex = 0;
+            
+            for (let i = 0; i < feedback.exact; i++) {
+                pegs[pegIndex++].classList.add('exact');
+            }
+            for (let i = 0; i < feedback.color; i++) {
+                pegs[pegIndex++].classList.add('color');
+            }
+        }
+
+        function updateStatus() {
+            attemptCountEl.textContent = attempts + 1;
+        }
+
+        function endGame(win) {
+            messageModal.style.display = 'flex';
+            resultTitle.textContent = win ? "ACCESS GRANTED" : "ACCESS DENIED";
+            resultTitle.style.color = win ? "var(--matrix-green)" : "var(--error-red)";
+            
+            secretCodeDisplay.innerHTML = '';
+            secretCode.forEach(color => {
+                const el = document.createElement('div');
+                el.className = 'slot';
+                el.style.backgroundColor = color;
+                el.style.boxShadow = `0 0 10px ${color}`;
+                el.style.borderColor = color;
+                secretCodeDisplay.appendChild(el);
+            });
+        }
+
+        initGame();
+
+    </script>
+</body>
+</html>

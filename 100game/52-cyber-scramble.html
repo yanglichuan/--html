@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>赛博拼词 - Cyber Scramble</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --text-color: #fff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #game-container {
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 80%);
+        }
+
+        #score-board {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #timer-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 5px;
+            background: var(--neon-pink);
+            width: 100%;
+            box-shadow: 0 0 10px var(--neon-pink);
+            transition: width 0.1s linear;
+        }
+
+        #scrambled-word {
+            font-size: 48px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px var(--neon-green);
+            margin-bottom: 40px;
+            text-align: center;
+            user-select: none;
+        }
+
+        #input-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 20px;
+        }
+
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid var(--neon-blue);
+            color: #fff;
+            font-size: 32px;
+            font-family: inherit;
+            text-align: center;
+            width: 80%;
+            outline: none;
+            text-transform: uppercase;
+        }
+
+        input:focus {
+            border-color: var(--neon-pink);
+            box-shadow: 0 10px 20px -10px var(--neon-pink);
+        }
+
+        #feedback {
+            height: 30px;
+            font-size: 18px;
+            color: var(--neon-yellow);
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        #streak-display {
+            font-size: 14px;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        #game-over-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            display: none;
+        }
+
+        h1 {
+            color: var(--neon-pink);
+            font-size: 42px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--neon-pink);
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: inherit;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="timer-bar"></div>
+        <div id="score-board">0</div>
+        
+        <div id="scrambled-word">LOADING</div>
+        
+        <div id="input-area">
+            <input type="text" id="user-input" autocomplete="off" autocorrect="off" spellcheck="false">
+            <div id="feedback"></div>
+            <div id="streak-display">Streak: 0</div>
+        </div>
+
+        <div id="game-over-modal">
+            <h1>GAME OVER</h1>
+            <p style="font-size: 24px;">Score: <span id="final-score">0</span></p>
+            <button onclick="startGame()">RETRY</button>
+        </div>
+    </div>
+
+    <script>
+        const WORDS = [
+            "CYBER", "NEON", "MATRIX", "GHOST", "VECTOR", "PIXEL", "GLITCH", "SYSTEM",
+            "DATA", "CODE", "HACK", "DRIVE", "LASER", "ROBOT", "FUTURE", "SPACE",
+            "POWER", "SPEED", "FORCE", "LIGHT", "DARK", "SHADOW", "SIGNAL", "NETWORK",
+            "SERVER", "CLIENT", "CLOUD", "VIRUS", "WORM", "TROJAN", "FIREWALL", "ACCESS",
+            "DENIED", "GRANTED", "LOGIN", "LOGOUT", "USER", "ADMIN", "ROOT", "SHELL",
+            "KERNEL", "BINARY", "LOGIC", "GATE", "CHIP", "CORE", "MEMORY", "DISK",
+            "SCREEN", "DISPLAY", "INPUT", "OUTPUT", "MOUSE", "KEY", "BOARD", "GAME"
+        ];
+
+        let currentWord = "";
+        let scrambled = "";
+        let score = 0;
+        let streak = 0;
+        let timer = 100; // Percentage
+        let timerInterval;
+        let gameActive = false;
+        let difficulty = 1;
+
+        const wordDisplay = document.getElementById('scrambled-word');
+        const input = document.getElementById('user-input');
+        const scoreDisplay = document.getElementById('score-board');
+        const timerBar = document.getElementById('timer-bar');
+        const feedback = document.getElementById('feedback');
+        const streakDisplay = document.getElementById('streak-display');
+        const modal = document.getElementById('game-over-modal');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        function startGame() {
+            score = 0;
+            streak = 0;
+            difficulty = 1;
+            timer = 100;
+            gameActive = true;
+            modal.style.display = 'none';
+            scoreDisplay.textContent = score;
+            streakDisplay.textContent = "Streak: 0";
+            input.value = "";
+            input.focus();
+            
+            nextWord();
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 100);
+        }
+
+        function nextWord() {
+            currentWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+            scrambled = scramble(currentWord);
+            wordDisplay.textContent = scrambled;
+            input.value = "";
+            feedback.textContent = "";
+            
+            // Reset timer slightly based on streak?
+            timer = Math.min(100, timer + 10);
+            updateTimerVisual();
+        }
+
+        function scramble(word) {
+            let arr = word.split('');
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            // Ensure it's not same as original
+            if (arr.join('') === word) return scramble(word);
+            return arr.join(' ');
+        }
+
+        function checkInput() {
+            if (!gameActive) return;
+            
+            const val = input.value.toUpperCase();
+            if (val === currentWord) {
+                // Correct
+                const points = 10 + streak * 2;
+                score += points;
+                streak++;
+                scoreDisplay.textContent = score;
+                streakDisplay.textContent = `Streak: ${streak}`;
+                feedback.textContent = `+${points}`;
+                feedback.style.color = "var(--neon-green)";
+                
+                // Visual effect
+                createParticle(window.innerWidth/2, window.innerHeight/2);
+                
+                nextWord();
+            } else {
+                // Wrong?
+                // Just wait.
+            }
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+            
+            // Decay rate increases with score/difficulty
+            const decay = 0.5 + (score / 500);
+            timer -= decay;
+            
+            if (timer <= 0) {
+                gameOver();
+            }
+            updateTimerVisual();
+        }
+
+        function updateTimerVisual() {
+            timerBar.style.width = `${Math.max(0, timer)}%`;
+            if (timer < 30) {
+                timerBar.style.backgroundColor = "var(--neon-pink)";
+                timerBar.style.boxShadow = "0 0 20px var(--neon-pink)";
+            } else {
+                timerBar.style.backgroundColor = "var(--neon-blue)";
+                timerBar.style.boxShadow = "0 0 10px var(--neon-blue)";
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            finalScoreDisplay.textContent = score;
+            modal.style.display = 'flex';
+        }
+
+        function createParticle(x, y) {
+            // Simple visual effect
+        }
+
+        input.addEventListener('input', checkInput);
+        
+        // Prevent enter key from submitting form if any
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // If incorrect, maybe shake screen?
+                if (input.value.toUpperCase() !== currentWord) {
+                    input.classList.add('shake');
+                    setTimeout(() => input.classList.remove('shake'), 500);
+                }
+            }
+        });
+
+        // Start
+        startGame();
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Rain Collector - Game 33/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-green: #39ff14;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+            box-shadow: 0 0 50px rgba(57, 255, 20, 0.1);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            text-shadow: 0 0 10px var(--p-green);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-green); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: var(--p-green);
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px var(--p-green);
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-green);
+            color: var(--p-green);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        button:hover {
+            background: var(--p-green);
+            color: black;
+            box-shadow: 0 0 30px var(--p-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">BITS COLLECTED</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">INTEGRITY</div>
+            <div id="health" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>SYNC LOST</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px; color: var(--p-green);">Bits: 0</p>
+        <button onclick="initGame()">RE-AUTHORIZE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const healthEl = document.getElementById('health');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 600, height = 600;
+        let bucket, bits, particles, score, health, gameActive;
+
+        class Bucket {
+            constructor() {
+                this.w = 80;
+                this.h = 20;
+                this.x = width / 2 - this.w / 2;
+                this.y = height - 50;
+            }
+            draw() {
+                ctx.fillStyle = '#39ff14';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#39ff14';
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Bit {
+            constructor() {
+                this.char = Math.random() > 0.5 ? '1' : '0';
+                this.x = Math.random() * (width - 20) + 10;
+                this.y = -20;
+                this.speed = 2 + Math.random() * 3 + (score / 1000);
+                this.color = '#39ff14';
+            }
+            update() {
+                this.y += this.speed;
+                if (this.y > height) {
+                    health -= 5;
+                    healthEl.textContent = health + '%';
+                    if (health <= 0) endGame();
+                    return true;
+                }
+                return false;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.font = "bold 20px Courier New";
+                ctx.fillText(this.char, this.x, this.y);
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            bucket = new Bucket();
+            bits = [];
+            particles = [];
+            score = 0;
+            health = 100;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            healthEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            spawnBit();
+            animate();
+        }
+
+        function spawnBit() {
+            if (!gameActive) return;
+            bits.push(new Bit());
+            setTimeout(spawnBit, Math.max(200, 800 - (score / 50)));
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Bits: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            bucket.draw();
+
+            bits.forEach((bit, i) => {
+                if (bit.update()) bits.splice(i, 1);
+                else {
+                    bit.draw();
+                    if (bit.y > bucket.y && bit.y < bucket.y + bucket.h &&
+                        bit.x > bucket.x && bit.x < bucket.x + bucket.w) {
+                        score += 10;
+                        scoreEl.textContent = score;
+                        bits.splice(i, 1);
+                    }
+                }
+            });
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            bucket.x = (e.clientX - rect.left) - bucket.w / 2;
+            if (bucket.x < 0) bucket.x = 0;
+            if (bucket.x + bucket.w > width) bucket.x = width - bucket.w;
+        });
+
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            bucket.x = (e.touches[0].clientX - rect.left) - bucket.w / 2;
+            if (bucket.x < 0) bucket.x = 0;
+            if (bucket.x + bucket.w > width) bucket.x = width - bucket.w;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>霓虹堆叠 - Neon Stack</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --neon-yellow: #fefe33;
+            --text-color: #fff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            background: linear-gradient(to bottom, #000000, #111111);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.2);
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #score-display {
+            font-size: 48px;
+            text-align: center;
+            text-shadow: 0 0 20px var(--neon-blue);
+            font-weight: bold;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+
+        #high-score {
+            font-size: 16px;
+            text-align: center;
+            color: var(--neon-pink);
+            margin-top: 5px;
+        }
+
+        #start-screen, #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+            transition: opacity 0.3s;
+        }
+
+        h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+            color: var(--neon-blue);
+            text-shadow: 0 0 20px var(--neon-blue);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        }
+
+        p {
+            font-size: 18px;
+            color: #ccc;
+            margin-bottom: 30px;
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 15px 40px;
+            font-size: 24px;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+            box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
+        }
+
+        button:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-green);
+            transform: scale(1.05);
+        }
+
+        #game-over-screen {
+            display: none;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        <div id="ui-layer">
+            <div>
+                <div id="score-display">0</div>
+                <div id="high-score">BEST: 0</div>
+            </div>
+        </div>
+
+        <div id="start-screen">
+            <h1>NEON STACK</h1>
+            <p>Tap to place the block</p>
+            <button id="start-btn">START</button>
+        </div>
+
+        <div id="game-over-screen">
+            <h1 style="color: var(--neon-pink);">GAME OVER</h1>
+            <p id="final-score">Score: 0</p>
+            <button id="restart-btn">RETRY</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const scoreDisplay = document.getElementById('score-display');
+        const highScoreDisplay = document.getElementById('high-score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        let width, height;
+        let animationId;
+        let score = 0;
+        let highScore = localStorage.getItem('neonStackHighScore') || 0;
+        let blocks = [];
+        let currentBlock = null;
+        let gameRunning = false;
+        let blockHeight = 40;
+        let baseSpeed = 5;
+        let speed = baseSpeed;
+        let direction = 1; // 1 = right, -1 = left
+        let hue = 0;
+
+        // Resize handling
+        function resize() {
+            width = canvas.width = window.innerWidth > 600 ? 600 : window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            // Adjust block height based on screen height
+            blockHeight = Math.max(30, Math.floor(height / 20));
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        highScoreDisplay.textContent = `BEST: ${highScore}`;
+
+        class Block {
+            constructor(x, y, w, h, color) {
+                this.x = x;
+                this.y = y;
+                this.w = w;
+                this.h = h;
+                this.color = color;
+                this.stopped = false;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.w, this.h);
+                ctx.shadowBlur = 0;
+
+                // Add a lighter border for 3D effect
+                ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(this.x, this.y, this.w, this.h);
+            }
+
+            update() {
+                if (!this.stopped) {
+                    this.x += speed * direction;
+                    // Bounce off walls
+                    if (this.x + this.w > width || this.x < 0) {
+                        direction *= -1;
+                    }
+                }
+            }
+        }
+
+        function initGame() {
+            blocks = [];
+            score = 0;
+            speed = baseSpeed;
+            scoreDisplay.textContent = score;
+            hue = 0;
+            
+            // Base block
+            const baseBlock = new Block(width/2 - 100, height - blockHeight, 200, blockHeight, `hsl(${hue}, 100%, 50%)`);
+            baseBlock.stopped = true;
+            blocks.push(baseBlock);
+
+            spawnBlock();
+            
+            gameRunning = true;
+            animate();
+        }
+
+        function spawnBlock() {
+            score++;
+            scoreDisplay.textContent = score - 1; // Score is number of stacked blocks (excluding base)
+            hue = (hue + 20) % 360;
+            
+            const prevBlock = blocks[blocks.length - 1];
+            // If score > 1, the previous block is the one just placed.
+            // But wait, the first block is base. spawnBlock is called immediately.
+            
+            let w = prevBlock.w;
+            let x = 0; // Start from left
+            if (score % 2 === 0) x = width - w; // Alternate start side? No, just keep it simple or random?
+            // Let's just start from left always for simplicity or random side
+            direction = 1;
+            x = -w + 10; // Start slightly off screen
+
+            // Move block up logic (camera scroll)
+            // If blocks reach middle of screen, move everything down
+            if (blocks.length * blockHeight > height / 2) {
+                blocks.forEach(b => b.y += blockHeight);
+                // Remove blocks that are off screen
+                if (blocks[0].y > height) {
+                    blocks.shift(); 
+                    // Adjust index if needed, but we just use last block
+                }
+            }
+
+            const y = prevBlock.y - blockHeight;
+            currentBlock = new Block(x, y, w, blockHeight, `hsl(${hue}, 100%, 50%)`);
+        }
+
+        function placeBlock() {
+            if (!gameRunning) return;
+
+            currentBlock.stopped = true;
+            const prevBlock = blocks[blocks.length - 1];
+
+            const dist = currentBlock.x - prevBlock.x;
+            const overlap = currentBlock.w - Math.abs(dist);
+
+            if (overlap > 0) {
+                // Cut block
+                currentBlock.w = overlap;
+                if (dist > 0) {
+                    // Block is to the right
+                    // x remains same (it's the overlap part starting from prevBlock.x + dist? No)
+                    // Visual logic:
+                    // Prev: [   ]
+                    // Curr:   [   ]
+                    // Overlap:  [-]
+                    // Current x is fine. Width is reduced.
+                } else {
+                    // Block is to the left
+                    // Prev:    [   ]
+                    // Curr: [   ]
+                    // Overlap:    [-]
+                    // Current x must be adjusted to prevBlock.x
+                    currentBlock.x = prevBlock.x;
+                }
+                
+                blocks.push(currentBlock);
+                
+                // Increase speed slightly
+                speed += 0.2;
+                
+                spawnBlock();
+            } else {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            
+            const finalScore = score - 1;
+            finalScoreDisplay.textContent = `Score: ${finalScore}`;
+            
+            if (finalScore > highScore) {
+                highScore = finalScore;
+                localStorage.setItem('neonStackHighScore', highScore);
+                highScoreDisplay.textContent = `BEST: ${highScore}`;
+            }
+            
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function animate() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw background grid effect
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for(let i=0; i<width; i+=50) {
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+            }
+            for(let i=0; i<height; i+=50) {
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+            }
+            ctx.stroke();
+
+            blocks.forEach(block => block.draw());
+            if (currentBlock) {
+                currentBlock.update();
+                currentBlock.draw();
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Controls
+        function handleInput(e) {
+            e.preventDefault();
+            if (gameRunning) {
+                placeBlock();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                if (gameRunning) placeBlock();
+                else if (startScreen.style.display !== 'none') startGame();
+                else if (gameOverScreen.style.display !== 'none') resetGame();
+            }
+        });
+
+        document.addEventListener('touchstart', handleInput);
+        document.addEventListener('mousedown', handleInput);
+
+        function startGame() {
+            startScreen.classList.add('hidden');
+            setTimeout(() => {
+                startScreen.style.display = 'none';
+                initGame();
+            }, 300);
+        }
+
+        function resetGame() {
+            gameOverScreen.style.display = 'none';
+            initGame();
+        }
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startGame();
+        });
+
+        restartBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            resetGame();
+        });
+
+    </script>
+</body>
+</html>

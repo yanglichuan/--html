@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neon Jump - Game 02/100</title>
+    <style>
+        :root {
+            --bg-dark: #0a0a12;
+            --neon-blue: #00d2ff;
+            --neon-pink: #ff007a;
+            --neon-purple: #bc00ff;
+            --text-main: #ffffff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #game-canvas {
+            background: linear-gradient(to bottom, #0a0a12, #1a1a2e);
+            border: 2px solid rgba(0, 210, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.1);
+            max-width: 100%;
+            max-height: 85vh;
+            cursor: pointer;
+        }
+
+        .ui-overlay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+            width: 100%;
+        }
+
+        .score-display {
+            font-size: 48px;
+            font-weight: 900;
+            text-shadow: 0 0 15px var(--neon-blue);
+            font-family: monospace;
+        }
+
+        .start-screen, .game-over-screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 10, 18, 0.85);
+            backdrop-filter: blur(5px);
+            z-index: 10;
+        }
+
+        .btn-start {
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid var(--neon-pink);
+            color: var(--neon-pink);
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 4px;
+            margin-top: 20px;
+            pointer-events: all;
+        }
+
+        .btn-start:hover {
+            background: var(--neon-pink);
+            color: white;
+            box-shadow: 0 0 25px var(--neon-pink);
+        }
+
+        .title {
+            font-size: 60px;
+            font-weight: 900;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui-overlay">
+        <div id="score" class="score-display">0</div>
+    </div>
+
+    <canvas id="game-canvas" width="400" height="600"></canvas>
+
+    <div id="start-screen" class="start-screen">
+        <h1 class="title">NEON JUMP</h1>
+        <p style="color: var(--neon-blue); letter-spacing: 1px;">Click or Space to Jump</p>
+        <button class="btn-start" onclick="startGame()">START</button>
+    </div>
+
+    <div id="game-over-screen" class="game-over-screen" style="display: none;">
+        <h1 class="title" style="background: var(--neon-pink); -webkit-background-clip: text;">CRASHED</h1>
+        <p id="final-score" style="font-size: 24px; margin: 10px 0;">Score: 0</p>
+        <button class="btn-start" onclick="startGame()">RETRY</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over-screen');
+
+        let gameState = 'START';
+        let score = 0;
+        let player, pipes, animationId;
+
+        class Player {
+            constructor() {
+                this.x = 80;
+                this.y = canvas.height / 2;
+                this.radius = 12;
+                this.velocity = 0;
+                this.gravity = 0.45;
+                this.jump = -8;
+                this.trail = [];
+            }
+
+            draw() {
+                // Draw trail
+                this.trail.forEach((p, i) => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, this.radius * (i / this.trail.length), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, 210, 255, ${0.1 * (i / this.trail.length)})`;
+                    ctx.fill();
+                });
+
+                // Draw core
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00d2ff';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Outer glow ring
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius + 3, 0, Math.PI * 2);
+                ctx.strokeStyle = '#00d2ff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+
+                this.trail.push({x: this.x, y: this.y});
+                if (this.trail.length > 10) this.trail.shift();
+
+                if (this.y + this.radius > canvas.height || this.y - this.radius < 0) {
+                    endGame();
+                }
+            }
+
+            jumpAction() {
+                this.velocity = this.jump;
+            }
+        }
+
+        class Pipe {
+            constructor() {
+                this.width = 60;
+                this.gap = 160;
+                this.x = canvas.width;
+                this.top = Math.random() * (canvas.height - this.gap - 100) + 50;
+                this.passed = false;
+                this.speed = 3.5;
+            }
+
+            draw() {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#ff007a';
+                ctx.fillStyle = 'rgba(255, 0, 122, 0.2)';
+                ctx.strokeStyle = '#ff007a';
+                ctx.lineWidth = 2;
+
+                // Top pipe
+                ctx.fillRect(this.x, 0, this.width, this.top);
+                ctx.strokeRect(this.x, 0, this.width, this.top);
+
+                // Bottom pipe
+                const bottomY = this.top + this.gap;
+                ctx.fillRect(this.x, bottomY, this.width, canvas.height - bottomY);
+                ctx.strokeRect(this.x, bottomY, this.width, canvas.height - bottomY);
+
+                // Connection details (Cyberpunk look)
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.top);
+                ctx.lineTo(this.x + this.width, this.top);
+                ctx.moveTo(this.x, bottomY);
+                ctx.lineTo(this.x + this.width, bottomY);
+                ctx.stroke();
+                
+                ctx.shadowBlur = 0;
+            }
+
+            update() {
+                this.x -= this.speed;
+                if (!this.passed && this.x < player.x) {
+                    this.passed = true;
+                    score++;
+                    scoreEl.textContent = score;
+                    if (score % 5 === 0) this.speed += 0.2; // Speed up
+                }
+            }
+
+            checkCollision(p) {
+                if (p.x + p.radius > this.x && p.x - p.radius < this.x + this.width) {
+                    if (p.y - p.radius < this.top || p.y + p.radius > this.top + this.gap) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        function startGame() {
+            gameState = 'PLAYING';
+            score = 0;
+            scoreEl.textContent = '0';
+            player = new Player();
+            pipes = [];
+            startScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            if (animationId) cancelAnimationFrame(animationId);
+            gameLoop();
+        }
+
+        function endGame() {
+            gameState = 'OVER';
+            document.getElementById('final-score').textContent = `Score: ${score}`;
+            gameOverScreen.style.display = 'flex';
+            cancelAnimationFrame(animationId);
+        }
+
+        function gameLoop() {
+            if (gameState !== 'PLAYING') return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Background Grid Effect
+            ctx.strokeStyle = 'rgba(0, 210, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for(let i=0; i<canvas.height; i+=40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+
+            player.update();
+            player.draw();
+
+            if (pipes.length === 0 || pipes[pipes.length - 1].x < canvas.width - 220) {
+                pipes.push(new Pipe());
+            }
+
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].update();
+                pipes[i].draw();
+
+                if (pipes[i].checkCollision(player)) {
+                    endGame();
+                }
+
+                if (pipes[i].x + pipes[i].width < 0) {
+                    pipes.splice(i, 1);
+                }
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                if (gameState === 'PLAYING') player.jumpAction();
+                else if (gameState === 'START' || gameState === 'OVER') startGame();
+            }
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            if (gameState === 'PLAYING') player.jumpAction();
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameState === 'PLAYING') player.jumpAction();
+        });
+    </script>
+</body>
+</html>

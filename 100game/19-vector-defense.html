@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Defense - Game 19/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">ENEMIES DEFEATED</div>
+            <div id="score" class="value">0</div>
+        </div>
+        <div class="stat">
+            <div class="label">BASE HEALTH</div>
+            <div id="health" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>BASE OVERRUN</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0</p>
+        <button onclick="initGame()">RE-AUTHORIZE DEFENSE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const healthEl = document.getElementById('health');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 600;
+        let base, enemies, projectiles, score, health, gameActive;
+
+        class Base {
+            constructor() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.radius = 30;
+                this.angle = 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                // Outer ring
+                ctx.strokeStyle = '#00f2ff';
+                ctx.lineWidth = 2;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Turret
+                ctx.fillStyle = '#00f2ff';
+                ctx.fillRect(this.radius - 5, -5, 20, 10);
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor() {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 600;
+                this.x = width / 2 + Math.cos(angle) * dist;
+                this.y = height / 2 + Math.sin(angle) * dist;
+                this.radius = 12;
+                this.speed = 1 + (score / 1000);
+                this.health = 1;
+                this.color = '#ff007a';
+            }
+            update() {
+                const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+                
+                if (Math.hypot(width / 2 - this.x, height / 2 - this.y) < base.radius + this.radius) {
+                    health -= 10;
+                    healthEl.textContent = `${health}%`;
+                    if (health <= 0) endGame();
+                    return true;
+                }
+                return false;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.radius);
+                ctx.lineTo(this.x + this.radius, this.y + this.radius);
+                ctx.lineTo(this.x - this.radius, this.y + this.radius);
+                ctx.closePath();
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Projectile {
+            constructor(angle) {
+                this.x = width / 2 + Math.cos(angle) * base.radius;
+                this.y = height / 2 + Math.sin(angle) * base.radius;
+                this.vx = Math.cos(angle) * 8;
+                this.vy = Math.sin(angle) * 8;
+                this.radius = 4;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                return (this.x < 0 || this.x > width || this.y < 0 || this.y > height);
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            base = new Base();
+            enemies = [];
+            projectiles = [];
+            score = 0;
+            health = 100;
+            gameActive = true;
+            scoreEl.textContent = '0';
+            healthEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            spawnEnemy();
+            animate();
+        }
+
+        function spawnEnemy() {
+            if (!gameActive) return;
+            enemies.push(new Enemy());
+            setTimeout(spawnEnemy, Math.max(200, 1000 - (score / 2)));
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Score: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            base.draw();
+
+            enemies.forEach((enemy, i) => {
+                if (enemy.update()) enemies.splice(i, 1);
+                else {
+                    enemy.draw();
+                    projectiles.forEach((proj, j) => {
+                        if (Math.hypot(enemy.x - proj.x, enemy.y - proj.y) < enemy.radius + proj.radius) {
+                            enemies.splice(i, 1);
+                            projectiles.splice(j, 1);
+                            score += 100;
+                            scoreEl.textContent = score;
+                        }
+                    });
+                }
+            });
+
+            projectiles.forEach((p, i) => {
+                if (p.update()) projectiles.splice(i, 1);
+                else p.draw();
+            });
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            base.angle = Math.atan2(e.clientY - rect.top - height / 2, e.clientX - rect.left - width / 2);
+        });
+
+        canvas.addEventListener('mousedown', () => {
+            if (gameActive) projectiles.push(new Projectile(base.angle));
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

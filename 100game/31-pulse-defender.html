@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Defender - Game 31/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">CORE CHARGE</div>
+            <div id="health" class="value">100%</div>
+        </div>
+        <div class="stat">
+            <div class="label">PULSE POWER</div>
+            <div id="score" class="value">0</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>CORE DEPLETED</h1>
+        <p id="final-score" style="font-size: 24px; margin-bottom: 20px;">Score: 0</p>
+        <button onclick="initGame()">RE-INIT DEFENSE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const healthEl = document.getElementById('health');
+        const scoreEl = document.getElementById('score');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 600;
+        let core, shield, enemies, projectiles, score, health, gameActive;
+
+        class Core {
+            constructor() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.radius = 20;
+            }
+            draw() {
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Shield {
+            constructor() {
+                this.angle = 0;
+                this.width = 0.5; // radians
+                this.radius = 60;
+            }
+            draw() {
+                ctx.strokeStyle = '#00f2ff';
+                ctx.lineWidth = 8;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(width/2, height/2, this.radius, this.angle - this.width, this.angle + this.width);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Enemy {
+            constructor() {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 600;
+                this.x = width / 2 + Math.cos(angle) * dist;
+                this.y = height / 2 + Math.sin(angle) * dist;
+                this.radius = 10;
+                this.speed = 1.5 + (score / 1000);
+                this.color = '#ff007a';
+            }
+            update() {
+                const angle = Math.atan2(height / 2 - this.y, width / 2 - this.x);
+                this.x += Math.cos(angle) * this.speed;
+                this.y += Math.sin(angle) * this.speed;
+                
+                // Shield check
+                const enemyAngle = Math.atan2(this.y - height/2, this.x - width/2);
+                const diff = Math.abs((enemyAngle - shield.angle + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+                
+                if (Math.hypot(width/2 - this.x, height/2 - this.y) < shield.radius + this.radius && diff < shield.width) {
+                    score += 100;
+                    scoreEl.textContent = score;
+                    return true;
+                }
+
+                if (Math.hypot(width/2 - this.x, height/2 - this.y) < core.radius + this.radius) {
+                    health -= 10;
+                    healthEl.textContent = health + '%';
+                    if (health <= 0) endGame();
+                    return true;
+                }
+                return false;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            core = new Core();
+            shield = new Shield();
+            enemies = [];
+            score = 0;
+            health = 100;
+            gameActive = true;
+            healthEl.textContent = '100%';
+            scoreEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            spawnEnemy();
+            animate();
+        }
+
+        function spawnEnemy() {
+            if (!gameActive) return;
+            enemies.push(new Enemy());
+            setTimeout(spawnEnemy, Math.max(200, 1000 - (score / 50)));
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            document.getElementById('final-score').textContent = `Score: ${score}`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            core.draw();
+            shield.draw();
+
+            enemies.forEach((e, i) => {
+                if (e.update()) enemies.splice(i, 1);
+                else e.draw();
+            });
+        }
+
+        window.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            shield.angle = Math.atan2(e.clientY - rect.top - height / 2, e.clientX - rect.left - width / 2);
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

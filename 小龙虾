@@ -1,0 +1,126 @@
+- 地址： http://115.191.33.218:18789
+- Token： 2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+- 密码： 12121212aA
+
+
+
+───────────────────────────────────────────────────╯
+│
+◇  Dashboard ready ──────────────────────────────────────────────────────────────────╮
+│                                                                                    │
+│  Dashboard link (with token):                                                      │
+│   http://1115.191.33.218:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae479  │
+│  10ec                                                                             │
+│  Copy/paste this URL in a browser on this machine to control OpenClaw.             │
+│  No GUI detected. Open from your computer:                                         │
+│  ssh -N -L 18789:127.0.0.1:18789 root@192.168.139.130                              │
+│  Then open:                                                                        │
+│  http://localhost:18789/                                                           │
+│  http://localhost:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec    │
+│  Docs:                                                                             │
+│  https://docs.openclaw.ai/gateway/remote                                           │
+│  https://docs.openclaw.ai/web/control-ui                                           │
+│
+
+
+http://115.191.33.218:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+http://115.191.33.218:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+
+另外，还有一个 Canvas 演示页面： http://115.191.33.218:18789/ openclaw /canvas/
+
+说明：
+
+- 直接访问根路径 ( / ) 会返回 404，这是正常的，因为 OpenClaw 的 UI 需要特定的 hash 路由和 token 验证。
+- 如果提示需要密码，请使用： 12121212aA
+
+
+
+
+
+
+
+
+1. 公网直接访问 (推荐) 您的安全组配置已生效，可以直接点击下方链接： http://115.191.33.218:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+2. SSH 隧道访问 (备用) 如果您在本地已经建立了 SSH 隧道 (Terminal 3)，也可以通过本地地址访问： http://localhost:18789/#token=2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+服务状态详情：
+
+- 版本 : 已更新为最新版 (通过 pnpm add -g openclaw )
+- 进程管理 : 由 PM2 管理 (Service Name: openclaw , ID: 0)
+- 端口 : 18789 (TCP)
+- Token : 2c56b5af63d1dcaa86bd0f93f88affb2e12b8e9ae47910ec
+
+
+
+
+
+
+
+OpenClaw 技能安装的标准命令是：
+
+```
+npx skills add <技能名称>
+```
+例如：
+
+```
+npx skills add pskoett/
+self-improving-agent
+```
+但是 ，由于您的服务器连接 GitHub 存在网络问题（连接超时），标准命令无法成功执行。
+
+我已经为您手动完成了该技能的安装： 我通过直接克隆代码仓库的方式绕过了安装工具的网络限制。
+
+当前状态：
+
+1. 技能已安装 ： self-improving-agent (显示名称为 self-improvement ) 已经出现在您的技能列表中。
+2. 状态检查 ：运行 openclaw skills check 显示该技能状态为 Ready to use (📦 self-improvement)。
+您现在可以直接使用这个技能了。如果需要安装其他技能且遇到同样网络问题，可以告诉我，我会帮您手动处理。
+
+
+
+
+
+
+
+openclaw models status
+
+🦞 OpenClaw 2026.3.8 (3caab92) — Your .zshrc wishes it could do what I do.
+
+Config        : ~/.openclaw/openclaw.json
+Agent dir     : ~/.openclaw/agents/main/agent
+Default       : openrouter/minimax/minimax-m2.5
+Fallbacks (0) : -
+Image model   : -
+Image fallbacks (0): -
+Aliases (1)   : OpenRouter -> openrouter/auto
+Configured models (3): openrouter/auto, openrouter/z-ai/glm-5, openrouter/minimax/minimax-m2.5
+
+Auth overview
+Auth store    : ~/.openclaw/agents/main/agent/auth-profiles.json
+Shell env     : off
+Providers w/ OAuth/tokens (0): -
+- openrouter effective=profiles:~/.openclaw/agents/main/agent/auth-profiles.json | profiles=1 (oauth=0, token=0, api_key=1) | openrouter:default=sk-or-v1...2214c615
+
+OAuth/token status
+- none
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

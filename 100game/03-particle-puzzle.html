@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Particle Puzzle - Game 03/100</title>
+    <style>
+        :root {
+            --bg: #050508;
+            --p-blue: #00f2ff;
+            --p-purple: #bc00ff;
+            --p-pink: #ff007a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #canvas {
+            background: #000;
+            border-radius: 12px;
+            box-shadow: 0 0 50px rgba(188, 0, 255, 0.15);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            bottom: 40px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .instruction {
+            font-size: 18px;
+            letter-spacing: 2px;
+            color: var(--p-blue);
+            text-shadow: 0 0 10px var(--p-blue);
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .level-complete {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 8, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+            pointer-events: all;
+        }
+
+        button:hover {
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 20px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="ui">
+        <p id="instruction" class="instruction">DRAG TO SHAPE</p>
+        <p id="stats" class="stats">Level 1 - Target: Triangle</p>
+    </div>
+
+    <div id="complete" class="level-complete">
+        <h1>SYNCHRONIZED</h1>
+        <p id="final-stats" style="margin-bottom: 20px;">Efficiency: 98%</p>
+        <button onclick="nextLevel()">NEXT PATTERN</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const completeScreen = document.getElementById('complete');
+        const instruction = document.getElementById('instruction');
+        const stats = document.getElementById('stats');
+
+        let width, height;
+        let particles = [];
+        let targetPoints = [];
+        let currentLevel = 0;
+        let mouse = { x: -1000, y: -1000, active: false };
+        let levelComplete = false;
+
+        const LEVELS = [
+            { name: "Triangle", points: [[0.5, 0.2], [0.2, 0.7], [0.8, 0.7]], count: 3 },
+            { name: "Diamond", points: [[0.5, 0.15], [0.85, 0.5], [0.5, 0.85], [0.15, 0.5]], count: 4 },
+            { name: "Star", points: [[0.5, 0.1], [0.6, 0.4], [0.9, 0.4], [0.65, 0.6], [0.75, 0.9], [0.5, 0.7], [0.25, 0.9], [0.35, 0.6], [0.1, 0.4], [0.4, 0.4]], count: 10 }
+        ];
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.baseX = this.x;
+                this.baseY = this.y;
+                this.targetX = this.x;
+                this.targetY = this.y;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.size = Math.random() * 2 + 1;
+                this.color = Math.random() > 0.5 ? '#00f2ff' : '#bc00ff';
+                this.friction = 0.95;
+                this.ease = 0.1;
+            }
+
+            update() {
+                // Mouse interaction
+                if (mouse.active) {
+                    let dx = mouse.x - this.x;
+                    let dy = mouse.y - this.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    let force = (100 - dist) / 100;
+                    if (dist < 100) {
+                        this.vx += (dx / dist) * force * 2;
+                        this.vy += (dy / dist) * force * 2;
+                    }
+                }
+
+                // Attraction to target
+                let dx = this.targetX - this.x;
+                let dy = this.targetY - this.y;
+                this.vx += dx * this.ease;
+                this.vy += dy * this.ease;
+
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function resize() {
+            width = canvas.width = 600;
+            height = canvas.height = 600;
+            if (window.innerWidth < 600) {
+                width = canvas.width = window.innerWidth * 0.9;
+                height = canvas.height = window.innerWidth * 0.9;
+            }
+        }
+
+        function initLevel() {
+            levelComplete = false;
+            completeScreen.style.display = 'none';
+            const level = LEVELS[currentLevel % LEVELS.length];
+            stats.textContent = `Level ${currentLevel + 1} - Target: ${level.name}`;
+            
+            particles = [];
+            const particleCount = 400;
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+
+            assignTargets();
+        }
+
+        function assignTargets() {
+            const level = LEVELS[currentLevel % LEVELS.length];
+            const pts = level.points;
+            
+            particles.forEach((p, i) => {
+                // Distributed along the lines of the shape
+                const segment = i % pts.length;
+                const nextSegment = (segment + 1) % pts.length;
+                const ratio = Math.random();
+                
+                const x1 = pts[segment][0] * width;
+                const y1 = pts[segment][1] * height;
+                const x2 = pts[nextSegment][0] * width;
+                const y2 = pts[nextSegment][1] * height;
+                
+                p.targetX = x1 + (x2 - x1) * ratio;
+                p.targetY = y1 + (y2 - y1) * ratio;
+            });
+        }
+
+        function nextLevel() {
+            currentLevel++;
+            initLevel();
+        }
+
+        function checkWin() {
+            let totalDist = 0;
+            particles.forEach(p => {
+                let dx = p.targetX - p.x;
+                let dy = p.targetY - p.y;
+                totalDist += Math.sqrt(dx * dx + dy * dy);
+            });
+            
+            const avgDist = totalDist / particles.length;
+            if (avgDist < 5 && !levelComplete) {
+                levelComplete = true;
+                completeScreen.style.display = 'flex';
+                document.getElementById('final-stats').textContent = `Precision: ${Math.round(100 - avgDist)}%`;
+            }
+        }
+
+        function animate(t) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+
+            // Connect nearby particles for a "neural" look
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < particles.length; i += 4) {
+                for (let j = i + 1; j < particles.length; j += 40) {
+                    let dx = particles[i].x - particles[j].x;
+                    let dy = particles[i].y - particles[j].y;
+                    let dist = dx * dx + dy * dy;
+                    if (dist < 2000) {
+                        ctx.strokeStyle = `rgba(188, 0, 255, ${1 - dist / 2000})`;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            checkWin();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', () => mouse.active = true);
+        window.addEventListener('mouseup', () => mouse.active = false);
+
+        canvas.addEventListener('touchstart', e => {
+            mouse.active = true;
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.touches[0].clientX - rect.left;
+            mouse.y = e.touches[0].clientY - rect.top;
+        });
+        window.addEventListener('touchend', () => mouse.active = false);
+
+        resize();
+        initLevel();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Sudoku - Game 29/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+            --cell-bg: #111;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 32px;
+            letter-spacing: 4px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(9, 45px);
+            grid-template-rows: repeat(9, 45px);
+            gap: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px;
+            border: 2px solid var(--p-blue);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            background: var(--cell-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--p-blue);
+        }
+
+        .cell:nth-child(3n) { border-right: 2px solid rgba(0, 242, 255, 0.3); }
+        .cell:nth-child(9n) { border-right: none; }
+        
+        .cell.fixed { color: rgba(255, 255, 255, 0.5); cursor: default; }
+        .cell.selected { background: rgba(0, 242, 255, 0.2); box-shadow: inset 0 0 10px var(--p-blue); }
+        .cell.error { color: var(--p-pink); text-shadow: 0 0 10px var(--p-pink); }
+
+        .number-pad {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .num-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--p-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .num-btn:hover { background: rgba(0, 242, 255, 0.1); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button.reset-btn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>CYBER SUDOKU</h1>
+    </div>
+
+    <div id="grid"></div>
+
+    <div class="number-pad">
+        <div class="num-btn" onclick="inputNum(1)">1</div>
+        <div class="num-btn" onclick="inputNum(2)">2</div>
+        <div class="num-btn" onclick="inputNum(3)">3</div>
+        <div class="num-btn" onclick="inputNum(4)">4</div>
+        <div class="num-btn" onclick="inputNum(5)">5</div>
+        <div class="num-btn" onclick="inputNum(6)">6</div>
+        <div class="num-btn" onclick="inputNum(7)">7</div>
+        <div class="num-btn" onclick="inputNum(8)">8</div>
+        <div class="num-btn" onclick="inputNum(9)">9</div>
+        <div class="num-btn" onclick="inputNum(0)" style="width: 60px;">DEL</div>
+    </div>
+
+    <div id="game-over" class="game-over">
+        <h2 style="font-size: 48px; color: var(--p-blue);">LOGIC SYNCED</h2>
+        <button class="reset-btn" onclick="initGame()">NEW SESSION</button>
+    </div>
+
+    <script>
+        const gridEl = document.getElementById('grid');
+        const gameOverEl = document.getElementById('game-over');
+        let selectedCell = null;
+        let board = [];
+        let solution = [];
+
+        function initGame() {
+            board = Array(81).fill(0);
+            generateSudoku();
+            renderBoard();
+            gameOverEl.style.display = 'none';
+        }
+
+        function generateSudoku() {
+            // Simplified: Just one hardcoded puzzle for demo, usually use a generator
+            const puzzle = [
+                5, 3, 0, 0, 7, 0, 0, 0, 0,
+                6, 0, 0, 1, 9, 5, 0, 0, 0,
+                0, 9, 8, 0, 0, 0, 0, 6, 0,
+                8, 0, 0, 0, 6, 0, 0, 0, 3,
+                4, 0, 0, 8, 0, 3, 0, 0, 1,
+                7, 0, 0, 0, 2, 0, 0, 0, 6,
+                0, 6, 0, 0, 0, 0, 2, 8, 0,
+                0, 0, 0, 4, 1, 9, 0, 0, 5,
+                0, 0, 0, 0, 8, 0, 0, 7, 9
+            ];
+            board = puzzle.map(v => ({ val: v, fixed: v !== 0 }));
+        }
+
+        function renderBoard() {
+            gridEl.innerHTML = '';
+            board.forEach((cell, i) => {
+                const el = document.createElement('div');
+                el.className = 'cell' + (cell.fixed ? ' fixed' : '');
+                el.textContent = cell.val === 0 ? '' : cell.val;
+                el.onclick = () => selectCell(el, i);
+                gridEl.appendChild(el);
+            });
+        }
+
+        function selectCell(el, i) {
+            if (board[i].fixed) return;
+            document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedCell = i;
+        }
+
+        function inputNum(n) {
+            if (selectedCell === null) return;
+            board[selectedCell].val = n;
+            renderBoard();
+            checkWin();
+        }
+
+        function checkWin() {
+            if (board.every(c => c.val !== 0)) {
+                // Simplified win check
+                gameOverEl.style.display = 'flex';
+            }
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

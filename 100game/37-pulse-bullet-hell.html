@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pulse Bullet Hell - Game 37/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">SURVIVAL TIME</div>
+            <div id="time" class="value">0.0s</div>
+        </div>
+        <div class="stat">
+            <div class="label">CORE INTEGRITY</div>
+            <div id="health" class="value">100%</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>CORE COMPROMISED</h1>
+        <p id="final-time" style="font-size: 24px; margin-bottom: 20px;">Time: 0.0s</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const timeEl = document.getElementById('time');
+        const healthEl = document.getElementById('health');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 800, height = 600;
+        let player, bullets, gameActive, startTime, health;
+
+        class Player {
+            constructor() {
+                this.x = width / 2;
+                this.y = height / 2;
+                this.radius = 10;
+                this.targetX = this.x;
+                this.targetY = this.y;
+            }
+            update() {
+                this.x += (this.targetX - this.x) * 0.1;
+                this.y += (this.targetY - this.y) * 0.1;
+            }
+            draw() {
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        class Bullet {
+            constructor(x, y, angle, speed, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.radius = 4;
+                this.color = color;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                return (this.x < -10 || this.x > width + 10 || this.y < -10 || this.y > height + 10);
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            player = new Player();
+            bullets = [];
+            health = 100;
+            gameActive = true;
+            startTime = Date.now();
+            healthEl.textContent = '100%';
+            gameOverEl.style.display = 'none';
+            spawnBullets();
+            animate();
+        }
+
+        function spawnBullets() {
+            if (!gameActive) return;
+            const count = 8;
+            const angleStep = (Math.PI * 2) / count;
+            const offset = Date.now() / 1000;
+            
+            for (let i = 0; i < count; i++) {
+                bullets.push(new Bullet(width / 2, height / 2, i * angleStep + offset, 2, '#ff007a'));
+            }
+            
+            // Side bullets
+            if (Math.random() < 0.3) {
+                bullets.push(new Bullet(Math.random() * width, 0, Math.PI / 2, 3, '#bc00ff'));
+            }
+
+            setTimeout(spawnBullets, 500);
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverEl.style.display = 'flex';
+            const finalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+            document.getElementById('final-time').textContent = `Time: ${finalTime}s`;
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, width, height);
+
+            player.update();
+            player.draw();
+
+            bullets.forEach((b, i) => {
+                if (b.update()) bullets.splice(i, 1);
+                else {
+                    b.draw();
+                    if (Math.hypot(player.x - b.x, player.y - b.y) < player.radius + b.radius) {
+                        health -= 1;
+                        healthEl.textContent = Math.max(0, Math.floor(health)) + '%';
+                        bullets.splice(i, 1);
+                        if (health <= 0) endGame();
+                    }
+                }
+            });
+
+            const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+            timeEl.textContent = elapsed + 's';
+        }
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            player.targetX = e.clientX - rect.left;
+            player.targetY = e.clientY - rect.top;
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

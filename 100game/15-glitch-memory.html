@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glitch Memory - Game 15/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 36px;
+            letter-spacing: 5px;
+            background: linear-gradient(to right, var(--p-blue), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+        }
+
+        .stats {
+            display: flex;
+            gap: 40px;
+            margin-top: 10px;
+            font-family: monospace;
+            color: var(--p-blue);
+            text-transform: uppercase;
+        }
+
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(4, 80px);
+            grid-template-rows: repeat(4, 80px);
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 242, 255, 0.1);
+        }
+
+        .card {
+            width: 80px;
+            height: 80px;
+            background: #111;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            transition: all 0.3s;
+            position: relative;
+            transform-style: preserve-3d;
+        }
+
+        .card:hover { border-color: var(--p-blue); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
+        .card.flipped { transform: rotateY(180deg); }
+        .card.matched { border-color: var(--p-blue); opacity: 0.5; cursor: default; }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%; height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+
+        .card-back { background: #111; }
+        .card-front { background: #1a1a1a; transform: rotateY(180deg); color: var(--p-blue); text-shadow: 0 0 10px var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 35px;
+            background: transparent;
+            border: 1px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: rgba(0, 242, 255, 0.1);
+            box-shadow: 0 0 20px var(--p-blue);
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+
+        .glitch-effect { animation: glitch 0.1s infinite; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>GLITCH MEMORY</h1>
+        <div class="stats">
+            <div>MOVES: <span id="moves">0</span></div>
+            <div>TIME: <span id="timer">0</span>s</div>
+        </div>
+    </div>
+
+    <div id="grid"></div>
+
+    <div id="game-over" class="game-over">
+        <h2 style="font-size: 48px; color: var(--p-blue);">MEMORY SYNCED</h2>
+        <p id="final-stats" style="font-size: 24px; margin-top: 10px; color: var(--p-blue);">Moves: 0 | Time: 0s</p>
+        <button onclick="initGame()">RESET DATABASE</button>
+    </div>
+
+    <script>
+        const gridEl = document.getElementById('grid');
+        const movesEl = document.getElementById('moves');
+        const timerEl = document.getElementById('timer');
+        const gameOverEl = document.getElementById('game-over');
+
+        let cards, flippedCards, moves, matches, timer, timerInterval, gameActive;
+        const SYMBOLS = ['⚡', '☢', '☣', '⚛', '◈', '◇', '◎', '▣'];
+
+        function initGame() {
+            cards = [...SYMBOLS, ...SYMBOLS].sort(() => Math.random() - 0.5);
+            flippedCards = [];
+            moves = 0;
+            matches = 0;
+            timer = 0;
+            gameActive = true;
+            movesEl.textContent = '0';
+            timerEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            gridEl.innerHTML = '';
+            gridEl.classList.remove('glitch-effect');
+
+            cards.forEach((symbol, i) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-back"></div>
+                    <div class="card-front">${symbol}</div>
+                `;
+                card.onclick = () => flipCard(card, symbol);
+                gridEl.appendChild(card);
+            });
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer++;
+                timerEl.textContent = timer;
+                if (timer % 10 === 0) triggerGlitch();
+            }, 1000);
+        }
+
+        function triggerGlitch() {
+            gridEl.classList.add('glitch-effect');
+            setTimeout(() => gridEl.classList.remove('glitch-effect'), 500);
+        }
+
+        function flipCard(card, symbol) {
+            if (!gameActive || flippedCards.length === 2 || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+
+            card.classList.add('flipped');
+            flippedCards.push({ card, symbol });
+
+            if (flippedCards.length === 2) {
+                moves++;
+                movesEl.textContent = moves;
+                checkMatch();
+            }
+        }
+
+        function checkMatch() {
+            const [c1, c2] = flippedCards;
+            if (c1.symbol === c2.symbol) {
+                c1.card.classList.add('matched');
+                c2.card.classList.add('matched');
+                matches++;
+                flippedCards = [];
+                if (matches === SYMBOLS.length) endGame();
+            } else {
+                setTimeout(() => {
+                    c1.card.classList.remove('flipped');
+                    c2.card.classList.remove('flipped');
+                    flippedCards = [];
+                }, 1000);
+            }
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            document.getElementById('final-stats').textContent = `Moves: ${moves} | Time: ${timer}s`;
+            setTimeout(() => {
+                gameOverEl.style.display = 'flex';
+            }, 1000);
+        }
+
+        initGame();
+    </script>
+</body>
+</html>

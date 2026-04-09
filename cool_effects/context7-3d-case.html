@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context7 3D Showcase - Particle Galaxy</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #info {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            text-align: center;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            pointer-events: none;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+            z-index: 10;
+        }
+        h1 { margin: 0; font-weight: 300; letter-spacing: 5px; text-transform: uppercase; }
+        p { font-size: 14px; opacity: 0.7; margin-top: 10px; }
+        .controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+        button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 0 15px rgba(0,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <h1>Context7 Galaxy</h1>
+        <p>Interactive 3D Particle System • Drag to Rotate • Scroll to Zoom</p>
+    </div>
+    
+    <div class="controls">
+        <button id="warpBtn">Warp Speed</button>
+        <button id="colorBtn">Change Color</button>
+    </div>
+
+    <!-- Using ES Modules for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // Scene Setup
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+        camera.position.set(0, 200, 500);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
+
+        // Post-processing (Bloom)
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // Geometry - Galaxy Particles
+        const geometry = new THREE.BufferGeometry();
+        const count = 15000;
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+        const sizes = new Float32Array(count);
+        
+        const colorInside = new THREE.Color(0xff6030);
+        const colorOutside = new THREE.Color(0x1b3984);
+
+        for(let i = 0; i < count; i++) {
+            const i3 = i * 3;
+            
+            // Spiral Galaxy Logic
+            const radius = Math.random() * Math.random() * 400; // More particles in center
+            const spinAngle = radius * 0.05;
+            const branchAngle = (i % 3) * ((Math.PI * 2) / 3); // 3 branches
+            
+            const randomX = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 30 * (radius/100 + 1);
+            const randomY = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 30 * (radius/100 + 1);
+            const randomZ = Math.pow(Math.random(), 3) * (Math.random() < 0.5 ? 1 : -1) * 30 * (radius/100 + 1);
+
+            positions[i3] = Math.cos(branchAngle + spinAngle) * radius + randomX;
+            positions[i3 + 1] = randomY * (1 - radius/500); // Flattened disk
+            positions[i3 + 2] = Math.sin(branchAngle + spinAngle) * radius + randomZ;
+
+            // Color mixing based on radius
+            const mixedColor = colorInside.clone();
+            mixedColor.lerp(colorOutside, radius / 400);
+
+            colors[i3] = mixedColor.r;
+            colors[i3 + 1] = mixedColor.g;
+            colors[i3 + 2] = mixedColor.b;
+
+            sizes[i] = Math.random() * 2;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // Shader Material for Particles
+        const material = new THREE.ShaderMaterial({
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            vertexColors: true,
+            uniforms: {
+                uTime: { value: 0 },
+                uSize: { value: 30 * renderer.getPixelRatio() }
+            },
+            vertexShader: `
+                uniform float uTime;
+                uniform float uSize;
+                attribute float size;
+                varying vec3 vColor;
+                
+                void main() {
+                    vColor = color;
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    gl_PointSize = size * uSize * (1.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                varying vec3 vColor;
+                
+                void main() {
+                    // Circular particle
+                    float distanceToCenter = distance(gl_PointCoord, vec2(0.5));
+                    float strength = 0.05 / distanceToCenter - 0.1;
+                    
+                    if(strength < 0.0) discard;
+                    
+                    gl_FragColor = vec4(vColor, strength);
+                }
+            `
+        });
+
+        const points = new THREE.Points(geometry, material);
+        scene.add(points);
+
+        // Interactive Logic
+        let warpSpeed = false;
+        let timeScale = 1.0;
+
+        document.getElementById('warpBtn').addEventListener('click', () => {
+            warpSpeed = !warpSpeed;
+            if(warpSpeed) {
+                // Animate to warp
+                const tl = setInterval(() => {
+                    if(controls.autoRotateSpeed < 20) controls.autoRotateSpeed += 1;
+                    else clearInterval(tl);
+                }, 50);
+                document.getElementById('warpBtn').textContent = "Normal Speed";
+                bloomPass.strength = 3.0;
+            } else {
+                // Animate back
+                controls.autoRotateSpeed = 0.5;
+                document.getElementById('warpBtn').textContent = "Warp Speed";
+                bloomPass.strength = 1.2;
+            }
+        });
+
+        document.getElementById('colorBtn').addEventListener('click', () => {
+            const r1 = Math.random(), g1 = Math.random(), b1 = Math.random();
+            const r2 = Math.random(), g2 = Math.random(), b2 = Math.random();
+            
+            const newColorInside = new THREE.Color(r1, g1, b1);
+            const newColorOutside = new THREE.Color(r2, g2, b2);
+            
+            const colorsAttr = geometry.attributes.color;
+            
+            for(let i = 0; i < count; i++) {
+                const i3 = i * 3;
+                const radius = Math.sqrt(
+                    positions[i3] * positions[i3] + 
+                    positions[i3+2] * positions[i3+2]
+                );
+                
+                const mixedColor = newColorInside.clone();
+                mixedColor.lerp(newColorOutside, radius / 400);
+                
+                colorsAttr.array[i3] = mixedColor.r;
+                colorsAttr.array[i3+1] = mixedColor.g;
+                colorsAttr.array[i3+2] = mixedColor.b;
+            }
+            colorsAttr.needsUpdate = true;
+        });
+
+        // Animation Loop
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+            
+            material.uniforms.uTime.value = elapsedTime * timeScale;
+            
+            // Slight wave movement
+            if(!warpSpeed) {
+                for(let i = 0; i < count; i++) {
+                    const i3 = i * 3;
+                    const x = geometry.attributes.position.array[i3];
+                    // geometry.attributes.position.array[i3+1] += Math.sin(elapsedTime + x) * 0.01;
+                }
+                // geometry.attributes.position.needsUpdate = true;
+            }
+
+            controls.update();
+            composer.render();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            material.uniforms.uSize.value = 30 * renderer.getPixelRatio();
+        });
+    </script>
+</body>
+</html>

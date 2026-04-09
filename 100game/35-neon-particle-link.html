@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Particle Link - Game 35/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">LEVEL</div>
+            <div id="level" class="value">1</div>
+        </div>
+        <div class="stat">
+            <div class="label">TIME</div>
+            <div id="timer" class="value">60</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>SYNC TIMEOUT</h1>
+        <p id="final-stats" style="font-size: 24px; margin-bottom: 20px;">Level: 1</p>
+        <button onclick="initGame()">RE-INIT SYSTEM</button>
+    </div>
+
+    <div class="controls-hint">Click Particles of the Same Color to Link Them</div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const levelEl = document.getElementById('level');
+        const timerEl = document.getElementById('timer');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 600, height = 600;
+        let particles, selected, level, timer, gameActive, timerInterval;
+
+        class Particle {
+            constructor(id, color) {
+                this.id = id;
+                this.color = color;
+                this.x = Math.random() * (width - 100) + 50;
+                this.y = Math.random() * (height - 100) + 50;
+                this.radius = 20;
+                this.active = true;
+            }
+            draw() {
+                if (!this.active) return;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = selected === this ? 25 : 15;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            contains(mx, my) {
+                return Math.hypot(this.x - mx, this.y - my) < this.radius;
+            }
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            level = 1;
+            timer = 60;
+            gameActive = true;
+            levelEl.textContent = level;
+            timerEl.textContent = timer;
+            gameOverEl.style.display = 'none';
+            setupLevel();
+            startTimer();
+            animate();
+        }
+
+        function setupLevel() {
+            particles = [];
+            selected = null;
+            const colors = ['#00f2ff', '#ff007a', '#bc00ff', '#39ff14'];
+            for (let i = 0; i < level + 2; i++) {
+                const color = colors[i % colors.length];
+                particles.push(new Particle(i * 2, color));
+                particles.push(new Particle(i * 2 + 1, color));
+            }
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timer--;
+                timerEl.textContent = timer;
+                if (timer <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(timerInterval);
+            document.getElementById('final-stats').textContent = `Level Reached: ${level}`;
+            gameOverEl.style.display = 'flex';
+        }
+
+        function animate() {
+            if (!gameActive) return;
+            requestAnimationFrame(animate);
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => p.draw());
+
+            if (selected) {
+                ctx.strokeStyle = selected.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(selected.x, selected.y);
+                ctx.lineTo(mouseX, mouseY);
+                ctx.stroke();
+            }
+        }
+
+        let mouseX, mouseY;
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
+        canvas.addEventListener('mousedown', e => {
+            if (!gameActive) return;
+            particles.forEach(p => {
+                if (p.active && p.contains(mouseX, mouseY)) {
+                    if (selected) {
+                        if (selected !== p && selected.color === p.color) {
+                            selected.active = false;
+                            p.active = false;
+                            selected = null;
+                            if (particles.every(p => !p.active)) {
+                                level++;
+                                levelEl.textContent = level;
+                                timer += 10;
+                                setupLevel();
+                            }
+                        } else {
+                            selected = p;
+                        }
+                    } else {
+                        selected = p;
+                    }
+                }
+            });
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

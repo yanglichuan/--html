@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Physics 3D Demo - Three.js + Cannon-es</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: 'Arial', sans-serif;
+            background: #000;
+        }
+        
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            pointer-events: none;
+            user-select: none;
+        }
+        
+        #info h2 {
+            margin-bottom: 8px;
+            font-size: 18px;
+            color: #4cc9f0;
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+        }
+        
+        #controls-ui {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+        
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+        
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+
+        .highlight {
+            color: #f72585;
+            font-weight: bold;
+        }
+    </style>
+    <!-- Import Maps for clean module imports -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+                "cannon-es": "https://unpkg.com/cannon-es@0.20.0/dist/cannon-es.js"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="info">
+        <h2>⚛️ 物理引擎演示 (Cannon-es)</h2>
+        <p>🖱️ <span class="highlight">左键点击</span>：发射球体</p>
+        <p>💥 物体具有真实物理碰撞效果</p>
+        <p>📦 自动生成堆叠的箱子</p>
+    </div>
+    
+    <div id="controls-ui">
+        <button id="resetBtn">重置场景</button>
+        <button id="spawnStackBtn">生成塔堆</button>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import * as CANNON from 'cannon-es';
+
+        // Graphics variables
+        let camera, scene, renderer;
+        let controls;
+        const meshes = [];
+        const bodies = [];
+
+        // Physics variables
+        let world;
+        const timeStep = 1 / 60;
+        let lastCallTime;
+
+        // Materials
+        const materialColors = [0x4cc9f0, 0x4361ee, 0x3a0ca3, 0x7209b7, 0xf72585];
+
+        init();
+        animate();
+
+        function init() {
+            // --- Init Physics World ---
+            world = new CANNON.World();
+            world.gravity.set(0, -9.82, 0); // Earth gravity
+            
+            // Default material
+            const defaultMaterial = new CANNON.Material('default');
+            const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, {
+                friction: 0.3,
+                restitution: 0.7, // Bounciness
+            });
+            world.addContactMaterial(defaultContactMaterial);
+
+            // --- Init Three.js Scene ---
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+            scene.fog = new THREE.Fog(0x111111, 20, 100);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(10, 15, 20);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // Soft white light
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+            directionalLight.position.set(10, 20, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Controls
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // --- Objects ---
+            createFloor();
+            createStack(0, 0.5, 0);
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('pointerdown', onPointerDown);
+            document.getElementById('resetBtn').addEventListener('click', resetScene);
+            document.getElementById('spawnStackBtn').addEventListener('click', () => createStack((Math.random()-0.5)*10, 5, (Math.random()-0.5)*10));
+        }
+
+        function createFloor() {
+            // Physics
+            const groundShape = new CANNON.Plane();
+            const groundBody = new CANNON.Body({ mass: 0 }); // Mass 0 = Static
+            groundBody.addShape(groundShape);
+            groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+            world.addBody(groundBody);
+
+            // Graphics
+            const geometry = new THREE.PlaneGeometry(100, 100);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x222222, 
+                roughness: 0.8,
+                metalness: 0.2
+            });
+            const floor = new THREE.Mesh(geometry, material);
+            floor.receiveShadow = true;
+            // Sync with physics body immediately
+            floor.position.copy(groundBody.position);
+            floor.quaternion.copy(groundBody.quaternion);
+            scene.add(floor);
+            
+            // Grid helper
+            const grid = new THREE.GridHelper(100, 50, 0x444444, 0x222222);
+            grid.position.y = 0.01; // Slightly above floor to avoid z-fighting
+            scene.add(grid);
+        }
+
+        function createBox(x, y, z, width, height, depth, color) {
+            const mass = 1;
+            
+            // Physics
+            const shape = new CANNON.Box(new CANNON.Vec3(width/2, height/2, depth/2));
+            const body = new CANNON.Body({ mass: mass, shape: shape });
+            body.position.set(x, y, z);
+            world.addBody(body);
+            bodies.push(body);
+
+            // Graphics
+            const geometry = new THREE.BoxGeometry(width, height, depth);
+            const material = new THREE.MeshStandardMaterial({
+                color: color || materialColors[Math.floor(Math.random() * materialColors.length)],
+                roughness: 0.4,
+                metalness: 0.1
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            meshes.push(mesh);
+        }
+
+        function createSphere(x, y, z, radius, velocity) {
+            const mass = 5;
+            
+            // Physics
+            const shape = new CANNON.Sphere(radius);
+            const body = new CANNON.Body({ mass: mass, shape: shape });
+            body.position.set(x, y, z);
+            if (velocity) {
+                body.velocity.copy(velocity);
+            }
+            world.addBody(body);
+            bodies.push(body);
+
+            // Graphics
+            const geometry = new THREE.SphereGeometry(radius, 32, 32);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.1,
+                metalness: 0.5,
+                emissive: 0x222222
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            meshes.push(mesh);
+        }
+
+        function createStack(startX, startY, startZ) {
+            const boxSize = 2;
+            for (let i = 0; i < 5; i++) { // Height
+                for (let j = 0; j < 2; j++) { // Width
+                     createBox(
+                         startX + j * boxSize * 1.05 - boxSize/2,
+                         startY + i * boxSize * 1.05 + boxSize/2,
+                         startZ,
+                         boxSize, boxSize, boxSize
+                     );
+                }
+            }
+        }
+
+        function onPointerDown(event) {
+            // Only shoot if clicking on canvas (not UI)
+            if (event.target.tagName !== 'CANVAS') return;
+
+            // Calculate mouse position in normalized device coordinates
+            const mouse = new THREE.Vector2();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Raycast to find point in space to shoot towards
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+
+            // Shoot ball from camera position
+            const shootVelocity = new CANNON.Vec3();
+            shootVelocity.set(
+                raycaster.ray.direction.x,
+                raycaster.ray.direction.y,
+                raycaster.ray.direction.z
+            );
+            shootVelocity.scale(30, shootVelocity); // Shoot speed
+
+            const radius = 0.8;
+            createSphere(
+                camera.position.x + raycaster.ray.direction.x * 2, 
+                camera.position.y + raycaster.ray.direction.y * 2, 
+                camera.position.z + raycaster.ray.direction.z * 2, 
+                radius,
+                shootVelocity
+            );
+        }
+
+        function resetScene() {
+            // Remove all dynamic bodies/meshes
+            for (let i = 0; i < bodies.length; i++) {
+                world.removeBody(bodies[i]);
+                scene.remove(meshes[i]);
+            }
+            bodies.length = 0;
+            meshes.length = 0;
+            
+            // Re-create initial stack
+            createStack(0, 0.5, 0);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate(time) {
+            requestAnimationFrame(animate);
+
+            if (lastCallTime === undefined) {
+                world.step(timeStep);
+            } else {
+                const dt = (time - lastCallTime) / 1000;
+                world.step(timeStep, dt, 3); // maxSubSteps = 3
+            }
+            lastCallTime = time;
+
+            // Sync physics <-> graphics
+            for (let i = 0; i < meshes.length; i++) {
+                meshes[i].position.copy(bodies[i].position);
+                meshes[i].quaternion.copy(bodies[i].quaternion);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+    </script>
+</body>
+</html>

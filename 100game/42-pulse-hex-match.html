@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>脉冲六角匹配 - Pulse Hex Match</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --panel-color: rgba(20, 20, 20, 0.8);
+            --accent-color: #00f2ff;
+            --text-color: #ffffff;
+            --neon-pink: #ff00ff;
+            --neon-blue: #00f2ff;
+            --neon-green: #00ff41;
+            --neon-yellow: #fefe33;
+            --neon-orange: #ff6600;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.2);
+        }
+
+        header {
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, rgba(0, 242, 255, 0.1), transparent);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px var(--accent-color);
+        }
+
+        #stats {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 18px;
+        }
+
+        .stat-item {
+            background: var(--panel-color);
+            padding: 5px 15px;
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            box-shadow: 0 0 5px var(--accent-color);
+        }
+
+        #canvas-wrapper {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            cursor: pointer;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .message {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--neon-pink);
+            text-shadow: 0 0 20px var(--neon-pink);
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            background: transparent;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s;
+            margin-top: 20px;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 242, 255, 0.3);
+        }
+
+        .btn:hover {
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 20px var(--accent-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>PULSE HEX MATCH</h1>
+            <div id="stats">
+                <div class="stat-item">SCORE: <span id="score-val">0</span></div>
+                <div class="stat-item">TIME: <span id="time-val">60</span></div>
+            </div>
+        </header>
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            <div id="ui-layer">
+                <div id="combo-msg" class="message">COMBO!</div>
+            </div>
+        </div>
+        <div id="overlay">
+            <h2 id="overlay-title">NEON PULSE</h2>
+            <p id="overlay-desc">Match 3 or more hexagonal pulses of the same color.</p>
+            <button id="start-btn" class="btn">START CORE</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreVal = document.getElementById('score-val');
+        const timeVal = document.getElementById('time-val');
+        const startBtn = document.getElementById('start-btn');
+        const overlay = document.getElementById('overlay');
+        const comboMsg = document.getElementById('combo-msg');
+
+        // Constants
+        const HEX_RADIUS = 30;
+        const HEX_WIDTH = Math.sqrt(3) * HEX_RADIUS;
+        const HEX_HEIGHT = 2 * HEX_RADIUS;
+        const COLS = 8;
+        const ROWS = 9;
+        const COLORS = [
+            '#ff00ff', // Pink
+            '#00f2ff', // Blue
+            '#00ff41', // Green
+            '#fefe33', // Yellow
+            '#ff6600'  // Orange
+        ];
+
+        // Game State
+        let grid = [];
+        let score = 0;
+        let timeLeft = 60;
+        let isPlaying = false;
+        let selectedHex = null;
+        let swapping = false;
+        let animations = [];
+        let particles = [];
+        let gameTimer = null;
+
+        // Resize Canvas
+        function resize() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = wrapper.clientWidth * dpr;
+            canvas.height = wrapper.clientHeight * dpr;
+            canvas.style.width = wrapper.clientWidth + 'px';
+            canvas.style.height = wrapper.clientHeight + 'px';
+            ctx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Hex {
+            constructor(q, r, colorIndex) {
+                this.q = q; // Axial column
+                this.r = r; // Axial row
+                this.colorIndex = colorIndex;
+                this.color = COLORS[colorIndex];
+                this.targetX = 0;
+                this.targetY = 0;
+                this.x = 0;
+                this.y = 0;
+                this.scale = 1;
+                this.opacity = 1;
+                this.pulse = 0;
+                this.removed = false;
+                this.updatePos();
+                this.x = this.targetX;
+                this.y = this.targetY;
+            }
+
+            updatePos() {
+                // Offset coordinates to axial conversion for horizontal hexes
+                const x = HEX_WIDTH * (this.q + this.r / 2);
+                const y = HEX_HEIGHT * 0.75 * this.r;
+                
+                // Center the grid
+                const gridWidth = HEX_WIDTH * (COLS - 0.5);
+                const gridHeight = HEX_HEIGHT * 0.75 * (ROWS - 1);
+                
+                this.targetX = (canvas.width / (window.devicePixelRatio || 1) - gridWidth) / 2 + x + HEX_WIDTH/2;
+                this.targetY = (canvas.height / (window.devicePixelRatio || 1) - gridHeight) / 2 + y + HEX_HEIGHT/2;
+            }
+
+            draw(ctx) {
+                if (this.removed && this.scale <= 0) return;
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.scale(this.scale, this.scale);
+                ctx.globalAlpha = this.opacity;
+
+                const r = HEX_RADIUS - 2;
+                const sides = 6;
+                
+                // Draw glow
+                ctx.shadowBlur = 10 + Math.sin(this.pulse) * 5;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                for (let i = 0; i < sides; i++) {
+                    const angle = (i * 60) * Math.PI / 180;
+                    const px = r * Math.cos(angle);
+                    const py = r * Math.sin(angle);
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Fill inner
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = 0.2 + Math.sin(this.pulse) * 0.1;
+                ctx.fill();
+
+                // Selected highlight
+                if (selectedHex === this) {
+                    ctx.shadowBlur = 20;
+                    ctx.strokeStyle = '#fff';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
+                }
+
+                ctx.restore();
+            }
+
+            update(dt) {
+                // Smooth move
+                this.x += (this.targetX - this.x) * 0.2;
+                this.y += (this.targetY - this.y) * 0.2;
+                
+                this.pulse += dt * 0.005;
+                
+                if (this.removed) {
+                    this.scale -= dt * 0.005;
+                    this.opacity -= dt * 0.005;
+                    if (this.scale < 0) this.scale = 0;
+                }
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.size = Math.random() * 3 + 1;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function initGrid() {
+            grid = [];
+            for (let r = 0; r < ROWS; r++) {
+                grid[r] = [];
+                for (let q = 0; q < COLS; q++) {
+                    // Avoid initial matches
+                    let colorIndex;
+                    do {
+                        colorIndex = Math.floor(Math.random() * COLORS.length);
+                    } while (checkInitialMatch(q, r, colorIndex));
+                    
+                    grid[r][q] = new Hex(q - Math.floor(r/2), r, colorIndex);
+                }
+            }
+        }
+
+        function checkInitialMatch(q, r, colorIndex) {
+            // Horizontal check
+            if (q >= 2 && 
+                grid[r][q-1] && grid[r][q-1].colorIndex === colorIndex && 
+                grid[r][q-2] && grid[r][q-2].colorIndex === colorIndex) return true;
+            
+            // Vertical check (axial diagonals)
+            if (r >= 2 && 
+                grid[r-1][q] && grid[r-1][q].colorIndex === colorIndex && 
+                grid[r-2][q] && grid[r-2][q].colorIndex === colorIndex) return true;
+
+            return false;
+        }
+
+        function getHexAt(x, y) {
+            let closest = null;
+            let minDist = HEX_RADIUS;
+
+            for (let r = 0; r < ROWS; r++) {
+                for (let q = 0; q < COLS; q++) {
+                    const hex = grid[r][q];
+                    const d = Math.sqrt((x - hex.x) ** 2 + (y - hex.y) ** 2);
+                    if (d < minDist) {
+                        minDist = d;
+                        closest = {r, q};
+                    }
+                }
+            }
+            return closest;
+        }
+
+        function areNeighbors(h1, h2) {
+            const dr = h1.r - h2.r;
+            const dq = (h1.q - Math.floor(h1.r/2)) - (h2.q - Math.floor(h2.r/2));
+            
+            // Hex neighbor logic for offset coordinates
+            if (Math.abs(dr) > 1) return false;
+            if (dr === 0) return Math.abs(dq) === 1;
+            
+            // Different row logic
+            if (h1.r % 2 === 0) {
+                return dq === 0 || dq === -1;
+            } else {
+                return dq === 0 || dq === 1;
+            }
+        }
+
+        async function swapHexes(p1, p2) {
+            swapping = true;
+            const h1 = grid[p1.r][p1.q];
+            const h2 = grid[p2.r][p2.q];
+
+            // Visual swap
+            const tempQ = h1.q;
+            const tempR = h1.r;
+            h1.q = h2.q;
+            h1.r = h2.r;
+            h2.q = tempQ;
+            h2.r = tempR;
+
+            h1.updatePos();
+            h2.updatePos();
+
+            grid[p1.r][p1.q] = h2;
+            grid[p2.r][p2.q] = h1;
+
+            await new Promise(r => setTimeout(r, 300));
+
+            const matches = findMatches();
+            if (matches.length > 0) {
+                handleMatches(matches);
+            } else {
+                // Swap back
+                h1.q = h2.q;
+                h1.r = h2.r;
+                h2.q = tempQ;
+                h2.r = tempR;
+                h1.updatePos();
+                h2.updatePos();
+                grid[p1.r][p1.q] = h1;
+                grid[p2.r][p2.q] = h2;
+                await new Promise(r => setTimeout(r, 300));
+            }
+            swapping = false;
+        }
+
+        function findMatches() {
+            const matched = new Set();
+
+            // Rows
+            for (let r = 0; r < ROWS; r++) {
+                for (let q = 0; q < COLS - 2; q++) {
+                    const c = grid[r][q].colorIndex;
+                    if (grid[r][q+1].colorIndex === c && grid[r][q+2].colorIndex === c) {
+                        matched.add(`${r},${q}`);
+                        matched.add(`${r},${q+1}`);
+                        matched.add(`${r},${q+2}`);
+                    }
+                }
+            }
+
+            // Diagonals (Top-Left to Bottom-Right)
+            for (let r = 0; r < ROWS - 2; r++) {
+                for (let q = 0; q < COLS; q++) {
+                    const c = grid[r][q].colorIndex;
+                    // Need to check neighbors carefully due to offset
+                    // This is a simplified check for 3 in a row
+                    const n1 = getNeighbor(q, r, 2); // SE
+                    const n2 = getNeighbor(q, r, 3); // SW
+                    
+                    if (n1) {
+                        const n1n1 = getNeighbor(n1.q, n1.r, 2);
+                        if (n1n1 && grid[n1.r][n1.q].colorIndex === c && grid[n1n1.r][n1n1.q].colorIndex === c) {
+                            matched.add(`${r},${q}`);
+                            matched.add(`${n1.r},${n1.q}`);
+                            matched.add(`${n1n1.r},${n1n1.q}`);
+                        }
+                    }
+                    if (n2) {
+                        const n2n2 = getNeighbor(n2.q, n2.r, 3);
+                        if (n2n2 && grid[n2.r][n2.q].colorIndex === c && grid[n2n2.r][n2n2.q].colorIndex === c) {
+                            matched.add(`${r},${q}`);
+                            matched.add(`${n2.r},${n2.q}`);
+                            matched.add(`${n2n2.r},${n2n2.q}`);
+                        }
+                    }
+                }
+            }
+
+            return Array.from(matched).map(s => {
+                const [r, q] = s.split(',').map(Number);
+                return {r, q};
+            });
+        }
+
+        function getNeighbor(q, r, dir) {
+            const isEven = r % 2 === 0;
+            const dirs = [
+                [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 0] // Dummy dirs
+            ];
+            // Hex neighbor offsets for point-up hexes in even-r storage
+            const offsets = isEven ? 
+                [[1, 0], [0, -1], [-1, -1], [-1, 0], [-1, 1], [0, 1]] :
+                [[1, 0], [1, -1], [0, -1], [-1, 0], [0, 1], [1, 1]];
+            
+            const [dq, dr] = offsets[dir % 6];
+            const nq = q + dq;
+            const nr = r + dr;
+            
+            if (nr >= 0 && nr < ROWS && nq >= 0 && nq < COLS) {
+                return {q: nq, r: nr};
+            }
+            return null;
+        }
+
+        async function handleMatches(matches) {
+            score += matches.length * 10;
+            scoreVal.textContent = score;
+
+            if (matches.length >= 5) {
+                showCombo();
+            }
+
+            matches.forEach(p => {
+                const hex = grid[p.r][p.q];
+                hex.removed = true;
+                for (let i = 0; i < 8; i++) {
+                    particles.push(new Particle(hex.x, hex.y, hex.color));
+                }
+            });
+
+            await new Promise(r => setTimeout(r, 500));
+
+            // Drop down
+            for (let q = 0; q < COLS; q++) {
+                let emptySpaces = 0;
+                for (let r = ROWS - 1; r >= 0; r--) {
+                    if (grid[r][q].removed) {
+                        emptySpaces++;
+                    } else if (emptySpaces > 0) {
+                        const hex = grid[r][q];
+                        grid[r+emptySpaces][q] = hex;
+                        hex.r = r + emptySpaces;
+                        hex.updatePos();
+                        grid[r][q] = {removed: true}; // Temp marker
+                    }
+                }
+                
+                // Fill new
+                for (let r = 0; r < emptySpaces; r++) {
+                    const colorIndex = Math.floor(Math.random() * COLORS.length);
+                    const newHex = new Hex(q - Math.floor(r/2), r, colorIndex);
+                    newHex.y = -100; // Start from top
+                    grid[r][q] = newHex;
+                }
+            }
+
+            // Recursive match check
+            await new Promise(r => setTimeout(r, 300));
+            const newMatches = findMatches();
+            if (newMatches.length > 0) {
+                handleMatches(newMatches);
+            }
+        }
+
+        function showCombo() {
+            comboMsg.classList.add('show');
+            setTimeout(() => comboMsg.classList.remove('show'), 1000);
+        }
+
+        function startTimer() {
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                timeVal.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(gameTimer);
+            overlay.classList.remove('hidden');
+            document.getElementById('overlay-title').textContent = 'TIME OVER';
+            document.getElementById('overlay-desc').textContent = `FINAL SCORE: ${score}`;
+            startBtn.textContent = 'RESTART CORE';
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 60;
+            scoreVal.textContent = score;
+            timeVal.textContent = timeLeft;
+            initGrid();
+            isPlaying = true;
+            overlay.classList.add('hidden');
+            startTimer();
+        }
+
+        // Input Handling
+        canvas.addEventListener('mousedown', (e) => {
+            if (!isPlaying || swapping) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            const pos = getHexAt(x, y);
+            if (pos) {
+                if (!selectedHex) {
+                    selectedHex = grid[pos.r][pos.q];
+                } else {
+                    const h1 = {r: grid.findIndex(row => row.includes(selectedHex)), q: 0};
+                    h1.q = grid[h1.r].indexOf(selectedHex);
+                    
+                    if (areNeighbors(h1, pos)) {
+                        swapHexes(h1, pos);
+                        selectedHex = null;
+                    } else {
+                        selectedHex = grid[pos.r][pos.q];
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            const pos = getHexAt(x, y);
+            if (pos) {
+                if (!selectedHex) {
+                    selectedHex = grid[pos.r][pos.q];
+                } else {
+                    const h1 = {r: grid.findIndex(row => row.includes(selectedHex)), q: 0};
+                    h1.q = grid[h1.r].indexOf(selectedHex);
+                    
+                    if (areNeighbors(h1, pos)) {
+                        swapHexes(h1, pos);
+                        selectedHex = null;
+                    } else {
+                        selectedHex = grid[pos.r][pos.q];
+                    }
+                }
+            }
+        }, {passive: false});
+
+        startBtn.addEventListener('click', startGame);
+
+        // Main Loop
+        let lastTime = performance.now();
+        function loop(t) {
+            const dt = t - lastTime;
+            lastTime = t;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw background grid effect
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+
+            if (isPlaying || !overlay.classList.contains('hidden')) {
+                // Update and draw hexes
+                for (let r = 0; r < ROWS; r++) {
+                    for (let q = 0; q < COLS; q++) {
+                        const hex = grid[r][q];
+                        if (hex && typeof hex.update === 'function') {
+                            hex.update(dt);
+                            hex.draw(ctx);
+                        }
+                    }
+                }
+
+                // Particles
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    particles[i].update();
+                    particles[i].draw(ctx);
+                    if (particles[i].life <= 0) particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        initGrid();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

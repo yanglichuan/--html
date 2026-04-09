@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>幽灵黑白棋 - Ghost Reversi</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --grid-color: #1a1a1a;
+            --neon-blue: #00f2ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff41;
+            --text-color: #e0e0e0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.1);
+        }
+
+        #header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--neon-blue);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        #score-board {
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .player-score {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .disc-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        #game-board {
+            flex-grow: 1;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 2px;
+            background-color: var(--grid-color);
+            padding: 2px;
+            position: relative;
+            aspect-ratio: 1;
+            margin: 10px;
+            border: 2px solid var(--neon-blue);
+        }
+
+        .cell {
+            background-color: rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cell:hover {
+            background-color: rgba(0, 242, 255, 0.1);
+        }
+
+        .disc {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            position: absolute;
+            box-shadow: 0 0 15px currentColor;
+        }
+
+        .disc.black {
+            background-color: var(--neon-blue);
+            color: var(--neon-blue);
+        }
+
+        .disc.white {
+            background-color: var(--neon-pink);
+            color: var(--neon-pink);
+        }
+
+        .valid-move {
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background-color: rgba(0, 255, 65, 0.3);
+            box-shadow: 0 0 5px var(--neon-green);
+            pointer-events: none;
+        }
+
+        #controls {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--neon-blue);
+            color: var(--neon-blue);
+            padding: 10px 20px;
+            font-family: inherit;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+
+        button:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-blue);
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--neon-green);
+            padding: 20px 40px;
+            text-align: center;
+            display: none;
+            z-index: 10;
+            box-shadow: 0 0 50px rgba(0, 255, 65, 0.3);
+        }
+
+        #message h2 {
+            color: var(--neon-green);
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="header">
+            <h1>Ghost Reversi</h1>
+        </div>
+        <div id="score-board">
+            <div class="player-score">
+                <div class="disc-icon" style="background-color: var(--neon-blue); color: var(--neon-blue);"></div>
+                <span>PLAYER: <span id="score-black">2</span></span>
+            </div>
+            <div class="player-score">
+                <div class="disc-icon" style="background-color: var(--neon-pink); color: var(--neon-pink);"></div>
+                <span>CPU: <span id="score-white">2</span></span>
+            </div>
+        </div>
+        
+        <div id="game-board"></div>
+
+        <div id="controls">
+            <button onclick="resetGame()">New Game</button>
+            <button onclick="toggleDifficulty()">Mode: <span id="difficulty">Easy</span></button>
+        </div>
+
+        <div id="message">
+            <h2 id="message-text"></h2>
+            <button onclick="resetGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const board = document.getElementById('game-board');
+        const scoreBlackEl = document.getElementById('score-black');
+        const scoreWhiteEl = document.getElementById('score-white');
+        const messageEl = document.getElementById('message');
+        const messageTextEl = document.getElementById('message-text');
+        const difficultyEl = document.getElementById('difficulty');
+
+        let grid = [];
+        let currentPlayer = 1; // 1 = Black (Player), -1 = White (CPU)
+        let gameOver = false;
+        let difficulty = 'Easy'; // Easy, Hard
+        let animationInProgress = false;
+
+        function initBoard() {
+            board.innerHTML = '';
+            grid = Array(8).fill().map(() => Array(8).fill(0));
+            
+            // Initial setup
+            grid[3][3] = -1;
+            grid[3][4] = 1;
+            grid[4][3] = 1;
+            grid[4][4] = -1;
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.onclick = () => handleMove(r, c);
+                    board.appendChild(cell);
+                }
+            }
+            renderBoard();
+            updateScore();
+            highlightValidMoves();
+        }
+
+        function renderBoard() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(cell => {
+                const r = parseInt(cell.dataset.r);
+                const c = parseInt(cell.dataset.c);
+                const val = grid[r][c];
+                
+                // Clear existing content
+                cell.innerHTML = '';
+                
+                if (val !== 0) {
+                    const disc = document.createElement('div');
+                    disc.className = `disc ${val === 1 ? 'black' : 'white'}`;
+                    cell.appendChild(disc);
+                }
+            });
+        }
+
+        function highlightValidMoves() {
+            const moves = getValidMoves(currentPlayer);
+            const cells = document.querySelectorAll('.cell');
+            
+            // Remove old highlights
+            document.querySelectorAll('.valid-move').forEach(el => el.remove());
+
+            if (!gameOver && currentPlayer === 1) {
+                moves.forEach(move => {
+                    const index = move.r * 8 + move.c;
+                    const marker = document.createElement('div');
+                    marker.className = 'valid-move';
+                    cells[index].appendChild(marker);
+                });
+            }
+        }
+
+        function isValidMove(r, c, player) {
+            if (grid[r][c] !== 0) return false;
+            
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (let [dr, dc] of directions) {
+                let nr = r + dr;
+                let nc = c + dc;
+                let flipped = false;
+
+                while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && grid[nr][nc] === -player) {
+                    nr += dr;
+                    nc += dc;
+                    flipped = true;
+                }
+
+                if (flipped && nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && grid[nr][nc] === player) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getValidMoves(player) {
+            const moves = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (isValidMove(r, c, player)) {
+                        moves.push({r, c});
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function makeMove(r, c, player) {
+            grid[r][c] = player;
+            const directions = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+
+            for (let [dr, dc] of directions) {
+                let nr = r + dr;
+                let nc = c + dc;
+                let toFlip = [];
+
+                while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && grid[nr][nc] === -player) {
+                    toFlip.push({r: nr, c: nc});
+                    nr += dr;
+                    nc += dc;
+                }
+
+                if (toFlip.length > 0 && nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && grid[nr][nc] === player) {
+                    toFlip.forEach(pos => grid[pos.r][pos.c] = player);
+                }
+            }
+        }
+
+        async function handleMove(r, c) {
+            if (gameOver || currentPlayer !== 1 || animationInProgress) return;
+            if (!isValidMove(r, c, 1)) return;
+
+            animationInProgress = true;
+            makeMove(r, c, 1);
+            renderBoard();
+            updateScore();
+            
+            currentPlayer = -1;
+            
+            // Check if CPU can move
+            if (getValidMoves(-1).length > 0) {
+                setTimeout(cpuMove, 500);
+            } else {
+                // CPU passes
+                if (getValidMoves(1).length > 0) {
+                    currentPlayer = 1;
+                    highlightValidMoves();
+                    animationInProgress = false;
+                } else {
+                    endGame();
+                }
+            }
+        }
+
+        function cpuMove() {
+            const moves = getValidMoves(-1);
+            if (moves.length === 0) return;
+
+            let bestMove;
+            if (difficulty === 'Easy') {
+                // Random move
+                bestMove = moves[Math.floor(Math.random() * moves.length)];
+            } else {
+                // Simple greedy: maximize flips + prefer corners
+                bestMove = moves.reduce((best, move) => {
+                    const score = evaluateMove(move.r, move.c);
+                    return score > best.score ? {move, score} : best;
+                }, {move: moves[0], score: -Infinity}).move;
+            }
+
+            makeMove(bestMove.r, bestMove.c, -1);
+            renderBoard();
+            updateScore();
+
+            currentPlayer = 1;
+            if (getValidMoves(1).length === 0) {
+                if (getValidMoves(-1).length > 0) {
+                    setTimeout(cpuMove, 500);
+                } else {
+                    endGame();
+                }
+            } else {
+                highlightValidMoves();
+                animationInProgress = false;
+            }
+        }
+
+        function evaluateMove(r, c) {
+            // Corner weights
+            if ((r === 0 || r === 7) && (c === 0 || c === 7)) return 100;
+            if (r === 0 || r === 7 || c === 0 || c === 7) return 10;
+            return 1;
+        }
+
+        function updateScore() {
+            let black = 0, white = 0;
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (grid[r][c] === 1) black++;
+                    else if (grid[r][c] === -1) white++;
+                }
+            }
+            scoreBlackEl.textContent = black;
+            scoreWhiteEl.textContent = white;
+        }
+
+        function endGame() {
+            gameOver = true;
+            animationInProgress = false;
+            const black = parseInt(scoreBlackEl.textContent);
+            const white = parseInt(scoreWhiteEl.textContent);
+            
+            messageEl.style.display = 'block';
+            if (black > white) {
+                messageTextEl.textContent = "YOU WIN!";
+                messageTextEl.style.color = "var(--neon-blue)";
+            } else if (white > black) {
+                messageTextEl.textContent = "CPU WINS!";
+                messageTextEl.style.color = "var(--neon-pink)";
+            } else {
+                messageTextEl.textContent = "DRAW!";
+                messageTextEl.style.color = "#fff";
+            }
+        }
+
+        function resetGame() {
+            messageEl.style.display = 'none';
+            gameOver = false;
+            currentPlayer = 1;
+            animationInProgress = false;
+            initBoard();
+        }
+
+        function toggleDifficulty() {
+            difficulty = difficulty === 'Easy' ? 'Hard' : 'Easy';
+            difficultyEl.textContent = difficulty;
+        }
+
+        // Initialize
+        initBoard();
+    </script>
+</body>
+</html>

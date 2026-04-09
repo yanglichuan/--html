@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ghost Maze - Game 21/100</title>
+    <style>
+        :root {
+            --bg: #050505;
+            --p-blue: #00f2ff;
+            --p-pink: #ff007a;
+            --p-purple: #bc00ff;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; }
+
+        body {
+            background-color: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            background: #000;
+            border: 2px solid rgba(0, 242, 255, 0.2);
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            max-width: 95vw;
+            max-height: 80vh;
+        }
+
+        .ui {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .stat {
+            text-align: center;
+            font-family: monospace;
+            text-shadow: 0 0 10px var(--p-blue);
+        }
+
+        .label { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; }
+        .value { font-size: 24px; font-weight: 900; color: var(--p-blue); }
+
+        .game-over {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(5, 5, 5, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        h1 {
+            font-size: 48px;
+            background: linear-gradient(to right, var(--p-pink), var(--p-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 12px 35px;
+            background: transparent;
+            border: 2px solid var(--p-blue);
+            color: var(--p-blue);
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: var(--p-blue);
+            color: black;
+            box-shadow: 0 0 30px var(--p-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <div class="stat">
+            <div class="label">LEVEL</div>
+            <div id="level" class="value">1</div>
+        </div>
+        <div class="stat">
+            <div class="label">STEPS</div>
+            <div id="steps" class="value">0</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="game-over" class="game-over">
+        <h1>MAZE ESCAPED</h1>
+        <p id="final-stats" style="font-size: 24px; margin-bottom: 20px;">Level Reached: 1</p>
+        <button onclick="initGame()">RE-INIT MAZE</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const levelEl = document.getElementById('level');
+        const stepsEl = document.getElementById('steps');
+        const gameOverEl = document.getElementById('game-over');
+
+        let width = 600, height = 600;
+        let grid, player, level, steps, gameActive, size;
+
+        class Player {
+            constructor() {
+                this.x = 0;
+                this.y = 0;
+            }
+            draw() {
+                const cellSize = width / size;
+                ctx.fillStyle = '#00f2ff';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#00f2ff';
+                ctx.beginPath();
+                ctx.arc(this.x * cellSize + cellSize / 2, this.y * cellSize + cellSize / 2, cellSize / 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+            move(dx, dy) {
+                if (!gameActive) return;
+                const nx = this.x + dx;
+                const ny = this.y + dy;
+                if (nx >= 0 && nx < size && ny >= 0 && ny < size && !grid[ny][nx].wall) {
+                    this.x = nx;
+                    this.y = ny;
+                    steps++;
+                    stepsEl.textContent = steps;
+                    if (this.x === size - 1 && this.y === size - 1) nextLevel();
+                }
+            }
+        }
+
+        function createMaze(s) {
+            const arr = Array.from({length: s}, () => Array.from({length: s}, () => ({wall: true})));
+            const stack = [{x: 0, y: 0}];
+            arr[0][0].wall = false;
+
+            while (stack.length > 0) {
+                const curr = stack[stack.length - 1];
+                const neighbors = [];
+                [[0, 2], [0, -2], [2, 0], [-2, 0]].forEach(([dx, dy]) => {
+                    const nx = curr.x + dx, ny = curr.y + dy;
+                    if (nx >= 0 && nx < s && ny >= 0 && ny < s && arr[ny][nx].wall) neighbors.push({x: nx, y: ny});
+                });
+
+                if (neighbors.length > 0) {
+                    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    arr[next.y][next.x].wall = false;
+                    arr[curr.y + (next.y - curr.y) / 2][curr.x + (next.x - curr.x) / 2].wall = false;
+                    stack.push(next);
+                } else {
+                    stack.pop();
+                }
+            }
+            arr[s - 1][s - 1].wall = false;
+            return arr;
+        }
+
+        function nextLevel() {
+            level++;
+            levelEl.textContent = level;
+            size = Math.min(21, 11 + (level * 2));
+            grid = createMaze(size);
+            player.x = 0;
+            player.y = 0;
+            draw();
+        }
+
+        function initGame() {
+            canvas.width = width;
+            canvas.height = height;
+            level = 1;
+            steps = 0;
+            size = 11;
+            player = new Player();
+            grid = createMaze(size);
+            gameActive = true;
+            levelEl.textContent = '1';
+            stepsEl.textContent = '0';
+            gameOverEl.style.display = 'none';
+            draw();
+        }
+
+        function draw() {
+            if (!gameActive) return;
+            ctx.fillStyle = '#050505';
+            ctx.fillRect(0, 0, width, height);
+            const cellSize = width / size;
+
+            grid.forEach((row, y) => {
+                row.forEach((cell, x) => {
+                    if (cell.wall) {
+                        ctx.fillStyle = '#111';
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+                        ctx.strokeRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                });
+            });
+
+            // Goal
+            ctx.fillStyle = '#39ff14';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#39ff14';
+            ctx.fillRect((size - 1) * cellSize + cellSize / 4, (size - 1) * cellSize + cellSize / 4, cellSize / 2, cellSize / 2);
+            ctx.shadowBlur = 0;
+
+            player.draw();
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('keydown', e => {
+            if (e.key === 'ArrowUp') player.move(0, -1);
+            if (e.key === 'ArrowDown') player.move(0, 1);
+            if (e.key === 'ArrowLeft') player.move(-1, 0);
+            if (e.key === 'ArrowRight') player.move(1, 0);
+        });
+
+        initGame();
+    </script>
+</body>
+</html>

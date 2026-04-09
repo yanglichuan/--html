@@ -47,3 +47,183 @@ pnpm-debug.log*
 # 其他
 dist/
 build/
+
+# ==================== 扩展排除规则 ====================
+
+# 演示文件和临时测试文件
+*.tmp
+*.temp
+*.bak
+*.backup
+*_backup*
+*_bak*
+*_old*
+*.old
+
+# 缓存文件
+*.cache
+.cache/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+*.whl
+
+# 临时文件
+*.swp
+*.swo
+*~
+.*.swp
+.*.swo
+.DS_Store
+.DS_Store?
+._*
+
+# 数据库文件（通常不需要版本控制）
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+
+# 媒体文件（大型二进制文件）
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.mp3
+*.wav
+*.flac
+*.ogg
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.webp
+*.svg
+*.ico
+!favicon.ico
+
+# 压缩包
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.tar.gz
+
+# 配置文件（本地覆盖）
+config.local.*
+settings.local.*
+*.local.*
+conf.local.*
+
+# 临时目录
+tmp/
+temp/
+temp_dir/
+临时/
+缓存/
+
+# 构建输出
+*.o
+*.obj
+*.exe
+*.dll
+*.dylib
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE 和编辑器
+.idea/
+.vscode/
+*.sublime-*
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+.vs/
+*.iml
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+Thumbs.db:encryptable
+
+# 字体
+*.ttf
+*.eot
+*.woff
+*.woff2
+*.otf
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm
+.yarn
+.pnp.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Java
+*.class
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+vendor/
+
+# Rust
+target/
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# Ruby
+*.gem
+.bundle/
+vendor/bundle/
+
+# Docker
+.dockerignore
+
+# 云服务器配置文件（本地特有）
+cloud-system.conf
+cloud-system.conf.new
+!cloud-system.conf.new
