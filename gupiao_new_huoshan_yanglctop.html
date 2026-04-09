@@ -1763,7 +1763,7 @@
         async function updateStockDetail() {
             // f127:行业, f9:PE, f23:PB, f20:总市值, f21:流通市值, f183:ROE, f184:净利润, f186:净利增长, f187:营收增长, f168:换手, f171:振幅, f108:股息
             const fields = 'f58,f127,f9,f23,f20,f21,f183,f184,f185,f186,f187,f168,f171,f108';
-            const url = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=${fields}`;
+            const url = `https://yanglc.top/api/eastmoney/quote?secid=${currentStock.id}&fields=${fields}`;
             const res = await getJSON(url);
             if (res?.data) {
                 const d = res.data;
@@ -1838,8 +1838,8 @@
         // const indexCache = ... (Removed in favor of SmartFetch)
 
         async function updateStats() {
-            const curUrl = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
-            const zsUrl = `https://yanglc.top/api/eastmoney/stock?secid=${ZS_ID}&fields=f43,f170`;
+            const curUrl = `https://yanglc.top/api/eastmoney/quote?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
+            const zsUrl = `https://yanglc.top/api/eastmoney/quote?secid=${ZS_ID}&fields=f43,f170`;
             const [curRes, zsRes] = await Promise.all([getJSON(curUrl), getJSON(zsUrl, 'CN')]);
 
             if (curRes?.data) {
