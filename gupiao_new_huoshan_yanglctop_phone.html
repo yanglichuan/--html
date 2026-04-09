@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>全A股实时联动对比系统</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -259,6 +259,13 @@
             margin-bottom: 4px;
             box-sizing: border-box;
             /* 确保 padding 不增加总高度 */
+        }
+
+        .subtitle-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
         /* 上海：高清亮蓝 (SH) - 侧重主板稳健 */
@@ -762,6 +769,210 @@
         .detail-val.down {
             color: var(--down-color);
         }
+        /* ================= 移动端适配 (Mobile Responsive) ================= */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: row; /* Keep it row, but overlap */
+                height: 100vh;
+                height: 100dvh;
+            }
+
+            .sidebar {
+                width: 100% !important;
+                height: 100% !important;
+                border-right: none;
+                flex-shrink: 0;
+                z-index: 10;
+            }
+
+            .sidebar-header {
+                padding: 0.5rem;
+            }
+
+            .stock-item {
+                padding: 0 0.5rem;
+            }
+
+            /* The detail view overlays the entire screen */
+            .main-content {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                height: 100dvh;
+                background-color: var(--bg-color);
+                z-index: 100;
+                transform: translateX(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                padding: 0.5rem;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .main-content.mobile-active {
+                transform: translateX(0);
+            }
+
+            /* Show back button */
+            .mobile-back-btn {
+                display: flex !important;
+            }
+
+            /* Hide hamburger toggle on mobile since sidebar is full screen */
+            #sidebar-toggle {
+                display: none !important;
+            }
+
+            .header-actions {
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 4px;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .control-center {
+                flex-wrap: nowrap;
+            }
+
+            /* 头部适配 */
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+                padding: 0;
+            }
+
+            .brand {
+                width: 100%;
+                justify-content: flex-start;
+                align-items: flex-start;
+                flex-wrap: wrap;
+            }
+
+            .brand > div:nth-child(4) {
+                width: 100%;
+                margin-top: 4px;
+                display: flex;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .subtitle-row {
+                display: flex !important;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 4px !important;
+                width: 100%;
+                margin-top: 4px;
+            }
+
+            #cur-industry {
+                display: inline-block !important;
+                font-size: 0.75rem !important;
+                padding: 4px 8px !important;
+                white-space: nowrap !important;
+            }
+
+            /* Hide hamburger toggle on mobile since sidebar is full screen */
+            #sidebar-toggle {
+                display: none !important;
+            }
+
+            /* 状态栏适配 */
+            .stats-bar {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            /* 图表容器适配 */
+            .charts-wrapper {
+                flex-direction: column;
+                min-height: 0;
+                height: auto;
+                flex: 1 0 auto;
+            }
+
+            .chart-box {
+                flex: 1 0 auto;
+                min-height: 250px;
+                height: 100%;
+            }
+
+            .chart-header-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            .time-range-btns {
+                flex-wrap: wrap;
+            }
+
+            .range-btn {
+                padding: 2px 6px;
+                font-size: 0.7rem;
+            }
+
+            /* 收藏面板全屏化 */
+            .fav-box, .intra-box {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 55vh;
+                z-index: 2000;
+                background: var(--card-bg);
+                border-radius: 0 0 16px 16px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            }
+
+            /* 字体大小调整 */
+            h1#main-title {
+                font-size: 0.9rem !important;
+            }
+            
+            .stat-value {
+                font-size: 1rem !important;
+            }
+            
+            .stat-change {
+                font-size: 0.8rem !important;
+            }
+
+            .chart-title {
+                font-size: 0.8rem !important;
+            }
+
+            /* Prevent elements from wrapping or getting squished in header */
+            #sidebar-industry {
+                font-size: 0.6rem !important;
+                white-space: nowrap;
+            }
+
+            /* 详情面板适配 */
+            .detail-panel {
+                width: 100%;
+                height: 60vh;
+                top: auto;
+                bottom: 0;
+                border-radius: 16px 16px 0 0;
+                right: 0;
+                transform: translateY(100%);
+                transition: transform 0.4s;
+                border: none;
+                border-top: 1px solid var(--glass-border);
+            }
+
+            .detail-panel.active {
+                transform: translateY(0);
+                right: 0;
+            }
+        }
+
+        .mobile-back-btn {
+            display: none;
+        }
     </style>
 </head>
 
@@ -803,6 +1014,10 @@
         <div class="container">
             <header>
                 <div class="brand">
+                    <div id="mobile-back" class="mobile-back-btn"
+                        style="cursor: pointer; padding: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; align-items: center; justify-content: center; margin-right: 8px;">
+                        <i data-lucide="chevron-left" size="20"></i>
+                    </div>
                     <div id="sidebar-toggle"
                         style="cursor: pointer; padding: 6px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); border-radius: 8px; display: flex; transition: all 0.2s;">
                         <i data-lucide="menu" size="20" color="#3b82f6"></i>
@@ -816,10 +1031,10 @@
                             <span
                                 style="font-size: 0.65rem; color: #10b981; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Live</span>
                         </div>
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <p style="font-size: 0.7rem; color: var(--text-secondary);">全维度联动 K 线 / 成交量 / 分时</p>
+                        <div class="subtitle-row" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0; display: inline-block;">全维度联动 K 线 / 成交量 / 分时</p>
                             <span id="cur-industry"
-                                style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; font-weight: 600;">--</span>
+                                style="font-size: 0.65rem; background: rgba(59, 130, 246, 0.1); color: var(--accent-color); padding: 2px 8px; border-radius: 4px; font-weight: 600; white-space: nowrap; display: inline-block;">--</span>
                         </div>
                     </div>
                 </div>
@@ -878,10 +1093,10 @@
                         </div>
 
                         <div id="intra-toggle"
-                            style="cursor: pointer; padding: 4px 8px; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 6px; display: flex; align-items: center; gap: 4px; transition: all 0.2s;"
+                            style="cursor: pointer; padding: 4px 8px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 6px; display: flex; align-items: center; gap: 4px; transition: all 0.2s;"
                             title="显示/隐藏 我的收藏">
-                            <i data-lucide="star" size="16" color="#ffd700"></i>
-                            <span style="font-size: 0.75rem; font-weight: 600; color: #ffd700;">收藏</span>
+                            <i data-lucide="star" size="16" color="var(--text-secondary)"></i>
+                            <span style="font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);">收藏</span>
                         </div>
 
                         <div id="fs-toggle"
@@ -1036,7 +1251,7 @@
                     <div id="candle-chart"></div>
                 </div>
 
-                <div class="chart-box fav-box" style="display: flex; flex-direction: column;">
+                <div class="chart-box fav-box" style="display: none; flex-direction: column;">
                     <div class="chart-title" style="display: flex; justify-content: space-between; width: 100%;">
                         <div style="display:flex; align-items:center; gap:0.5rem;">
                             <i data-lucide="star" size="16" fill="#ffd700" color="#ffd700"></i> 我的收藏
@@ -1650,7 +1865,7 @@
 
                 // Pass price/pct to selectStock for Optimistic UI
                 return `
-                    <div class="stock-item ${isActive} ${itemClass}" style="height:${ITEM_HEIGHT - 4}px" data-id="${fullId}" onclick="selectStock('${fullId}', '${s.f14}', '${priceDisplay}', '${pctDisplay}')">
+                    <div class="stock-item ${isActive} ${itemClass}" style="height:${ITEM_HEIGHT - 4}px" data-id="${fullId}" onclick="selectStock('${fullId}', '${s.f14}', '${s.f127 || ''}', '${priceDisplay}', '${pctDisplay}')">
                         <div style="font-size: 0.8rem; font-weight: 900; color: #FFD700; min-width: 28px; opacity: 1; text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); font-family: 'JetBrains Mono', monospace;">${(globalIndex + 1).toString().padStart(2, '0')}</div>
                         <div class="stock-info" style="flex: 1;">
                             <div class="stock-name-row">
@@ -1662,7 +1877,7 @@
                                 <span style="font-size: 0.65rem; color: var(--accent-color); opacity: 0.8;">${s.f127 || '--'}</span>
                             </div>
                         </div>
-                        <div style="text-align:right">
+                        <div style="text-align:right; margin-right: 8px;">
                             <div class="stock-price ${color}">${priceDisplay}</div>
                             <div class="stock-pct ${color}">${sign}${pctDisplay}%</div>
                         </div>
@@ -1707,7 +1922,8 @@
             if (isLoggedIn && typeof FavoritesManager !== 'undefined') FavoritesManager.refreshAllPrices();
         };
 
-        function selectStock(id, name, optPrice = '--', optPct = '--') {
+        // --- Select Stock ---
+        function selectStock(id, name, industryName = '--', optPrice = '--', optPct = '--') {
             AudioFX.play('click');
 
             // 局部更新列表状态 (主列表)
@@ -1721,7 +1937,7 @@
             document.querySelectorAll(`.fav-item[data-id="${id}"]`).forEach(el => el.classList.add('active'));
 
             const stockData = allStocks.find(s => `${s.f13}.${s.f12}` === id);
-            const industry = stockData ? (stockData.f127 || '--') : '--';
+            const industry = stockData ? (stockData.f127 || '--') : (industryName || '--');
 
             currentStock = { id, name, industry };
 
@@ -1748,10 +1964,24 @@
                 const headerPct = document.getElementById('kline-header-pct');
                 headerPct.innerText = pctStr;
                 headerPct.className = (pctVal > 0 ? 'up' : pctVal < 0 ? 'down' : '');
-
-                // Note: Volume is not available in list item, so it will be updated by updateStats network call
             }
             // -----------------------------------------------
+
+            // Mobile slide-in logic
+            if (window.innerWidth <= 768) {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent && !mainContent.classList.contains('mobile-active')) {
+                    // Push state to history to intercept system back button
+                    history.pushState({ view: 'detail' }, '', '#detail');
+                    mainContent.classList.add('mobile-active');
+                    // Give animation time to finish before resizing charts
+                    setTimeout(() => {
+                        if (typeof candleChart !== 'undefined') candleChart.resize();
+                        if (typeof sparkCur !== 'undefined') sparkCur.resize();
+                        if (typeof sparkZS !== 'undefined') sparkZS.resize();
+                    }, 350);
+                }
+            }
 
             updateAll();
             if (document.getElementById('stock-detail-panel').classList.contains('active')) {
@@ -1763,7 +1993,7 @@
         async function updateStockDetail() {
             // f127:行业, f9:PE, f23:PB, f20:总市值, f21:流通市值, f183:ROE, f184:净利润, f186:净利增长, f187:营收增长, f168:换手, f171:振幅, f108:股息
             const fields = 'f58,f127,f9,f23,f20,f21,f183,f184,f185,f186,f187,f168,f171,f108';
-            const url = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=${fields}`;
+            const url = `https://yanglc.top/api/eastmoney/quote?secid=${currentStock.id}&fields=${fields}`;
             const res = await getJSON(url);
             if (res?.data) {
                 const d = res.data;
@@ -1838,8 +2068,8 @@
         // const indexCache = ... (Removed in favor of SmartFetch)
 
         async function updateStats() {
-            const curUrl = `https://yanglc.top/api/eastmoney/stock?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
-            const zsUrl = `https://yanglc.top/api/eastmoney/stock?secid=${ZS_ID}&fields=f43,f170`;
+            const curUrl = `https://yanglc.top/api/eastmoney/quote?secid=${currentStock.id}&fields=f58,f43,f170,f47,f127`;
+            const zsUrl = `https://yanglc.top/api/eastmoney/quote?secid=${ZS_ID}&fields=f43,f170`;
             const [curRes, zsRes] = await Promise.all([getJSON(curUrl), getJSON(zsUrl, 'CN')]);
 
             if (curRes?.data) {
@@ -2354,10 +2584,46 @@
             requestAnimationFrame(animate);
         });
 
+        // --- Mobile Back Button ---
+        document.getElementById('mobile-back').addEventListener('click', () => {
+            AudioFX.play('switch');
+            
+            if (window.location.hash === '#detail') {
+                // Let the popstate event handle the UI updates
+                history.back();
+            } else {
+                // Fallback direct manipulation
+                document.querySelector('.main-content').classList.remove('mobile-active');
+                document.querySelectorAll('.stock-item.active').forEach(el => el.classList.remove('active'));
+            }
+        });
+
+        // --- System Back Button Intercept ---
+        window.addEventListener('popstate', (e) => {
+            // When user navigates back and the hash is gone, hide the detail view
+            if (window.location.hash !== '#detail') {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent && mainContent.classList.contains('mobile-active')) {
+                    mainContent.classList.remove('mobile-active');
+                    document.querySelectorAll('.stock-item.active').forEach(el => el.classList.remove('active'));
+                }
+            }
+        });
+
         (async () => {
+            // Reset hash on hard reload to prevent getting stuck in detail view without a list
+            if (window.location.hash === '#detail') {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+
             await fetchStockList();
-            // 初始化时手动触发默认股票的选择逻辑，确保 UI 同步
-            selectStock(currentStock.id, currentStock.name);
+            
+            // On mobile, don't auto-open the detail view on initial load
+            if (window.innerWidth > 768) {
+                // 初始化时手动触发默认股票的选择逻辑，确保 UI 同步
+                selectStock(currentStock.id, currentStock.name, currentStock.industry);
+            }
+            
             setInterval(() => { updateStats(); updateIntraday(); }, 30000);
 
             // 详情面板交互
