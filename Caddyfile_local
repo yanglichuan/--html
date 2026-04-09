@@ -1,0 +1,209 @@
+https://yanglc.top {
+	root * /var/www/yanglc.top
+	encode gzip zstd
+
+	@newsflashProxy path /api/36kr/newsflash/list
+	handle @newsflashProxy {
+		reverse_proxy https://gateway.36kr.com {
+			rewrite /api/mis/nav/newsflash/list
+			header_up Host gateway.36kr.com
+			header_up Origin https://36kr.com
+			header_up Referer https://36kr.com/
+			header_up User-Agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+			header_up Accept "*/*"
+			header_up Accept-Language "zh-CN,zh;q=0.9"
+		}
+	}
+
+	@eastmoneyQuoteProxy path /api/eastmoney/quote
+	handle @eastmoneyQuoteProxy {
+		reverse_proxy https://push2.eastmoney.com {
+			rewrite /api/qt/stock/get
+			header_up Host push2.eastmoney.com
+			header_up Referer https://quote.eastmoney.com/
+			header_up User-Agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+			header_up Accept "application/json,text/plain,*/*"
+			header_up Accept-Language "zh-CN,zh;q=0.9"
+		}
+	}
+
+	@eastmoneyClistProxy path /api/eastmoney/clist
+	handle @eastmoneyClistProxy {
+		reverse_proxy https://push2.eastmoney.com {
+			rewrite /api/qt/clist/get
+			header_up Host push2.eastmoney.com
+			header_up Referer https://quote.eastmoney.com/
+			header_up User-Agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+			header_up Accept "application/json,text/plain,*/*"
+			header_up Accept-Language "zh-CN,zh;q=0.9"
+		}
+	}
+
+	@eastmoneyKlineProxy path /api/eastmoney/kline
+	handle @eastmoneyKlineProxy {
+		reverse_proxy https://push2delay.eastmoney.com {
+			rewrite /api/qt/stock/kline/get
+			header_up Host push2his.eastmoney.com
+			header_up Referer https://quote.eastmoney.com/
+			header_up User-Agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+			header_up Accept "application/json,text/plain,*/*"
+			header_up Accept-Language "zh-CN,zh;q=0.9"
+		}
+	}
+
+	@pixel path /pixel /pixel/*
+	handle @pixel {
+		handle_path /pixel/* {
+			root * /var/www/pixel-night
+			file_server
+		}
+		handle {
+			redir /pixel/ 308
+		}
+	}
+
+	@testpage path /test /test/*
+	handle @testpage {
+		handle_path /test/* {
+			root * /var/www/frontend-test
+			file_server
+		}
+		handle {
+			redir /test/ 308
+		}
+	}
+
+	@stylespage path /styles /styles/*
+	handle @stylespage {
+		handle_path /styles/* {
+			root * /var/www/frontend-styles
+			file_server
+		}
+		handle {
+			redir /styles/ 308
+		}
+	}
+
+	@flexdemo path /flex-demo /flex-demo/*
+	handle @flexdemo {
+		handle_path /flex-demo/* {
+			root * /var/www/cursor-flex-demo
+			file_server
+		}
+		handle {
+			redir /flex-demo/ 308
+		}
+	}
+
+	@liqingzhao path /li-qingzhao /li-qingzhao/*
+	handle @liqingzhao {
+		handle_path /li-qingzhao/* {
+			root * /var/www/li-qingzhao
+			file_server
+		}
+		handle {
+			redir /li-qingzhao/ 308
+		}
+	}
+
+	@libai path /li-bai /li-bai/*
+	handle @libai {
+		handle_path /li-bai/* {
+			root * /var/www/li-bai
+			file_server
+		}
+		handle {
+			redir /li-bai/ 308
+		}
+	}
+
+	@dufu path /du-fu /du-fu/*
+	handle @dufu {
+		handle_path /du-fu/* {
+			root * /var/www/du-fu
+			file_server
+		}
+		handle {
+			redir /du-fu/ 308
+		}
+	}
+
+	@julisuojv path /juli-suojv /juli-suojv/*
+	handle @julisuojv {
+		handle_path /juli-suojv/* {
+			root * /var/www/juli-suojv
+			file_server
+		}
+		handle {
+			redir /juli-suojv/ 308
+		}
+	}
+
+	@stockagent path /stock-agent /stock-agent/*
+	handle @stockagent {
+		handle_path /stock-agent/* {
+			root * /var/www/stock-agent
+			file_server
+		}
+		handle {
+			redir /stock-agent/ 308
+		}
+	}
+
+	@webgame path /web-game /web-game/*
+	handle @webgame {
+		handle_path /web-game/* {
+			root * /var/www/web-game
+			file_server
+		}
+		handle {
+			redir /web-game/ 308
+		}
+	}
+
+	@health path /health
+	handle @health {
+		respond "ok" 200
+	}
+
+	@tsplayground path /ts-playground /ts-playground/*
+	handle @tsplayground {
+		handle_path /ts-playground/* {
+			root * /var/www/yanglc.top/ts-playground
+			file_server
+		}
+		handle {
+			redir /ts-playground/ 308
+		}
+	}
+
+	@kidstypinggame path /kids-typing-game /kids-typing-game/*
+	handle @kidstypinggame {
+		handle_path /kids-typing-game/* {
+			root * /var/www/kids-typing-game
+			file_server
+		}
+		handle {
+			redir /kids-typing-game/ 308
+		}
+	}
+
+	@keyyyyy path /keyyyyy /keyyyyy/*
+	handle @keyyyyy {
+		handle_path /keyyyyy/* {
+			root * /var/www/keyyyyy
+			file_server
+		}
+		handle {
+			redir /keyyyyy/ 308
+		}
+	}
+
+	file_server
+}
+
+http://yanglc.top {
+	redir https://yanglc.top{uri} 308
+}
+
+import /etc/caddy/sites-enabled/*
