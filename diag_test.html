@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>诊断测试</title>
+</head>
+<body>
+<h2>API 诊断测试</h2>
+<div id="result" style="font-family:monospace;font-size:14px;padding:10px;"></div>
+<script>
+const result = document.getElementById('result');
+function log(msg, color) {
+    result.innerHTML += '<div style="color:'+(color||'#333')+';margin:4px 0;">'+msg+'</div>';
+}
+log('开始诊断...');
+log('协议: ' + location.protocol);
+log('完整地址: ' + location.href);
+
+// 测试1: 通过本地代理 fetch
+const proxyUrl = 'http://localhost:9500/proxy/clist?pn=1&pz=1&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f13,f14,f127';
+log('请求URL: ' + proxyUrl);
+
+fetch(proxyUrl).then(r => {
+    log('代理 fetch 状态: ' + r.status + ' ' + r.statusText, 'green');
+    return r.json();
+}).then(data => {
+    log('代理 fetch 数据: ' + JSON.stringify(data).substring(0, 300), 'green');
+}).catch(e => {
+    log('代理 fetch 失败: ' + e.message, 'red');
+});
+</script>
+</body>
+</html>
