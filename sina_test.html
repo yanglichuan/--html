@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新浪股票接口测试</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e1a;
+            --card: #111827;
+            --border: rgba(255,255,255,0.08);
+            --text: #f1f5f9;
+            --muted: #64748b;
+            --up: #f43f5e;
+            --down: #10b981;
+            --accent: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container { max-width: 1000px; margin: 0 auto; }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+
+        .section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 200px;
+            padding: 0.6rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Outfit', monospace;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+
+        input[type="number"] {
+            width: 100px;
+            padding: 0.6rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: 'Outfit', monospace;
+            outline: none;
+        }
+
+        input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Outfit', 'Noto Sans SC', sans-serif;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background: #2563eb; }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.08);
+            color: var(--text);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        .btn-success {
+            background: var(--down);
+            color: white;
+        }
+        .btn-success:hover { background: #059669; }
+
+        .preset-chips {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .chip {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .chip:hover {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.15);
+        }
+        .chip.active {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.2);
+            color: #60a5fa;
+        }
+
+        .url-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #a5f3fc;
+            word-break: break-all;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .url-box .label {
+            color: var(--muted);
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .result-box {
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #d1fae5;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 400px;
+            overflow: auto;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+
+        .result-box.error {
+            color: #fca5a5;
+            border-color: rgba(244,63,94,0.2);
+        }
+
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #6b7280;
+        }
+        .status-dot.loading { background: #f59e0b; animation: pulse 1s infinite; }
+        .status-dot.ok { background: var(--down); }
+        .status-dot.error { background: var(--up); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Stock card */
+        .stock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stock-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.2s;
+        }
+
+        .stock-card:hover {
+            border-color: var(--accent);
+            background: rgba(59,130,246,0.05);
+        }
+
+        .stock-name {
+            font-weight: 600;
+            font-size: 1.05rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stock-code {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-family: monospace;
+            margin-bottom: 0.75rem;
+        }
+
+        .stock-price {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .stock-change {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+
+        .stock-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .stock-meta span { display: flex; justify-content: space-between; }
+        .stock-meta .value { color: var(--text); font-family: monospace; }
+
+        .up { color: var(--up); }
+        .down { color: var(--down); }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            background: rgba(0,0,0,0.2);
+            padding: 0.25rem;
+            border-radius: 10px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 0.4rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--muted);
+            background: none;
+            border: none;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .tab.active {
+            background: var(--accent);
+            color: white;
+        }
+
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* K线图区域 */
+        .kline-container {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .kline-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .kline-table th {
+            text-align: left;
+            padding: 0.5rem;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            font-weight: 500;
+            position: sticky;
+            top: 0;
+            background: rgba(10,14,26,0.9);
+        }
+
+        .kline-table td {
+            padding: 0.4rem 0.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-family: monospace;
+        }
+
+        .kline-table tr:hover td {
+            background: rgba(255,255,255,0.03);
+        }
+    </style>
+</head>
+
+<body>
+<div class="container">
+    <h1>新浪股票接口测试</h1>
+    <p class="subtitle">hq.sinajs.cn / money.finance.sina.com.cn</p>
+
+    <!-- 实时行情测试 -->
+    <div class="section">
+        <div class="section-title">📡 实时行情 (hq.sinajs.cn)</div>
+
+        <div class="preset-chips">
+            <span class="chip active" data-codes="sh600519,sz000858,sz300750,sh600036,sz000001">贵州茅台/五粮液/宁德/招商/平安</span>
+            <span class="chip" data-codes="sh000001,sz399001,sz399006">上证指数/深证成指/创业板</span>
+            <span class="chip" data-codes="sh600000,sh601398,sh601988,sh600036,sh600276">银行权重股</span>
+            <span class="chip" data-codes="sh512880,sh518880,sh159920">ETF基金</span>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="stockCodes" value="sh600519,sz000858,sz300750" placeholder="股票代码，如 sh600519,sz000001">
+            <button class="btn-primary" onclick="fetchRealtime()">查询实时行情</button>
+            <button class="btn-secondary" onclick="testRawFetch()">原始接口测试</button>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">等待请求...</span>
+        </div>
+
+        <div class="url-box" id="realtimeUrl">
+            <div class="label">请求 URL</div>
+            <span id="showUrl"></span>
+        </div>
+
+        <div class="result-box" id="realtimeResult">结果将显示在这里...</div>
+
+        <div class="stock-grid" id="stockGrid"></div>
+    </div>
+
+    <!-- K线数据测试 -->
+    <div class="section">
+        <div class="section-title">📊 K线历史数据 (money.finance.sina.com.cn)</div>
+
+        <div class="controls">
+            <input type="text" id="klineSymbol" value="sh600519" placeholder="股票代码，如 sh600519">
+            <select id="klineScale" style="padding:0.6rem 0.75rem; border:1px solid var(--border); border-radius:10px; background:rgba(255,255,255,0.04); color:var(--text); font-size:0.9rem; outline:none;">
+                <option value="5">5分钟</option>
+                <option value="15">15分钟</option>
+                <option value="30">30分钟</option>
+                <option value="60" selected>60分钟</option>
+                <option value="240">日K</option>
+                <option value="1440">周K</option>
+            </select>
+            <input type="number" id="klineDatalen" value="60" min="1" max="1023" placeholder="数量">
+            <button class="btn-success" onclick="fetchKline()">获取K线数据</button>
+        </div>
+
+        <div class="url-box" id="klineUrl">
+            <div class="label">请求 URL</div>
+            <span id="showKlineUrl"></span>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-dot" id="klineStatusDot"></div>
+            <span id="klineStatusText">等待请求...</span>
+        </div>
+
+        <div class="result-box" id="klineResult">结果将显示在这里...</div>
+
+        <div class="kline-container" id="klineTableContainer" style="display:none;">
+            <div style="margin-bottom:0.5rem;font-size:0.85rem;color:var(--muted);">最近 <span id="klineCount">0</span> 条K线数据</div>
+            <div style="max-height:400px;overflow:auto;">
+                <table class="kline-table" id="klineTable">
+                    <thead>
+                        <tr>
+                            <th>日期</th>
+                            <th>开盘</th>
+                            <th>收盘</th>
+                            <th>最高</th>
+                            <th>最低</th>
+                            <th>成交量</th>
+                        </tr>
+                    </thead>
+                    <tbody id="klineTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量多接口测试 -->
+    <div class="section">
+        <div class="section-title">🔄 多接口对比测试</div>
+        <div class="controls">
+            <input type="text" id="compareCodes" value="sh600519,sz000858,sz300750,sh600036,sz000001" placeholder="股票代码">
+            <button class="btn-secondary" onclick="runCompare()">运行对比测试</button>
+        </div>
+        <div class="result-box" id="compareResult">点击按钮开始对比...</div>
+    </div>
+</div>
+
+<script>
+// ========== 工具函数 ==========
+
+function setStatus(dotId, textId, state, text) {
+    const dot = document.getElementById(dotId);
+    const txt = document.getElementById(textId);
+    dot.className = 'status-dot ' + state;
+    txt.textContent = text;
+}
+
+function parseSinaRealtime(code, raw) {
+    // 格式: var hq_str_sh600519="贵州茅台,1820.00,1836.99,1850.00,1868.00,1820.00,1848.50,1848.52,26737,338987.19,...";
+    const match = raw.match(/hq_str_\w+="([^"]+)"/);
+    if (!match) return null;
+    const fields = match[1].split(',');
+    if (fields.length < 32) return null;
+
+    const name = fields[0];
+    const open = parseFloat(fields[1]);
+    const yClose = parseFloat(fields[2]);
+    const price = parseFloat(fields[3]);
+    const high = parseFloat(fields[4]);
+    const low = parseFloat(fields[5]);
+    const vol = parseInt(fields[8]) || 0;
+    const amount = parseFloat(fields[9]) || 0;
+
+    const change = price - yClose;
+    const changePct = yClose > 0 ? (change / yClose * 100) : 0;
+
+    // 五档
+    const bids = [];
+    const asks = [];
+    for (let i = 10; i < 20; i += 2) {
+        bids.push({ price: parseFloat(fields[i]), vol: parseInt(fields[i + 1]) || 0 });
+        asks.push({ price: parseFloat(fields[i + 10]), vol: parseInt(fields[i + 11]) || 0 });
+    }
+
+    const date = fields[30];
+    const time = fields[31];
+
+    return { code, name, open, yClose, price, high, low, change, changePct, vol, amount, bids, asks, date, time };
+}
+
+function renderStockCard(s) {
+    const up = s.change >= 0;
+    const cls = up ? 'up' : 'down';
+    const sign = up ? '+' : '';
+    const arrow = up ? '▲' : '▼';
+
+    return `
+    <div class="stock-card">
+        <div class="stock-name">${s.name}</div>
+        <div class="stock-code">${s.code.toUpperCase()}</div>
+        <div class="stock-price">${s.price.toFixed(2)}</div>
+        <div class="stock-change ${cls}">${arrow} ${sign}${s.change.toFixed(2)} (${sign}${s.changePct.toFixed(2)}%)</div>
+        <div class="stock-meta">
+            <span>开盘 <span class="value">${s.open.toFixed(2)}</span></span>
+            <span>昨收 <span class="value">${s.yClose.toFixed(2)}</span></span>
+            <span>最高 <span class="value ${cls}">${s.high.toFixed(2)}</span></span>
+            <span>最低 <span class="value ${cls}">${s.low.toFixed(2)}</span></span>
+            <span>成交量 <span class="value">${(s.vol / 10000).toFixed(2)}万</span></span>
+            <span>成交额 <span class="value">${(s.amount / 100000000).toFixed(2)}亿</span></span>
+        </div>
+        <div class="stock-meta" style="margin-top:0.5rem;border-top:1px solid var(--border);padding-top:0.5rem;">
+            <span style="font-size:0.75rem;color:var(--muted);">${s.date} ${s.time || ''}</span>
+        </div>
+    </div>`;
+}
+
+// ========== 实时行情 ==========
+
+async function fetchRealtime() {
+    const codes = document.getElementById('stockCodes').value.trim();
+    if (!codes) return;
+
+    const url = `https://hq.sinajs.cn/list=${codes}`;
+    document.getElementById('showUrl').textContent = url;
+    setStatus('statusDot', 'statusText', 'loading', '正在请求...');
+
+    try {
+        const res = await fetch(url, {
+            headers: {
+                'Referer': 'https://finance.sina.com.cn/',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            }
+        });
+        const text = await res.text();
+        document.getElementById('realtimeResult').textContent = text;
+        document.getElementById('realtimeResult').className = 'result-box';
+
+        // 解析
+        const codeList = codes.split(',');
+        let cardsHtml = '';
+        let allParsed = true;
+
+        for (const code of codeList) {
+            const s = parseSinaRealtime(code, text);
+            if (s) {
+                cardsHtml += renderStockCard(s);
+            } else {
+                allParsed = false;
+            }
+        }
+
+        if (allParsed && cardsHtml) {
+            document.getElementById('stockGrid').innerHTML = cardsHtml;
+            setStatus('statusDot', 'statusText', 'ok', `成功获取 ${codeList.length} 只股票`);
+        } else {
+            document.getElementById('stockGrid').innerHTML = '<div style="color:var(--up-color);padding:1rem;">部分股票解析失败，可能代码有误</div>';
+            setStatus('statusDot', 'statusText', 'error', '部分解析失败');
+        }
+    } catch (e) {
+        document.getElementById('realtimeResult').textContent = '请求失败: ' + e.message;
+        document.getElementById('realtimeResult').className = 'result-box error';
+        document.getElementById('stockGrid').innerHTML = '';
+        setStatus('statusDot', 'statusText', 'error', '请求失败: ' + e.message);
+    }
+}
+
+// ========== 原始接口测试（无 Referer） ==========
+
+async function testRawFetch() {
+    const codes = document.getElementById('stockCodes').value.trim() || 'sh600519';
+    const url = `https://hq.sinajs.cn/list=${codes}`;
+
+    document.getElementById('showUrl').textContent = url + ' (不带 Referer)';
+    setStatus('statusDot', 'statusText', 'loading', '测试无 Referer 请求...');
+
+    try {
+        const res = await fetch(url);
+        const text = await res.text();
+        document.getElementById('realtimeResult').textContent = '✅ 无 Referer 也能访问成功:\n\n' + text;
+        document.getElementById('realtimeResult').className = 'result-box';
+        document.getElementById('stockGrid').innerHTML = '';
+        setStatus('statusDot', 'statusText', 'ok', '无 Referer 请求成功!');
+    } catch (e) {
+        document.getElementById('realtimeResult').textContent = '❌ 无 Referer 请求失败:\n' + e.message;
+        document.getElementById('realtimeResult').className = 'result-box error';
+        setStatus('statusDot', 'statusText', 'error', '无 Referer 失败: ' + e.message);
+    }
+}
+
+// ========== K线数据 ==========
+
+async function fetchKline() {
+    const symbol = document.getElementById('klineSymbol').value.trim();
+    const scale = document.getElementById('klineScale').value;
+    const datalen = document.getElementById('klineDatalen').value || 60;
+
+    const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${symbol}&scale=${scale}&ma=no&datalen=${datalen}`;
+    document.getElementById('showKlineUrl').textContent = url;
+    setStatus('klineStatusDot', 'klineStatusText', 'loading', '正在请求K线...');
+
+    try {
+        const res = await fetch(url, {
+            headers: {
+                'Referer': 'https://finance.sina.com.cn/',
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+            }
+        });
+        const data = await res.json();
+        document.getElementById('klineResult').textContent = JSON.stringify(data, null, 2);
+        document.getElementById('klineResult').className = 'result-box';
+
+        if (Array.isArray(data) && data.length > 0) {
+            document.getElementById('klineCount').textContent = data.length;
+            const tbody = document.getElementById('klineTableBody');
+            // 显示最新在前
+            const reversed = [...data].reverse();
+            tbody.innerHTML = reversed.map(d => {
+                const open = parseFloat(d.open);
+                const close = parseFloat(d.close);
+                const cls = close >= open ? 'down' : 'up';
+                return `<tr>
+                    <td>${d.day}</td>
+                    <td>${open.toFixed(2)}</td>
+                    <td class="${cls}">${close.toFixed(2)}</td>
+                    <td>${parseFloat(d.high).toFixed(2)}</td>
+                    <td>${parseFloat(d.low).toFixed(2)}</td>
+                    <td>${d.volume}</td>
+                </tr>`;
+            }).join('');
+            document.getElementById('klineTableContainer').style.display = 'block';
+            setStatus('klineStatusDot', 'klineStatusText', 'ok', `获取 ${data.length} 条K线数据`);
+        } else {
+            document.getElementById('klineTableContainer').style.display = 'none';
+            setStatus('klineStatusDot', 'klineStatusText', 'error', '返回数据为空');
+        }
+    } catch (e) {
+        document.getElementById('klineResult').textContent = '请求失败: ' + e.message;
+        document.getElementById('klineResult').className = 'result-box error';
+        document.getElementById('klineTableContainer').style.display = 'none';
+        setStatus('klineStatusDot', 'klineStatusText', 'error', '请求失败: ' + e.message);
+    }
+}
+
+// ========== 多接口对比 ==========
+
+async function runCompare() {
+    const codes = document.getElementById('compareCodes').value.trim();
+    if (!codes) return;
+
+    const codeList = codes.split(',').filter(c => c.trim());
+    const results = [];
+
+    // 1. 新浪实时接口
+    const t0 = Date.now();
+    try {
+        const sinaUrl = `https://hq.sinajs.cn/list=${codes}`;
+        const res = await fetch(sinaUrl, {
+            headers: { 'Referer': 'https://finance.sina.com.cn/' }
+        });
+        const t1 = Date.now();
+        const text = await res.text();
+        const parsed = [];
+        for (const code of codeList) {
+            const s = parseSinaRealtime(code, text);
+            if (s) parsed.push(s);
+        }
+        results.push({ source: '新浪 hq.sinajs.cn', time: t1 - t0, count: parsed.length, success: true });
+    } catch (e) {
+        results.push({ source: '新浪 hq.sinajs.cn', time: Date.now() - t0, count: 0, success: false, error: e.message });
+    }
+
+    // 2. 新浪K线接口
+    const t2 = Date.now();
+    try {
+        const klineUrl = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${codeList[0]}&scale=240&ma=no&datalen=10`;
+        const res = await fetch(klineUrl, {
+            headers: { 'Referer': 'https://finance.sina.com.cn/' }
+        });
+        const t3 = Date.now();
+        const data = await res.json();
+        results.push({ source: '新浪K线 API', time: t3 - t2, count: Array.isArray(data) ? data.length : 0, success: true });
+    } catch (e) {
+        results.push({ source: '新浪K线 API', time: Date.now() - t2, count: 0, success: false, error: e.message });
+    }
+
+    // 3. 东方财富接口（via proxy）
+    const t4 = Date.now();
+    try {
+        const fs = 'm:0+t:6,m:0+t:80,m:1+t:2,m:1+t:23';
+        const emUrl = `/proxy/clist?pn=1&pz=10&po=1&np=1&fltt=2&invt=2&fid=f3&fs=${fs}&fields=f2,f3,f12,f14`;
+        const res = await fetch(emUrl);
+        const t5 = Date.now();
+        const data = await res.json();
+        const count = data?.data?.diff?.length || 0;
+        results.push({ source: '东方财富 (本地代理 :9500)', time: t5 - t4, count, success: true });
+    } catch (e) {
+        results.push({ source: '东方财富 (本地代理 :9500)', time: Date.now() - t4, count: 0, success: false, error: e.message });
+    }
+
+    // 渲染结果
+    let html = `=== 接口对比测试 (${codeList.length} 只股票) ===\n\n`;
+    results.forEach(r => {
+        const icon = r.success ? '✅' : '❌';
+        const timeStr = r.time + 'ms';
+        html += `${icon} ${r.source}\n   耗时: ${timeStr} | 数据: ${r.count}条`;
+        if (r.error) html += ` | 错误: ${r.error}`;
+        html += '\n\n';
+    });
+
+    document.getElementById('compareResult').textContent = html;
+}
+
+// ========== 预设股票快捷切换 ==========
+
+document.querySelectorAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        document.getElementById('stockCodes').value = chip.dataset.codes;
+        fetchRealtime();
+    });
+});
+
+// ========== 初始化 ==========
+
+document.addEventListener('DOMContentLoaded', () => {
+    // 启动时自动请求默认股票
+    fetchRealtime();
+});
+</script>
+
+</body>
+</html>

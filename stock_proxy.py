@@ -14,6 +14,9 @@ def add_cors_headers(response):
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
     return response
 
+SINA_RT = 'https://hq.sinajs.cn'
+SINA_KLINE = 'https://money.finance.sina.com.cn'
+
 EM_BASE = 'https://push2delay.eastmoney.com'
 EM_HIS = 'https://push2his.eastmoney.com'
 EM_STOCK = 'https://push2delay.eastmoney.com'
