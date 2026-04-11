@@ -522,18 +522,18 @@ async function fetchRealtime() {
     const codes = document.getElementById('stockCodes').value.trim();
     if (!codes) return;
 
-    const url = `https://hq.sinajs.cn/list=${codes}`;
+    // 通过本地代理访问新浪接口
+    const url = `http://localhost:9600/sina/rt?codes=${encodeURIComponent(codes)}`;
     document.getElementById('showUrl').textContent = url;
     setStatus('statusDot', 'statusText', 'loading', '正在请求...');
 
     try {
-        const res = await fetch(url, {
-            headers: {
-                'Referer': 'https://finance.sina.com.cn/',
-                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-            }
-        });
-        const text = await res.text();
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        // 新浪返回的是GBK编码的文本，需要处理
+        const buffer = await res.arrayBuffer();
+        const decoder = new TextDecoder('gbk');
+        const text = decoder.decode(buffer);
         document.getElementById('realtimeResult').textContent = text;
         document.getElementById('realtimeResult').className = 'result-box';
 
@@ -570,22 +570,25 @@ async function fetchRealtime() {
 
 async function testRawFetch() {
     const codes = document.getElementById('stockCodes').value.trim() || 'sh600519';
-    const url = `https://hq.sinajs.cn/list=${codes}`;
-
-    document.getElementById('showUrl').textContent = url + ' (不带 Referer)';
-    setStatus('statusDot', 'statusText', 'loading', '测试无 Referer 请求...');
+    // 通过代理访问新浪
+    const url = `http://localhost:9600/sina/rt?codes=${encodeURIComponent(codes)}`;
+    document.getElementById('showUrl').textContent = url + ' (via 本地代理)';
+    setStatus('statusDot', 'statusText', 'loading', '测试新浪实时接口...');
 
     try {
         const res = await fetch(url);
-        const text = await res.text();
-        document.getElementById('realtimeResult').textContent = '✅ 无 Referer 也能访问成功:\n\n' + text;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const buffer = await res.arrayBuffer();
+        const decoder = new TextDecoder('gbk');
+        const text = decoder.decode(buffer);
+        document.getElementById('realtimeResult').textContent = '✅ 代理访问新浪成功:\n\n' + text;
         document.getElementById('realtimeResult').className = 'result-box';
         document.getElementById('stockGrid').innerHTML = '';
-        setStatus('statusDot', 'statusText', 'ok', '无 Referer 请求成功!');
+        setStatus('statusDot', 'statusText', 'ok', '新浪接口请求成功!');
     } catch (e) {
-        document.getElementById('realtimeResult').textContent = '❌ 无 Referer 请求失败:\n' + e.message;
+        document.getElementById('realtimeResult').textContent = '❌ 请求失败: ' + e.message + '\n\n请确认本地代理服务已启动：\npython3 sina_proxy.py';
         document.getElementById('realtimeResult').className = 'result-box error';
-        setStatus('statusDot', 'statusText', 'error', '无 Referer 失败: ' + e.message);
+        setStatus('statusDot', 'statusText', 'error', '失败: ' + e.message);
     }
 }
 
@@ -596,7 +599,8 @@ async function fetchKline() {
     const scale = document.getElementById('klineScale').value;
     const datalen = document.getElementById('klineDatalen').value || 60;
 
-    const url = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${symbol}&scale=${scale}&ma=no&datalen=${datalen}`;
+    // 通过本地代理访问新浪K线接口
+    const url = `http://localhost:9600/sina/kline?symbol=${encodeURIComponent(symbol)}&scale=${scale}&datalen=${datalen}`;
     document.getElementById('showKlineUrl').textContent = url;
     setStatus('klineStatusDot', 'klineStatusText', 'loading', '正在请求K线...');
 
@@ -652,37 +656,35 @@ async function runCompare() {
     const codeList = codes.split(',').filter(c => c.trim());
     const results = [];
 
-    // 1. 新浪实时接口
+    // 1. 新浪实时接口 (via proxy)
     const t0 = Date.now();
     try {
-        const sinaUrl = `https://hq.sinajs.cn/list=${codes}`;
-        const res = await fetch(sinaUrl, {
-            headers: { 'Referer': 'https://finance.sina.com.cn/' }
-        });
+        const sinaUrl = `http://localhost:9600/sina/rt?codes=${encodeURIComponent(codes)}`;
+        const res = await fetch(sinaUrl);
         const t1 = Date.now();
-        const text = await res.text();
+        const buffer = await res.arrayBuffer();
+        const decoder = new TextDecoder('gbk');
+        const text = decoder.decode(buffer);
         const parsed = [];
         for (const code of codeList) {
             const s = parseSinaRealtime(code, text);
             if (s) parsed.push(s);
         }
-        results.push({ source: '新浪 hq.sinajs.cn', time: t1 - t0, count: parsed.length, success: true });
+        results.push({ source: '新浪 hq.sinajs.cn (via proxy)', time: t1 - t0, count: parsed.length, success: true });
     } catch (e) {
-        results.push({ source: '新浪 hq.sinajs.cn', time: Date.now() - t0, count: 0, success: false, error: e.message });
+        results.push({ source: '新浪 hq.sinajs.cn (via proxy)', time: Date.now() - t0, count: 0, success: false, error: e.message });
     }
 
-    // 2. 新浪K线接口
+    // 2. 新浪K线接口 (via proxy)
     const t2 = Date.now();
     try {
-        const klineUrl = `https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData?symbol=${codeList[0]}&scale=240&ma=no&datalen=10`;
-        const res = await fetch(klineUrl, {
-            headers: { 'Referer': 'https://finance.sina.com.cn/' }
-        });
+        const klineUrl = `http://localhost:9600/sina/kline?symbol=${codeList[0]}&scale=240&datalen=10`;
+        const res = await fetch(klineUrl);
         const t3 = Date.now();
         const data = await res.json();
-        results.push({ source: '新浪K线 API', time: t3 - t2, count: Array.isArray(data) ? data.length : 0, success: true });
+        results.push({ source: '新浪K线 API (via proxy)', time: t3 - t2, count: Array.isArray(data) ? data.length : 0, success: true });
     } catch (e) {
-        results.push({ source: '新浪K线 API', time: Date.now() - t2, count: 0, success: false, error: e.message });
+        results.push({ source: '新浪K线 API (via proxy)', time: Date.now() - t2, count: 0, success: false, error: e.message });
     }
 
     // 3. 东方财富接口（via proxy）
