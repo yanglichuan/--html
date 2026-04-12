@@ -417,14 +417,17 @@
         <div class="result-box" id="klineResult">结果将显示在这里...</div>
 
         <div class="kline-container" id="klineTableContainer" style="display:none;">
-            <div style="margin-bottom:0.5rem;font-size:0.85rem;color:var(--muted);">最近 <span id="klineCount">0</span> 条K线数据</div>
+            <div style="margin-bottom:0.5rem;font-size:0.85rem;color:var(--muted);display:flex;align-items:center;justify-content:space-between;">
+                <span>最近 <span id="klineCount">0</span> 条K线数据</span>
+                <button class="btn-secondary" style="padding:0.3rem 0.8rem;font-size:0.8rem;" onclick="copyKlineData()">复制全部</button>
+            </div>
             <div style="max-height:400px;overflow:auto;">
                 <table class="kline-table" id="klineTable">
                     <thead>
                         <tr>
                             <th>日期</th>
                             <th>开盘</th>
-                            <th>收盘</th>
+                            <th>最新价</th>
                             <th>最高</th>
                             <th>最低</th>
                             <th>成交量</th>
@@ -645,6 +648,32 @@ async function fetchKline() {
         document.getElementById('klineTableContainer').style.display = 'none';
         setStatus('klineStatusDot', 'klineStatusText', 'error', '请求失败: ' + e.message);
     }
+}
+
+function copyKlineData() {
+    const rows = document.querySelectorAll('#klineTableBody tr');
+    if (rows.length === 0) return;
+    const header = '日期\t开盘\t收盘\t最高\t最低\t成交量';
+    const text = header + '\n' + Array.from(rows).map(row => {
+        return Array.from(row.cells).map(cell => cell.textContent.trim()).join('\t');
+    }).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('[onclick="copyKlineData()"]');
+        if (btn) {
+            const orig = btn.textContent;
+            btn.textContent = '已复制!';
+            setTimeout(() => btn.textContent = orig, 1500);
+        }
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+    });
 }
 
 // ========== 多接口对比 ==========

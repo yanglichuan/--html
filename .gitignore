@@ -227,3 +227,6 @@ vendor/bundle/
 cloud-system.conf
 cloud-system.conf.new
 !cloud-system.conf.new
+
+# 本地安装的第三方库
+.pip_libs/
