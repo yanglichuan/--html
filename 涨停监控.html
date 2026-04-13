@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>涨停监控</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f0f23; color: #fff; min-height: 100vh; padding: 15px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 12px; }
+        .header h1 { font-size: 20px; }
+        .stats { display: flex; gap: 20px; }
+        .stat { text-align: center; }
+        .stat-value { font-size: 24px; font-weight: bold; }
+        .stat-label { font-size: 12px; opacity: 0.8; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .controls input { padding: 10px; border: 1px solid #333; border-radius: 8px; background: #1a1a2e; color: #fff; font-size: 14px; width: 200px; }
+        .controls button { padding: 10px 20px; border: none; border-radius: 8px; background: #667eea; color: #fff; font-size: 14px; cursor: pointer; }
+        .controls button:hover { background: #764ba2; }
+        
+        .filter-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .filter-tab { padding: 8px 16px; border: none; border-radius: 20px; background: #1a1a2e; color: #888; font-size: 13px; cursor: pointer; transition: all 0.3s; }
+        .filter-tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        
+        .stock-card { background: linear-gradient(145deg, #1a1a2e, #16213e); border-radius: 12px; padding: 15px; border-left: 4px solid #667eea; position: relative; overflow: hidden; transition: all 0.3s; }
+        .stock-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        .stock-card.zhangting { border-left-color: #ff4757; background: linear-gradient(145deg, #2d1f3d, #1a1a2e); }
+        .stock-card.zhangting::before { content: '涨停'; position: absolute; top: 10px; right: -25px; background: #ff4757; color: #fff; padding: 2px 30px; font-size: 12px; transform: rotate(45deg); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .stock-name { font-size: 16px; font-weight: bold; }
+        .stock-code { font-size: 12px; color: #666; }
+        .zhangfu-badge { background: linear-gradient(135deg, #ff4757, #ff6b81); padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        
+        .price-info { display: flex; align-items: baseline; gap: 15px; margin-bottom: 12px; }
+        .current-price { font-size: 28px; font-weight: bold; }
+        .price-change { font-size: 14px; color: #ff4757; }
+        
+        .progress-bar { position: relative; height: 8px; background: #333; border-radius: 4px; margin: 10px 0; overflow: hidden; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, #2ed573, #ffa502, #ff4757); border-radius: 4px; transition: width 0.3s; }
+        .zhangting-line { position: absolute; right: 0; top: -4px; width: 2px; height: 16px; background: #ff4757; }
+        
+        .levels { display: flex; justify-content: space-between; font-size: 11px; color: #666; }
+        .level { text-align: center; }
+        .level-price { color: #fff; font-weight: 500; }
+        .level.highlight { color: #ff4757; }
+        
+        .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid #333; font-size: 12px; }
+        .update-time { color: #666; }
+        
+        .loading, .empty { text-align: center; padding: 40px; color: #666; }
+        .empty { display: none; }
+        
+        .refresh-indicator { display: inline-block; width: 8px; height: 8px; background: #2ed573; border-radius: 50%; margin-right: 5px; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .toast { position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #ff4757, #ff6b81); padding: 15px 25px; border-radius: 10px; font-weight: bold; animation: slideIn 0.3s, slideOut 0.3s 2.7s forwards; z-index: 1000; display: none; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        
+        .error-msg { background: #ff4757; padding: 10px; border-radius: 8px; margin-bottom: 15px; text-align: center; display: none; }
+        
+        .info-box { background: #1a1a2e; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 14px; line-height: 1.6; }
+        .info-box a { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📈 涨停监控</h1>
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="ztCount">0</div>
+                <div class="stat-label">涨停</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="nearCount">0</div>
+                <div class="stat-label">接近涨停</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value"><span class="refresh-indicator"></span><span id="updateTime">--:--:--</span></div>
+                <div class="stat-label">最后更新</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="info-box">
+        💡 <strong>提示：</strong>由于浏览器安全限制，建议使用以下方式打开：<br>
+        1. 使用 <strong>Live Server</strong> 插件在 VS Code 中打开<br>
+        2. 或者在命令行运行: <code>python3 -m http.server 8080</code> 然后访问 <a href="http://localhost:8080" style="color:#667eea">http://localhost:8080</a>
+    </div>
+    
+    <div id="errorMsg" class="error-msg"></div>
+    
+    <div class="controls">
+        <input type="text" id="stockInput" placeholder="输入股票代码，多个用逗号分隔">
+        <button onclick="addStocks()">添加自选</button>
+        <button onclick="refreshData()">🔄 刷新</button>
+    </div>
+    
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="setFilter('all')">全部</button>
+        <button class="filter-tab" onclick="setFilter('zt')">已涨停</button>
+        <button class="filter-tab" onclick="setFilter('near')">接近涨停</button>
+    </div>
+    
+    <div id="loading" class="loading">正在加载数据...</div>
+    <div id="empty" class="empty">暂无数据，请添加股票代码</div>
+    <div id="grid" class="grid"></div>
+    
+    <div id="toast" class="toast"></div>
+
+    <script>
+        let allStocks = [];
+        let filteredStocks = [];
+        let currentFilter = 'all';
+        let previousZtSet = new Set();
+        let defaultStocks = ['000001','600519','300750','688506','601020','688480','002565','300113'];
+        
+        // 计算涨停价格
+        function calcZtPrice(prevClose, code) {
+            code = String(code);
+            if (code.startsWith('688') || code.startsWith('8') || code.startsWith('4')) {
+                return prevClose * 1.2;
+            }
+            if (code.startsWith('ST') || code.startsWith('*ST') || code.startsWith('S')) {
+                return prevClose * 1.05;
+            }
+            return prevClose * 1.1;
+        }
+        
+        // 使用新浪财经JSONP获取股票数据
+        function fetchStockData(codes) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                const callbackName = 'stockCallback_' + Date.now();
+                
+                window[callbackName] = (data) => {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    resolve(data);
+                };
+                
+                script.onerror = () => {
+                    delete window[callbackName];
+                    document.body.removeChild(script);
+                    reject(new Error('获取失败'));
+                };
+                
+                // 新浪财经接口
+                const url = `https://hq.sinajs.cn/list=${codes}`;
+                script.src = `${url}&callback=${callbackName}`;
+                document.body.appendChild(script);
+                
+                setTimeout(() => {
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                        if (script.parentNode) document.body.removeChild(script);
+                        reject(new Error('超时'));
+                    }
+                }, 5000);
+            });
+        }
+        
+        // 解析新浪数据
+        function parseSinaData(code, data) {
+            const match = data.match(/"([^"]+)"/);
+            if (!match) return null;
+            
+            const parts = match[1].split(',');
+            if (parts.length < 32) return null;
+            
+            const name = parts[0];
+            const open = parseFloat(parts[1]) || 0;
+            const prevClose = parseFloat(parts[2]) || 0;
+            const price = parseFloat(parts[3]) || 0;
+            const high = parseFloat(parts[4]) || 0;
+            const low = parseFloat(parts[5]) || 0;
+            
+            const change = prevClose > 0 ? ((price - prevClose) / prevClose * 100) : 0;
+            
+            return {
+                code: code,
+                name: name,
+                price: price,
+                change: change,
+                prevClose: prevClose,
+                open: open,
+                high: high,
+                low: low,
+                updateTime: new Date().toLocaleTimeString()
+            };
+        }
+        
+        // 获取股票数据
+        async function fetchStocks(codes) {
+            const results = [];
+            const batchSize = 50;
+            
+            for (let i = 0; i < codes.length; i += batchSize) {
+                const batch = codes.slice(i, i + batchSize);
+                const batchStr = batch.map(c => {
+                    // 转换代码格式
+                    if (c.startsWith('6') || c.startsWith('5')) return `sh${c}`;
+                    if (c.startsWith('0') || c.startsWith('1') || c.startsWith('2') || c.startsWith('3')) return `sz${c}`;
+                    return c;
+                }).join(',');
+                
+                try {
+                    const data = await fetchStockData(batchStr);
+                    // 新浪返回的是 hq.sinajs.cn?list=... 格式
+                    const lines = data.split(';');
+                    lines.forEach((line, idx) => {
+                        const codeIdx = i + idx;
+                        if (codeIdx < codes.length && line.includes('="')) {
+                            const stock = parseSinaData(codes[codeIdx], line);
+                            if (stock) results.push(stock);
+                        }
+                    });
+                } catch (error) {
+                    console.error('批次获取失败:', error);
+                }
+                
+                await new Promise(r => setTimeout(r, 200));
+            }
+            
+            return results;
+        }
+        
+        // 获取涨幅榜数据 - 使用东方财富CORS代理
+        async function fetchZhangfuBang() {
+            try {
+                // 使用 allorigins 代理解决跨域
+                const url = 'https://push2.eastmoney.com/api/qt/clist/get?pn=1&pz=200&po=1&np=1&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:13,m:1+t:2,m:1+t:23,m:0+t:80+s:2048&fields=f2,f3,f4,f12,f14,f15,f16';
+                
+                const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (data.data && data.data.diff) {
+                    return data.data.diff.map(item => ({
+                        code: item.f12,
+                        name: item.f14,
+                        price: item.f2 / 100,
+                        change: item.f3 / 100,
+                        prevClose: item.f4 / 100,
+                        high: item.f15 / 100,
+                        low: item.f16 / 100,
+                        updateTime: new Date().toLocaleTimeString()
+                    }));
+                }
+            } catch (error) {
+                console.error('涨幅榜获取失败:', error);
+            }
+            return [];
+        }
+        
+        // 渲染卡片
+        function renderCard(stock) {
+            const ztPrice = calcZtPrice(stock.prevClose, stock.code);
+            const progress = stock.prevClose > 0 ? Math.min(100, (stock.price / ztPrice) * 100) : 0;
+            const isZt = stock.change >= 9.9;
+            const distance = (ztPrice - stock.price).toFixed(2);
+            
+            return `
+                <div class="stock-card ${isZt ? 'zhangting' : ''}" data-code="${stock.code}">
+                    <div class="card-header">
+                        <div>
+                            <div class="stock-name">${stock.name || stock.code}</div>
+                            <div class="stock-code">${stock.code}</div>
+                        </div>
+                        <div class="zhangfu-badge">${stock.change >= 0 ? '+' : ''}${stock.change.toFixed(2)}%</div>
+                    </div>
+                    <div class="price-info">
+                        <div class="current-price">¥${stock.price.toFixed(2)}</div>
+                        <div class="price-change">涨停 ¥${ztPrice.toFixed(2)}</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                        <div class="zhangting-line"></div>
+                    </div>
+                    <div class="levels">
+                        <div class="level">
+                            <div class="level-price">${(100 - 2).toFixed(1)}%</div>
+                            <div>¥${(ztPrice * 0.98).toFixed(2)}</div>
+                        </div>
+                        <div class="level">
+                            <div class="level-price">${(100 - 1).toFixed(1)}%</div>
+                            <div>¥${(ztPrice * 0.99).toFixed(2)}</div>
+                        </div>
+                        <div class="level highlight">
+                            <div class="level-price">${(100).toFixed(1)}%</div>
+                            <div>¥${ztPrice.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="update-time">🔄 ${stock.updateTime}</div>
+                        <div>
+                            <span>距涨停</span>
+                            <span style="color: ${isZt ? '#ff4757' : '#ffa502'}">${isZt ? '-' : distance}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // 渲染列表
+        function renderGrid(stocks) {
+            const grid = document.getElementById('grid');
+            const loading = document.getElementById('loading');
+            const empty = document.getElementById('empty');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            loading.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            if (stocks.length === 0) {
+                grid.innerHTML = '';
+                empty.style.display = 'block';
+                empty.textContent = '暂无数据，请添加股票代码或检查网络';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            grid.innerHTML = stocks.map(renderCard).join('');
+            
+            // 更新统计
+            const ztCount = stocks.filter(s => s.change >= 9.9).length;
+            const nearCount = stocks.filter(s => s.change >= 8 && s.change < 9.9).length;
+            
+            document.getElementById('ztCount').textContent = ztCount;
+            document.getElementById('nearCount').textContent = nearCount;
+            document.getElementById('updateTime').textContent = new Date().toLocaleTimeString();
+            
+            // 检查新涨停
+            const currentZtSet = new Set(stocks.filter(s => s.change >= 9.9).map(s => s.code));
+            currentZtSet.forEach(code => {
+                if (!previousZtSet.has(code)) {
+                    const stock = stocks.find(s => s.code === code);
+                    showToast(`🎉 ${stock.name} 涨停了!`);
+                }
+            });
+            previousZtSet = currentZtSet;
+        }
+        
+        // 添加自选股
+        function addStocks() {
+            const input = document.getElementById('stockInput').value.trim();
+            if (!input) return;
+            
+            const codes = input.split(',').map(c => c.trim()).filter(c => c);
+            if (codes.length > 0) {
+                defaultStocks = [...new Set([...defaultStocks, ...codes])];
+                document.getElementById('stockInput').value = '';
+                refreshData();
+                showToast(`已添加 ${codes.length} 只股票`);
+            }
+        }
+        
+        // 刷新数据
+        async function refreshData() {
+            const loading = document.getElementById('loading');
+            const errorMsg = document.getElementById('errorMsg');
+            
+            loading.style.display = 'block';
+            errorMsg.style.display = 'none';
+            
+            try {
+                // 优先获取涨幅榜
+                let stocks = await fetchZhangfuBang();
+                
+                // 如果涨幅榜为空，使用自选股
+                if (stocks.length === 0 && defaultStocks.length > 0) {
+                    stocks = await fetchStocks(defaultStocks);
+                }
+                
+                // 过滤掉无效数据
+                allStocks = stocks.filter(s => s.price > 0 && s.prevClose > 0);
+                
+                // 排序
+                allStocks.sort((a, b) => b.change - a.change);
+                
+                // 筛选
+                applyFilter();
+                
+            } catch (error) {
+                console.error('刷新失败:', error);
+                loading.style.display = 'none';
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = '获取数据失败: ' + error.message;
+                
+                // 如果网络失败，使用默认股票尝试
+                try {
+                    const stocks = await fetchStocks(defaultStocks);
+                    allStocks = stocks.filter(s => s.price > 0 && s.prevClose > 0);
+                    applyFilter();
+                } catch (e) {
+                    console.error('备用数据源也失败:', e);
+                }
+            }
+        }
+        
+        // 筛选
+        function applyFilter() {
+            filteredStocks = allStocks.filter(stock => {
+                if (currentFilter === 'zt') return stock.change >= 9.9;
+                if (currentFilter === 'near') return stock.change >= 8 && stock.change < 9.9;
+                return true;
+            });
+            
+            renderGrid(filteredStocks);
+        }
+        
+        // 设置筛选
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                const isActive = (filter === 'all' && tab.textContent === '全部') ||
+                                 (filter === 'zt' && tab.textContent === '已涨停') ||
+                                 (filter === 'near' && tab.textContent === '接近涨停');
+                tab.classList.toggle('active', isActive);
+            });
+            applyFilter();
+        }
+        
+        // 显示提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+        
+        // 初始化
+        refreshData();
+        
+        // 自动刷新
+        setInterval(refreshData, 15000);
+    </script>
+</body>
+</html>

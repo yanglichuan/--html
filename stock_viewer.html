@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回调反弹分析 - 股票查看器</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 0; display: flex; height: 100vh; overflow: hidden; background-color: #f5f5f5; }
+        #sidebar { width: 320px; background: #fff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column; box-shadow: 2px 0 5px rgba(0,0,0,0.05); z-index: 10; }
+        .instructions { padding: 15px; background: #e3f2fd; color: #0d47a1; font-size: 14px; text-align: center; border-bottom: 1px solid #bbdefb; font-weight: 500; }
+        .instructions kbd { background: #fff; border: 1px solid #ccc; padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,0.2); margin: 0 3px; font-family: monospace; }
+        #stock-list { flex: 1; overflow-y: auto; }
+        .stock-item { padding: 12px 20px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: background-color 0.2s; }
+        .stock-item:hover { background: #f9f9f9; }
+        .stock-item.active { background: #e3f2fd; border-left: 4px solid #1976d2; padding-left: 16px; }
+        .stock-name { font-weight: 500; color: #333; }
+        .stock-code { font-family: monospace; color: #666; font-size: 13px; background: #f5f5f5; padding: 2px 6px; border-radius: 4px; }
+        .stock-item.active .stock-name { color: #1976d2; }
+        .stock-item.active .stock-code { background: #bbdefb; color: #0d47a1; }
+        #content { flex: 1; display: flex; flex-direction: column; background: #fff; }
+        #header { padding: 15px 20px; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; justify-content: space-between; }
+        #header h2 { margin: 0; font-size: 20px; color: #333; }
+        #header .selected-stock-info { font-size: 14px; color: #666; }
+        #chart-container { flex: 1; position: relative; }
+        /* Scrollbar styles */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <div class="instructions">
+            支持使用键盘 <kbd>↑</kbd> <kbd>↓</kbd> 快速切换股票
+        </div>
+        <div id="stock-list"></div>
+    </div>
+    <div id="content">
+        <div id="header">
+            <h2 id="current-title">正在加载...</h2>
+            <div class="selected-stock-info" id="current-info"></div>
+        </div>
+        <div id="chart-container">
+            <!-- TradingView Widget BEGIN -->
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+              <div id="tradingview_chart" style="height:100%;width:100%"></div>
+            </div>
+            <!-- TradingView Widget END -->
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <script>
+        const stocks = [{"name": "深华发Ａ", "code": "000020"}, {"name": "中国天楹", "code": "000035"}, {"name": "深南电A", "code": "000037"}, {"name": "中洲控股", "code": "000042"}, {"name": "粤高速Ａ", "code": "000429"}, {"name": "珠海港", "code": "000507"}, {"name": "华塑控股", "code": "000509"}, {"name": "荣安地产", "code": "000517"}, {"name": "建投能源", "code": "000600"}, {"name": "盈方微", "code": "000670"}, {"name": "宝新能源", "code": "000690"}, {"name": "湖南发展", "code": "000722"}, {"name": "四川美丰", "code": "000731"}, {"name": "和展能源", "code": "000809"}, {"name": "冀东装备", "code": "000856"}, {"name": "湖北能源", "code": "000883"}, {"name": "中粮科技", "code": "000930"}, {"name": "冀中能源", "code": "000937"}, {"name": "中捷资源", "code": "002021"}, {"name": "登海种业", "code": "002041"}, {"name": "中泰化学", "code": "002092"}, {"name": "兴化股份", "code": "002109"}, {"name": "兆新股份", "code": "002256"}, {"name": "陕天然气", "code": "002267"}, {"name": "理工能科", "code": "002322"}, {"name": "雅博股份", "code": "002323"}, {"name": "棕榈股份", "code": "002431"}, {"name": "山东墨龙", "code": "002490"}, {"name": "协鑫集成", "code": "002506"}, {"name": "江苏国信", "code": "002608"}, {"name": "贝肯能源", "code": "002828"}, {"name": "苏州银行", "code": "002966"}, {"name": "金龙机电", "code": "300032"}, {"name": "尤洛卡", "code": "300099"}, {"name": "通裕重工", "code": "300185"}, {"name": "日科化学", "code": "300214"}, {"name": "开尔新材", "code": "300234"}, {"name": "珈伟新能", "code": "300317"}, {"name": "天壕能源", "code": "300332"}, {"name": "天能重工", "code": "300569"}, {"name": "迦南智能", "code": "300880"}, {"name": "尤安设计", "code": "300983"}, {"name": "扬电科技", "code": "301012"}, {"name": "科源制药", "code": "301281"}, {"name": "皖通高速", "code": "600012"}, {"name": "新疆天业", "code": "600075"}, {"name": "中信尼雅", "code": "600084"}, {"name": "广州发展", "code": "600098"}, {"name": "三峡水利", "code": "600116"}, {"name": "中闽能源", "code": "600163"}, {"name": "红星发展", "code": "600367"}, {"name": "盘江股份", "code": "600395"}, {"name": "宁夏建材", "code": "600449"}, {"name": "六国化工", "code": "600470"}, {"name": "上海能源", "code": "600508"}, {"name": "淮河能源", "code": "600575"}, {"name": "国新能源", "code": "600617"}, {"name": "太极实业", "code": "600667"}, {"name": "金瑞矿业", "code": "600714"}, {"name": "华银电力", "code": "600744"}, {"name": "辽宁能源", "code": "600758"}, {"name": "洲际油气", "code": "600759"}, {"name": "通宝能源", "code": "600780"}, {"name": "新奥股份", "code": "600803"}, {"name": "新天绿能", "code": "600956"}, {"name": "大秦铁路", "code": "601006"}, {"name": "厦门银行", "code": "601187"}, {"name": "林洋能源", "code": "601222"}, {"name": "绿色动力", "code": "601330"}, {"name": "北元集团", "code": "601568"}, {"name": "中国电建", "code": "601669"}, {"name": "潞安环能", "code": "601699"}, {"name": "宁波建工", "code": "601789"}, {"name": "中衡设计", "code": "603017"}, {"name": "德力佳", "code": "603092"}, {"name": "芯能科技", "code": "603105"}, {"name": "镇洋发展", "code": "603213"}, {"name": "日月股份", "code": "603218"}, {"name": "振德医疗", "code": "603301"}, {"name": "水发燃气", "code": "603318"}, {"name": "鼎信通讯", "code": "603421"}, {"name": "韩建河山", "code": "603616"}, {"name": "江苏新能", "code": "603693"}, {"name": "南卫股份", "code": "603880"}, {"name": "城地香江", "code": "603887"}, {"name": "同力天启", "code": "605286"}, {"name": "博睿数据", "code": "688229"}, {"name": "英诺特", "code": "688253"}, {"name": "固德威", "code": "688390"}];
+        let currentIndex = 0;
+        let widget = null;
+
+        function getTVSymbol(code) {
+            // TradingView expects SSE/SZSE prefix for Chinese stocks
+            if (code.startsWith('6')) return 'SSE:' + code;
+            return 'SZSE:' + code;
+        }
+
+        function renderList() {
+            const listEl = document.getElementById('stock-list');
+            listEl.innerHTML = '';
+            stocks.forEach((stock, index) => {
+                const div = document.createElement('div');
+                div.className = 'stock-item' + (index === currentIndex ? ' active' : '');
+                div.innerHTML = `<span class="stock-name">${stock.name}</span><span class="stock-code">${stock.code}</span>`;
+                div.onclick = () => selectStock(index);
+                div.id = 'stock-' + index;
+                listEl.appendChild(div);
+            });
+        }
+
+        function selectStock(index) {
+            if (index < 0) index = 0;
+            if (index >= stocks.length) index = stocks.length - 1;
+            
+            const oldIndex = currentIndex;
+            currentIndex = index;
+            
+            // Update UI list without full re-render
+            const oldItem = document.getElementById('stock-' + oldIndex);
+            if (oldItem) oldItem.classList.remove('active');
+            
+            const newItem = document.getElementById('stock-' + currentIndex);
+            if (newItem) {
+                newItem.classList.add('active');
+                // Scroll into view if needed
+                newItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            const stock = stocks[currentIndex];
+            document.getElementById('current-title').innerText = `${stock.name} (${stock.code})`;
+            document.getElementById('current-info').innerText = `第 ${currentIndex + 1} / ${stocks.length} 只`;
+
+            updateChart(stock.code);
+        }
+
+        function updateChart(code) {
+            const symbol = getTVSymbol(code);
+            const widgetConfig = {
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "range": "12M",  // 1 Year range
+                "timezone": "Asia/Shanghai",
+                "theme": "light",
+                "style": "1",    // Candlesticks
+                "locale": "zh_CN",
+                "enable_publishing": false,
+                "hide_top_toolbar": false,
+                "hide_legend": false,
+                "save_image": false,
+                "container_id": "tradingview_chart"
+            };
+
+            // TradingView widget doesn't have a clean update method that works reliably across all setups,
+            // re-initializing is fast enough and ensures the correct range and symbol.
+            document.getElementById('tradingview_chart').innerHTML = '';
+            widget = new TradingView.widget(widgetConfig);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectStock(currentIndex - 1);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectStock(currentIndex + 1);
+            }
+        });
+
+        // Init
+        renderList();
+        if (stocks.length > 0) {
+            selectStock(0);
+        }
+    </script>
+</body>
+</html>

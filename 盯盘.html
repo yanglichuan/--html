@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票盯盘</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #fff; min-height: 100vh; padding: 20px; }
+        
+        .container { max-width: 600px; margin: 0 auto; }
+        
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; color: #e94560; margin-bottom: 15px; }
+        
+        .stock-input { display: flex; gap: 10px; margin-bottom: 20px; }
+        .stock-input input { flex: 1; padding: 12px; border: 1px solid #333; border-radius: 8px; background: #16213e; color: #fff; font-size: 16px; }
+        .stock-input button { padding: 12px 24px; border: none; border-radius: 8px; background: #e94560; color: #fff; font-size: 16px; cursor: pointer; }
+        .stock-input button:hover { background: #ff6b6b; }
+        
+        .stock-info { background: #16213e; border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        .stock-name { font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+        .stock-code { font-size: 14px; color: #888; margin-bottom: 15px; }
+        .stock-price { font-size: 48px; font-weight: bold; margin-bottom: 10px; }
+        .stock-change { font-size: 20px; margin-bottom: 15px; }
+        .stock-change.up { color: #ff4757; }
+        .stock-change.down { color: #2ed573; }
+        .stock-change.neutral { color: #ffa502; }
+        
+        .last-update { font-size: 12px; color: #666; }
+        
+        .levels { background: #16213e; border-radius: 16px; padding: 20px; }
+        .levels h3 { font-size: 16px; margin-bottom: 15px; color: #888; }
+        
+        .level-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .level-item { background: #1a1a2e; border-radius: 12px; padding: 15px; text-align: center; transition: all 0.3s; }
+        .level-item.active { transform: scale(1.05); box-shadow: 0 0 20px rgba(233, 69, 96, 0.5); }
+        .level-item.current { background: #e94560; }
+        .level-item .price { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .level-item .percent { font-size: 14px; color: #888; }
+        .level-item .status { font-size: 12px; margin-top: 5px; color: #666; }
+        .level-item.up .percent { color: #ff4757; }
+        .level-item.down .percent { color: #2ed573; }
+        
+        .price-line { position: relative; height: 8px; background: linear-gradient(90deg, #2ed573, #ffa502, #ff4757); border-radius: 4px; margin: 20px 0; }
+        .price-indicator { position: absolute; top: -8px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transform: translateX(-50%); transition: left 0.3s; }
+        .price-indicator::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background: #e94560; border-radius: 50%; }
+        
+        .log { background: #16213e; border-radius: 16px; padding: 20px; margin-top: 20px; max-height: 200px; overflow-y: auto; }
+        .log h3 { font-size: 16px; margin-bottom: 10px; color: #888; }
+        .log-item { padding: 8px 0; border-bottom: 1px solid #1a1a2e; font-size: 14px; display: flex; justify-content: space-between; }
+        .log-item:last-child { border-bottom: none; }
+        .log-time { color: #666; }
+        .log-change { color: #ffa502; }
+        .log-change.up { color: #ff4757; }
+        .log-change.down { color: #2ed573; }
+        
+        .alert { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #e94560; padding: 15px 30px; border-radius: 8px; font-weight: bold; animation: alertPulse 1s infinite; display: none; z-index: 1000; }
+        @keyframes alertPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        
+        .loading { text-align: center; padding: 20px; color: #666; }
+        .error { text-align: center; padding: 20px; color: #ff4757; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 股票盯盘</h1>
+            <div class="stock-input">
+                <input type="text" id="stockCode" placeholder="输入股票代码 (如: 000001)" value="000001">
+                <button onclick="fetchStock()">查询</button>
+            </div>
+        </div>
+        
+        <div id="stockInfo" class="stock-info">
+            <div class="loading">输入股票代码后点击查询</div>
+        </div>
+        
+        <div id="levels" class="levels" style="display: none;">
+            <h3>价格区间 (以0.5%为单位)</h3>
+            <div class="price-line">
+                <div class="price-indicator" id="priceIndicator"></div>
+            </div>
+            <div class="level-grid" id="levelGrid"></div>
+        </div>
+        
+        <div id="log" class="log" style="display: none;">
+            <h3>📋 异动记录</h3>
+            <div id="logContent"></div>
+        </div>
+    </div>
+    
+    <div id="alert" class="alert">⚠️ 价格触及边界!</div>
+
+    <script>
+        let currentPrice = 0;
+        let basePrice = 0;
+        let intervalId = null;
+        let logs = [];
+        const unit = 0.005; // 0.5%
+        
+        // 获取股票数据
+        async function fetchStock() {
+            const code = document.getElementById('stockCode').value.trim();
+            if (!code) return;
+            
+            document.getElementById('stockInfo').innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('levels').style.display = 'none';
+            
+            try {
+                // 使用东方财富API获取实时数据
+                const response = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${getSecId(code)}&fields=f43,f44,f45,f46,f47,f48,f57,f58,f107,f169,f170`);
+                const data = await response.json();
+                
+                if (data.data && data.data.f43) {
+                    currentPrice = data.data.f43 / 100;
+                    basePrice = currentPrice;
+                    displayStock(data.data);
+                    startMonitoring(code);
+                } else {
+                    document.getElementById('stockInfo').innerHTML = '<div class="error">股票代码不存在</div>';
+                }
+            } catch (error) {
+                console.error('获取失败:', error);
+                // 模拟数据用于测试
+                currentPrice = 10.00;
+                basePrice = currentPrice;
+                displayStock({
+                    f58: document.getElementById('stockCode').value,
+                    f43: 1000,
+                    f169: 0,
+                    f170: 0
+                });
+                startMonitoring(document.getElementById('stockCode').value);
+            }
+        }
+        
+        // 根据代码获取市场ID
+        function getSecId(code) {
+            code = code.padStart(6, '0');
+            if (code.startsWith('6')) return `1.${code}`;
+            if (code.startsWith('0') || code.startsWith('3')) return `0.${code}`;
+            if (code.startsWith('4') || code.startsWith('8')) return `0.${code}`;
+            return `0.${code}`;
+        }
+        
+        // 显示股票信息
+        function displayStock(data) {
+            const name = data.f58 || '未知';
+            const price = data.f43 / 100;
+            const change = data.f169 / 100;
+            const changePercent = data.f170 / 100;
+            const time = new Date().toLocaleTimeString();
+            
+            let changeClass = 'neutral';
+            let changeSymbol = '';
+            if (change > 0) { changeClass = 'up'; changeSymbol = '+'; }
+            else if (change < 0) { changeClass = 'down'; changeSymbol = ''; }
+            
+            document.getElementById('stockInfo').innerHTML = `
+                <div class="stock-name">${name}</div>
+                <div class="stock-code">${document.getElementById('stockCode').value.padStart(6, '0')}</div>
+                <div class="stock-price">¥${price.toFixed(2)}</div>
+                <div class="stock-change ${changeClass}">${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)</div>
+                <div class="last-update">更新时间: ${time}</div>
+            `;
+            
+            generateLevels(price);
+            document.getElementById('levels').style.display = 'block';
+            document.getElementById('log').style.display = 'block';
+        }
+        
+        // 生成价格区间
+        function generateLevels(price) {
+            const grid = document.getElementById('levelGrid');
+            grid.innerHTML = '';
+            
+            // 生成 ±3% 的区间
+            const levels = [];
+            for (let i = -6; i <= 6; i++) {
+                const offset = i * 0.5; // 0.5% 单位
+                const levelPrice = price * (1 + offset / 100);
+                const percent = offset;
+                const isUp = offset > 0;
+                
+                levels.push({ price: levelPrice, percent, isUp });
+            }
+            
+            // 按价格排序（从高到低）
+            levels.sort((a, b) => b.price - a.price);
+            
+            levels.forEach((level, index) => {
+                const isCurrent = Math.abs(level.percent) < 0.25;
+                const item = document.createElement('div');
+                item.className = `level-item ${level.isUp ? 'up' : 'down'} ${isCurrent ? 'current' : ''}`;
+                item.id = `level-${index}`;
+                item.innerHTML = `
+                    <div class="price">¥${level.price.toFixed(2)}</div>
+                    <div class="percent">${level.percent > 0 ? '+' : ''}${level.percent.toFixed(1)}%</div>
+                    <div class="status">${isCurrent ? '当前价' : ''}</div>
+                `;
+                grid.appendChild(item);
+            });
+            
+            updatePriceIndicator(price);
+        }
+        
+        // 更新价格指示器
+        function updatePriceIndicator(price) {
+            const indicator = document.getElementById('priceIndicator');
+            const percent = ((price - basePrice) / basePrice) * 100;
+            
+            // 限制在 -3% 到 +3% 范围内
+            const clampedPercent = Math.max(-3, Math.min(3, percent));
+            const position = ((clampedPercent + 3) / 6) * 100;
+            
+            indicator.style.left = `${position}%`;
+            
+            // 更新当前价位标记
+            const items = document.querySelectorAll('.level-item');
+            items.forEach((item, index) => {
+                const levelPrice = parseFloat(item.querySelector('.price').textContent.replace('¥', ''));
+                const diff = ((price - levelPrice) / levelPrice) * 100;
+                const statusEl = item.querySelector('.status');
+                
+                if (Math.abs(diff) < 0.25) {
+                    item.classList.add('active');
+                    statusEl.textContent = '◉ 当前';
+                } else if (diff < 0) {
+                    item.classList.remove('active');
+                    statusEl.textContent = `↑ +${Math.abs(diff).toFixed(2)}%`;
+                } else {
+                    item.classList.remove('active');
+                    statusEl.textContent = `↓ -${diff.toFixed(2)}%`;
+                }
+            });
+        }
+        
+        // 开始监控
+        function startMonitoring(code) {
+            if (intervalId) clearInterval(intervalId);
+            
+            logs = [];
+            document.getElementById('logContent').innerHTML = '';
+            
+            intervalId = setInterval(async () => {
+                try {
+                    const response = await fetch(`https://push2.eastmoney.com/api/qt/stock/get?secid=${getSecId(code)}&fields=f43,f169,f170`);
+                    const data = await response.json();
+                    
+                    if (data.data) {
+                        const newPrice = data.data.f43 / 100;
+                        const change = data.data.f169 / 100;
+                        const changePercent = data.data.f170 / 100;
+                        const time = new Date().toLocaleTimeString();
+                        
+                        // 检查是否有异动
+                        const percentChange = ((newPrice - currentPrice) / currentPrice) * 100;
+                        if (Math.abs(percentChange) >= 0.5) {
+                            addLog(time, percentChange, newPrice);
+                            showAlert(percentChange);
+                        }
+                        
+                        currentPrice = newPrice;
+                        
+                        // 更新显示
+                        const nameEl = document.querySelector('.stock-name');
+                        const priceEl = document.querySelector('.stock-price');
+                        const changeEl = document.querySelector('.stock-change');
+                        
+                        priceEl.textContent = `¥${newPrice.toFixed(2)}`;
+                        
+                        let changeClass = 'neutral';
+                        let changeSymbol = '';
+                        if (change > 0) { changeClass = 'up'; changeSymbol = '+'; }
+                        else if (change < 0) { changeClass = 'down'; changeSymbol = ''; }
+                        
+                        changeEl.className = `stock-change ${changeClass}`;
+                        changeEl.textContent = `${changeSymbol}${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)`;
+                        
+                        document.querySelector('.last-update').textContent = `更新时间: ${time}`;
+                        
+                        updatePriceIndicator(newPrice);
+                    }
+                } catch (error) {
+                    console.error('监控更新失败:', error);
+                }
+            }, 3000); // 每3秒更新一次
+        }
+        
+        // 添加日志
+        function addLog(time, percentChange, price) {
+            const direction = percentChange > 0 ? '📈 上涨' : '📉 下跌';
+            const logClass = percentChange > 0 ? 'up' : 'down';
+            
+            logs.unshift({ time, percentChange, price, direction });
+            if (logs.length > 50) logs.pop();
+            
+            const logContent = document.getElementById('logContent');
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.innerHTML = `
+                <span><span class="log-time">${time}</span> ${direction}</span>
+                <span class="log-change ${logClass}">${percentChange > 0 ? '+' : ''}${percentChange.toFixed(2)}% → ¥${price.toFixed(2)}</span>
+            `;
+            logContent.insertBefore(logItem, logContent.firstChild);
+            
+            // 限制显示数量
+            while (logContent.children.length > 20) {
+                logContent.removeChild(logContent.lastChild);
+            }
+        }
+        
+        // 显示警报
+        function showAlert(percentChange) {
+            const alert = document.getElementById('alert');
+            alert.textContent = percentChange > 0 ? `🚀 价格突破 +0.5%!` : `📉 价格跌破 -0.5%!`;
+            alert.style.display = 'block';
+            setTimeout(() => { alert.style.display = 'none'; }, 3000);
+        }
+        
+        // 键盘事件
+        document.getElementById('stockCode').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fetchStock();
+        });
+        
+        // 初始加载默认股票
+        fetchStock();
+    </script>
+</body>
+</html>
